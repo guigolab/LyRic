@@ -1,0 +1,37 @@
+{
+    "__default__" :
+    {
+        "queue" : "rg-el7,short-sl7",
+        "virtual_free" : "15G",
+        "h_rt" : "1:30:00",
+        "email" : "julien.lagarde@crg.eu",
+        "notify" : "ae",
+        "err" : "{workflow.basedir}/qsub_logs/",
+        "out" : "{workflow.basedir}/qsub_logs/",
+        "threads" : ""
+    },
+    "readMapping" :
+    {
+        "virtual_free" : "40G",
+        "h_rt" : "6:00:00",
+        "queue" : "rg-el7,short-sl7",
+        "threads" : "-pe smp 12"
+    },
+    "blastDemultiplex" :
+    {
+        "virtual_free" : "90G",
+        "h_rt" : "6:00:00",
+        "threads" : "-pe smp 12"
+
+    },
+    "processBlastDemultiplex":
+    {
+        "virtual_free" : "15G",
+        "h_rt" : "1:00:00"
+    },
+    "getUndeterminedReads":
+    {
+        "virtual_free" : "20G",
+        "h_rt" : "1:00:00"
+    }
+}
