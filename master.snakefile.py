@@ -9,27 +9,27 @@ DROPBOX_PLOTS=config["DROPBOX_PLOTSDIR"]
 
 
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
-TECHNAME=config["TECHNAME"]
+#TECHNAME=config["TECHNAME"]
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
-pacBioMappingDir=config["PB_MAPPINGS"]
+#mappingDir=config["PB_MAPPINGS"]
 sizeFrac_Rpalette=config["SIZEFRACTION_RPALETTE"]
 #print(CAPDESIGNTOGENOME)
 
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 wildcard_constraints:
  	capDesign = "[^_]+",
- 	sizeFrac = "[^_]+"
-
+ 	sizeFrac = "[^_]+",
+ 	techname = "[^_]+"
 
 # get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries):
-(CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{capDesign}_{sizeFrac}.fastq")
+(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq")
 # remove duplicate entries:
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
+TECHNAMES=set(TECHNAMES)
 
 
-
-adaptersTSV = config["DEMULTIPLEX_DIR"] + "all_adapters.tsv"
+adaptersTSV = "demultiplexing/all_adapters.tsv"
 f = open(adaptersTSV, 'r')
 BARCODES = []
 BARCODESUNDETER = []
@@ -82,30 +82,30 @@ ruleorder: getUndeterminedReads > demultiplexFastqs
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + "_" + "{capDesign}_all.readlength.{ext}", capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), # facetted histograms of read length
-		config["STATSDATADIR"] + config["TECHNAME"] + ".fastq.readCounts.tsv", #read counts per fastq
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".fastq.UP.stats.{ext}", ext=config["PLOTFORMATS"]), # UP reads plots
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".fastq.BC.stats.{ext}", ext=config["PLOTFORMATS"]), # barcode reads plots
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".fastq.foreignBC.stats.{ext}", ext=config["PLOTFORMATS"]), #foreign barcode reads plots
+		expand(config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}", techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), # facetted histograms of read length
+		expand(config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv", techname=TECHNAMES), #read counts per fastq
+		expand(config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # UP reads plots
+		expand(config["PLOTSDIR"] + "{techname}.fastq.BC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # barcode reads plots
+		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
 
-		expand (config["PB_MAPPINGS"] + "{capDesign}_{sizeFrac}.{barcodesU}.bam", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # STAR-mapped reads
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".ambiguousBarcodes.reads.stats.{ext}", ext=config["PLOTFORMATS"]), # ambiguous barcodes plots
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + "_{capDesign}.adapters.location.stats.{ext}", capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), #location of adapters over reads
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".chimeric.reads.stats.{ext}", ext=config["PLOTFORMATS"]), # stats on chimeric reads
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".finalDemul.reads.stats.{ext}", ext=config["PLOTFORMATS"]), #final demultiplexing stats
-		expand(config["DEMULTIPLEX_DIR"] + "qc/{capDesign}_{sizeFrac}.demul.QC1.txt", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
-		expand(config["DEMULTIPLEX_DIR"] + "{capDesign}_{sizeFrac}.{barcodes}.fastq", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES), #get demultiplexed FASTQs
-		expand(config["DEMULTIPLEX_DIR"] + "{capDesign}_{sizeFrac}.Undeter.fastq", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # get Undetermined (non-demultiplexed) reads
-		expand(config["DEMULTIPLEX_DIR"] + "qc/{capDesign}_{sizeFrac}.demul.QC2.txt", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
-		expand(config["DEMULTIPLEX_DIR"] + "qc/{capDesign}_{sizeFrac}.{barcodes}.demul.QC3.txt", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".demultiplexing.perSample.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand(config["PLOTSDIR"] + config["TECHNAME"] + ".mapping.perSample.perFraction.stats.{ext}", ext=config["PLOTFORMATS"])
+		expand ("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # STAR-mapped reads
+		expand(config["PLOTSDIR"] + "{techname}.ambiguousBarcodes.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # ambiguous barcodes plots
+		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.adapters.location.stats.{ext}",techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), #location of adapters over reads
+		expand(config["PLOTSDIR"] + "{techname}.chimeric.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # stats on chimeric reads
+		expand(config["PLOTSDIR"] + "{techname}.finalDemul.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #final demultiplexing stats
+		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
+		expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq",techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES), #get demultiplexed FASTQs
+		expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # get Undetermined (non-demultiplexed) reads
+		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
+		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.demul.QC3.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
+		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"])
 #		expand("{capDesign}_{sizeFrac}.{barcodesU}.test", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER)
 
 
 rule getFastqReadCounts:
-	input: config["FQPATH"] + "{capDesign}_{sizeFrac}.fastq"
-	output: temp(config["STATSDATADIR"] + config["TECHNAME"] + "_{capDesign}_{sizeFrac}.fastq.readCounts.tsv")
+	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq"
+	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv")
 	shell:
 		'''
 let total=$(cat {input} | wc -l)/4
@@ -113,27 +113,27 @@ echo -e "$(basename {input})\t$total" > {output}
 		'''
 
 rule aggFastqReadCounts:
-	input:  expand (config["STATSDATADIR"] + config["TECHNAME"] + "_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
-	output: config["STATSDATADIR"] + config["TECHNAME"] + ".fastq.readCounts.tsv"
+	input:  expand (config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
+	output: config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv"
 	shell: "cat {input} | sort > {output}"
 
 #get read lengths for all FASTQ files:
 rule getReadLength:
-	input: config["FQPATH"] + "{capDesign}_{sizeFrac}.fastq"
-	output: temp(config["TECHNAME"] + "_{capDesign}_{sizeFrac}.readlength.tsv")
+	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq"
+	output: temp("{techname}_{capDesign}_{sizeFrac}.readlength.tsv")
 	shell: "fastq2fasta.pl {input} | FastaToTbl | awk -v s={wildcards.sizeFrac} '{{print s\"\\t\"length($2)}}' > {output}"
 
 #aggregate read length data over all fractions of a given capDesign:
 rule aggReadLength:
-	input: expand(config["TECHNAME"] + "_{{capDesign}}_{sizeFrac}.readlength.tsv", sizeFrac=SIZEFRACS)
+	input: expand("{{techname}}_{{capDesign}}_{sizeFrac}.readlength.tsv", sizeFrac=SIZEFRACS)
 	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
-	output: config["STATSDATADIR"] + config["TECHNAME"] + "_{capDesign}_all.readlength.tsv"
+	output: config["STATSDATADIR"] + "{techname}_{capDesign}_all.readlength.tsv"
 	shell: "cat {input} > {output}"
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + config["TECHNAME"] + "_{capDesign}_all.readlength.tsv"
-	output: config["PLOTSDIR"] + config["TECHNAME"] +  "_{capDesign}_all.readlength.{ext}"
+	input: config["STATSDATADIR"] + "{techname}_{capDesign}_all.readlength.tsv"
+	output: config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -221,13 +221,13 @@ rule readMapping:
 #		 barcodesU = lambda wildcards: {wildcards.capDesign} + "_.+"
 	input:
 #		reads = returnCapDesignBarcodesFastqs,
-		reads = config["DEMULTIPLEX_DIR"] + "{capDesign}_{sizeFrac}.{barcodesU}.fastq",
+		reads = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq",
 		genome = lambda wildcards: "/users/rg/jlagarde/genomes/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 #	params:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
 	threads: 12
 	output:
-		config["PB_MAPPINGS"] + "{capDesign}_{sizeFrac}.{barcodesU}.bam"
+		"mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam"
 	shell:
 		'''
 sameBarcodeCapDesign=$(echo "{wildcards.capDesign} {wildcards.barcodesU}" | perl -slane 'if($F[1]=~/$F[0]/ || $F[1] eq "Undeter"){{print "1"}} else {{print "0"}}')
@@ -252,9 +252,9 @@ fi
 
 rule getMappingStats:
 	input:
-		bams = config["PB_MAPPINGS"] + "{capDesign}_{sizeFrac}.{barcodesU}.bam",
-		fastqs = config["DEMULTIPLEX_DIR"] + "{capDesign}_{sizeFrac}.{barcodesU}.fastq"
-	output: temp(config["STATSDATADIR"] + config["TECHNAME"] + "_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv")
+		bams = "mappings/" + "{capDesign}_{sizeFrac}.{barcodesU}.bam",
+		fastqs = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq"
+	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv")
 	shell:
 		'''
 sameBarcodeCapDesign=$(echo "{wildcards.capDesign} {wildcards.barcodesU}" | perl -slane 'if($F[1]=~/$F[0]/ || $F[1] eq "Undeter"){{print "1"}} else {{print "0"}}')
@@ -267,16 +267,16 @@ touch {output}
 fi
 		'''
 rule aggMappingStats:
-	input:expand(config["STATSDATADIR"] + config["TECHNAME"] + "_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv",capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER)
-	output: config["STATSDATADIR"] + config["TECHNAME"] + ".mapping.perSample.perFraction.stats.tsv"
+	input:expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER)
+	output: config["STATSDATADIR"] + "{techname}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
 cat {input} | sort > {output}
 		'''
 
 rule plotMappingStats:
-	input: config["STATSDATADIR"] + config["TECHNAME"] + ".mapping.perSample.perFraction.stats.tsv"
-	output: config["PLOTSDIR"] + config["TECHNAME"] + ".mapping.perSample.perFraction.stats.{ext}"
+	input: config["STATSDATADIR"] + "{techname}.mapping.perSample.perFraction.stats.tsv"
+	output: config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}"
 	shell:
 		'''
 echo "library(ggplot2)
