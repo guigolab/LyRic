@@ -1,13 +1,11 @@
 import glob
 from collections import defaultdict
-#from pytools.persistent_dict import PersistentDict
+import os.path
+from itertools import product
 
-#configfile: "config.json"
 
 # # path to dropbox folder where to sync output R plots:
 DROPBOX_PLOTS=config["DROPBOX_PLOTSDIR"]
-
-
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
 #TECHNAME=config["TECHNAME"]
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
@@ -17,9 +15,9 @@ sizeFrac_Rpalette=config["SIZEFRACTION_RPALETTE"]
 
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 wildcard_constraints:
- 	capDesign = "[^_]+",
- 	sizeFrac = "[^_]+",
- 	techname = "[^_]+"
+ 	capDesign = "[^_/]+",
+ 	sizeFrac = "[^_/]+",
+ 	techname = "[^_/]+"
 
 # get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries):
 (TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq")
@@ -27,6 +25,7 @@ wildcard_constraints:
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
+
 
 
 adaptersTSV = "demultiplexing/all_adapters.tsv"
@@ -42,39 +41,11 @@ for line in f:
 		BARCODESUNDETER.append(columns[0])
 		CAPDESIGNTOBARCODES[barcodeId[0]].append(columns[0])
 
-
-#print(SIZEFRACS)
-# def returnCapDesignBarcodesFastqs(wildcards):
-# 	print("capDesign " + wildcards.capDesign + "barcode " + wildcards.barcodesU)
-# #  	capDesign=wildcards
-# # # 	print(args)
-#  	fastqs = ''
-# # 	for sizeFrac in (SIZEFRACS):
-# #		print(sizeFrac)
-# 	for barcode in (CAPDESIGNTOBARCODES[wildcards.capDesign]):
-# 		print("barcode " + barcode)
-# 		if barcode == wildcards.barcodesU:
-# #			fastqs.append(config["DEMULTIPLEX_DIR"] + wildcards.capDesign + "_" + wildcards.sizeFrac +"." + barcode + ".fastq")
-# 			fastqs = config["DEMULTIPLEX_DIR"] + wildcards.capDesign + "_" + wildcards.sizeFrac +"." + barcode + ".fastq"
-# #	print(fastqs)
-# 	return(fastqs)
-
-# print (returnCapDesignBarcodesFastqs('Hv1'))
-
-
-#print (returnCapDesignBarcodes('Hv1'))
-#BARCODESUNDETER=BARCODES
-
 BARCODESUNDETER.append("Undeter")
-
 BARCODES=set(BARCODES)
-#print (BARCODES)
 BARCODESUNDETER=set(BARCODESUNDETER)
-#print (BARCODES)
 
-#print (BARCODES)
-
-include: "demultiplex.snakefile"
+include: "demultiplex.snakefile.py"
 
 #to avoid AmbiguousRuleException: (and in that order, otherwise {capDesign}_{sizeFrac}.Undeter.fastq will be generated using rule demultiplexFastqs and not getUndeterminedReads, which will always give empty Undeter files :
 ruleorder: getUndeterminedReads > demultiplexFastqs
