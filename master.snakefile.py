@@ -27,6 +27,72 @@ SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
 
 
+########################
+### make list of forbidden combinations (missing input files)
+### inspired by https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
+
+AUTHORIZEDCOMBINATIONS = []
+
+for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS):
+	print (comb)
+	if(os.path.isfile(config["FQPATH"] + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq")):
+		tup=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]))
+		AUTHORIZEDCOMBINATIONS.append(tup)
+
+print ("AUTHORIZEDCOMBINATIONS:")
+print (AUTHORIZEDCOMBINATIONS)
+
+
+def filter_combinator(whitelist):
+	def filtered_combinator(*args, **kwargs):
+		print("args:")
+		for a in args:
+			print(a)
+		print("kwargs:")
+		for a in kwargs:
+			print(a, kwargs[a])
+
+		for wc_comb in product(*args, **kwargs):
+			print ("wc_comb:")
+			print (wc_comb)
+#			print ("wc_comb 0-3:")
+#			print (wc_comb[0:3])
+            #use only first 2/3 elements of args, which should be techname, capDesign, sizeFrac. We don't care about the rest, as they're not present in input files
+			found=False
+			for ac in AUTHORIZEDCOMBINATIONS:
+#				print("current AUTH:")
+#				print (ac)
+				if(wc_comb[0:3] == ac):
+					print ("SUCCESS")
+					found=True
+					yield(wc_comb)
+					break
+			if not found and wc_comb[2][0] != 'sizeFrac':
+#if this point is reached it means wc_comb[0:3] was not found. Try with wc_comb[0:2]
+				for ac in AUTHORIZEDCOMBINATIONS:
+#				print("current AUTH:")
+#				print (ac)
+					if(wc_comb[0:2] == ac[0:2]):
+						print ("SUCCESS")
+						found=True
+						yield(wc_comb)
+						break
+#				for currAc in ac:
+#					print(currAc)
+
+			# if (frozenset(wc_comb[0:3]) in whitelist):
+			# 	print(" OK")
+			# 	yield wc_comb
+			# # elif (frozenset(wc_comb[0:2]) not in blacklist):
+			# # 	print(" OK")
+			# # 	yield wc_comb
+			# else:
+			# 	print(" FORBIDDEN")
+	return filtered_combinator
+
+#filtered_product = filter_combinator(FORBIDDENCOMBINATIONS)
+filtered_product = filter_combinator(AUTHORIZEDCOMBINATIONS)
+
 
 adaptersTSV = "demultiplexing/all_adapters.tsv"
 f = open(adaptersTSV, 'r')
@@ -53,25 +119,26 @@ ruleorder: getUndeterminedReads > demultiplexFastqs
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
-		expand(config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}", techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), # facetted histograms of read length
+		expand(config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, ext=config["PLOTFORMATS"]), # facetted histograms of read length
 		expand(config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv", techname=TECHNAMES), #read counts per fastq
-		expand(config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # UP reads plots
-		expand(config["PLOTSDIR"] + "{techname}.fastq.BC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # barcode reads plots
-		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
+ 		expand(config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # UP reads plots
+ 		expand(config["PLOTSDIR"] + "{techname}.fastq.BC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # barcode reads plots
+ 		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
+ 		expand ("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # mapped reads
+ 		expand(config["PLOTSDIR"] + "{techname}.ambiguousBarcodes.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # ambiguous barcodes plots
+ 		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.adapters.location.stats.{ext}",techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), #location of adapters over reads
+ 		expand(config["PLOTSDIR"] + "{techname}.chimeric.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # stats on chimeric reads
+ 		expand(config["PLOTSDIR"] + "{techname}.finalDemul.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #final demultiplexing stats
+ 		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
 
-		expand ("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # STAR-mapped reads
-		expand(config["PLOTSDIR"] + "{techname}.ambiguousBarcodes.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # ambiguous barcodes plots
-		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.adapters.location.stats.{ext}",techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), #location of adapters over reads
-		expand(config["PLOTSDIR"] + "{techname}.chimeric.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # stats on chimeric reads
-		expand(config["PLOTSDIR"] + "{techname}.finalDemul.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #final demultiplexing stats
-		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
-		expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq",techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES), #get demultiplexed FASTQs
-		expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # get Undetermined (non-demultiplexed) reads
-		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
-		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.demul.QC3.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
-		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"])
-#		expand("{capDesign}_{sizeFrac}.{barcodesU}.test", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER)
+
+ 		expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES), #get demultiplexed FASTQs
+ 		expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # get Undetermined (non-demultiplexed) reads
+ 		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
+ 		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.demul.QC3.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
+ 		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
+ 		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"])
+# #		expand("{capDesign}_{sizeFrac}.{barcodesU}.test", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER)
 
 
 rule getFastqReadCounts:
@@ -79,12 +146,13 @@ rule getFastqReadCounts:
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv")
 	shell:
 		'''
-let total=$(cat {input} | wc -l)/4
+let total=$(cat {input} | wc -l)/4 || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
 echo -e "$(basename {input})\t$total" > {output}
 		'''
 
 rule aggFastqReadCounts:
-	input:  expand (config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
+	input: lambda wildcards: expand (config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
+#	input: lambda wildcards: expand("{techname}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS)
 	output: config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv"
 	shell: "cat {input} | sort > {output}"
 
@@ -92,11 +160,11 @@ rule aggFastqReadCounts:
 rule getReadLength:
 	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq"
 	output: temp("{techname}_{capDesign}_{sizeFrac}.readlength.tsv")
-	shell: "fastq2fasta.pl {input} | FastaToTbl | awk -v s={wildcards.sizeFrac} '{{print s\"\\t\"length($2)}}' > {output}"
+	shell: "fastq2tsv.pl {input} | awk -v s={wildcards.sizeFrac} '{{print s\"\\t\"length($2)}}' > {output}"
 
 #aggregate read length data over all fractions of a given capDesign:
 rule aggReadLength:
-	input: expand("{{techname}}_{{capDesign}}_{sizeFrac}.readlength.tsv", sizeFrac=SIZEFRACS)
+	input: lambda wildcards: expand("{techname}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS)
 	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}_all.readlength.tsv"
 	shell: "cat {input} > {output}"
@@ -223,7 +291,7 @@ fi
 
 rule getMappingStats:
 	input:
-		bams = "mappings/" + "{capDesign}_{sizeFrac}.{barcodesU}.bam",
+		bams = "mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam",
 		fastqs = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv")
 	shell:
@@ -238,7 +306,7 @@ touch {output}
 fi
 		'''
 rule aggMappingStats:
-	input:expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv", filtered_product, techname=wildcards.techname, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER)
 	output: config["STATSDATADIR"] + "{techname}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
