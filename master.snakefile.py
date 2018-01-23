@@ -34,7 +34,6 @@ TECHNAMES=set(TECHNAMES)
 AUTHORIZEDCOMBINATIONS = []
 
 for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS):
-	print (comb)
 	if(os.path.isfile(config["FQPATH"] + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq")):
 		tup=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]))
 		AUTHORIZEDCOMBINATIONS.append(tup)
@@ -45,16 +44,7 @@ print (AUTHORIZEDCOMBINATIONS)
 
 def filter_combinator(whitelist):
 	def filtered_combinator(*args, **kwargs):
-		print("args:")
-		for a in args:
-			print(a)
-		print("kwargs:")
-		for a in kwargs:
-			print(a, kwargs[a])
-
 		for wc_comb in product(*args, **kwargs):
-			print ("wc_comb:")
-			print (wc_comb)
 #			print ("wc_comb 0-3:")
 #			print (wc_comb[0:3])
             #use only first 2/3 elements of args, which should be techname, capDesign, sizeFrac. We don't care about the rest, as they're not present in input files
@@ -63,7 +53,6 @@ def filter_combinator(whitelist):
 #				print("current AUTH:")
 #				print (ac)
 				if(wc_comb[0:3] == ac):
-					print ("SUCCESS")
 					found=True
 					yield(wc_comb)
 					break
@@ -73,7 +62,6 @@ def filter_combinator(whitelist):
 #				print("current AUTH:")
 #				print (ac)
 					if(wc_comb[0:2] == ac[0:2]):
-						print ("SUCCESS")
 						found=True
 						yield(wc_comb)
 						break
