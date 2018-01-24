@@ -17,7 +17,9 @@ sizeFrac_Rpalette=config["SIZEFRACTION_RPALETTE"]
 wildcard_constraints:
  	capDesign = "[^_/]+",
  	sizeFrac = "[^_/]+",
- 	techname = "[^_/]+"
+ 	techname = "[^_/]+",
+ #	barcodes = "[^_/]+",
+ #	barcodesU ="[^_/]+"
 
 # get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries):
 (TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq")
@@ -115,6 +117,7 @@ rule all:
  		expand(config["PLOTSDIR"] + "{techname}.fastq.BC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # barcode reads plots
  		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
  		expand ("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # mapped reads
+ 		expand ("mappings/" + "{techname}_{capDesign}_{barcodesU}.merged.bam", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # mapped reads
  		expand(config["PLOTSDIR"] + "{techname}.ambiguousBarcodes.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # ambiguous barcodes plots
  		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.adapters.location.stats.{ext}",techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), #location of adapters over reads
  		expand(config["PLOTSDIR"] + "{techname}.chimeric.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # stats on chimeric reads

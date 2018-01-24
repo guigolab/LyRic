@@ -78,8 +78,8 @@ echoerr "Mapping done"
 echoerr "Creating/sorting BAM"
 cat {output}.tmp | samtools view -b -u -S - | samtools sort --threads {threads} -T $TMPDIR -m 5G - >{output}
 echoerr "Done creating/sorting BAM"
-echoerr "Indexing BAM"
-samtools index {output}
+#echoerr "Indexing BAM"
+#samtools index {output}
 rm {output}.tmp
 else
 touch {output}
@@ -140,13 +140,13 @@ dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
-# rule test:
-# 	input: returnCapDesignBarcodesFastqs
-# #config["DEMULTIPLEX_DIR"] + "{capDesign}_{sizeFrac}.{barcodesU}.fastq"
-# 	output: "{capDesign}_{sizeFrac}.{barcodesU}.test" if returnCapDesignBarcodesFastqs else "./tmp/{capDesign}_{sizeFrac}.{barcodesU}.test"
-# 	shell:
-# 		'''
-# head {input} > {output}
-# 		'''
 
+rule mergeCapDesignBams:
+	input: lambda wildcards: expand("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodesU=wildcards.barcodesU)
+	output: "mappings/" + "{techname}_{capDesign}_{barcodesU}.merged.bam"
+	shell:
+		'''
+ samtools merge {output} {input}
+ samtools index {output}
 
+		'''
