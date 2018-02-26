@@ -19,7 +19,7 @@
     },
     "blastDemultiplex" :
     {
-        "virtual_free" : "90G",
+        "virtual_free" : "120G",
         "h_rt" : "6:00:00",
         "threads" : "-pe smp 12"
 

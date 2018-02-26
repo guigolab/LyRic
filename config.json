@@ -1,5 +1,5 @@
 {
-       "FQPATH" :"fastqs/",
+       "FQPATH" :"fastqs/def/",
        "PLOTSDIR" : "plots/",
        "SIZEFRACTION_RPALETTE": "c('1-1.5' ='#f765ac','1.5-2.5' ='#b370f9', '2.5+'='#CCC914')",
        "DROPBOX_PLOTSDIR" :"/RNACapture/phase2/plots/",

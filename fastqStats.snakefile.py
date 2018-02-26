@@ -1,3 +1,13 @@
+rule checkNoDuplicateReadIds:
+	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq"
+	output: config["FQPATH"] + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt"
+	shell:
+		'''
+cat {input} | fastq2tsv.pl | cut -f1 | sort| uniq -dc > {output}
+count=$(cat {output} | wc -l)
+if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
+		'''
+
 
 rule getFastqReadCounts:
 	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq"

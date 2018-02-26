@@ -66,17 +66,17 @@ rule readMapping:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
 	threads: 12
 	output:
-		"mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam"
+		temp("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam")
 	shell:
 		'''
 sameBarcodeCapDesign=$(echo "{wildcards.capDesign} {wildcards.barcodesU}" | perl -slane 'if($F[1]=~/$F[0]/ || $F[1] eq "Undeter"){{print "1"}} else {{print "0"}}')
 run=1
 if [[ $sameBarcodeCapDesign == 1 && $run == 1 ]]; then
 echoerr "Mapping"
-minimap2 -t {threads} -L -ax splice {input.genome} {input.reads} > {output}.tmp
+minimap2 --cs -t {threads} --secondary=no -L -ax splice {input.genome} {input.reads} > {output}.tmp
 echoerr "Mapping done"
 echoerr "Creating/sorting BAM"
-cat {output}.tmp | samtools view -b -u -S - | samtools sort --threads {threads} -T $TMPDIR -m 5G - >{output}
+cat {output}.tmp | samtools view -F 256 -F4 -F 2048 -b -u -S - | samtools sort --threads {threads} -T $TMPDIR -m 5G - >{output}
 echoerr "Done creating/sorting BAM"
 #echoerr "Indexing BAM"
 #samtools index {output}
@@ -141,12 +141,75 @@ dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 		'''
 
 
-rule mergeCapDesignBams:
+rule mergeSizeFracBams:
 	input: lambda wildcards: expand("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodesU=wildcards.barcodesU)
 	output: "mappings/" + "{techname}_{capDesign}_{barcodesU}.merged.bam"
 	shell:
 		'''
- samtools merge {output} {input}
- samtools index {output}
+sameBarcodeCapDesign=$(echo "{wildcards.capDesign} {wildcards.barcodesU}" | perl -slane 'if($F[1]=~/$F[0]/ || $F[1] eq "Undeter"){{print "1"}} else {{print "0"}}')
+if [ $sameBarcodeCapDesign == 1 ]; then
+samtools merge {output} {input}
+samtools index {output}
+else
+touch {output}
+fi
+		'''
+
+rule checkOnlyOneHit:
+	input: "mappings/" + "{techname}_{capDesign}_{barcodesU}.merged.bam"
+	output: "mappings/" + "qc/{techname}_{capDesign}_{barcodesU}.merged.bam.dupl.txt"
+	shell:
+		'''
+samtools view {input} | cut -f1 | sort| uniq -dc > {output}
+count=$(cat {output} | wc -l)
+if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
+		'''
+
+
+rule readBamToBed:
+	input: lambda wildcards: expand("mappings/" + "{techname}_{capDesign}_{barcodesU}.merged.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodesU=wildcards.barcodesU)
+	output: "mappings/bed/" + "{techname}_{capDesign}_{barcodesU}.merged.bed"
+	shell:
+		'''
+sameBarcodeCapDesign=$(echo "{wildcards.capDesign} {wildcards.barcodesU}" | perl -slane 'if($F[1]=~/$F[0]/ || $F[1] eq "Undeter"){{print "1"}} else {{print "0"}}')
+if [ $sameBarcodeCapDesign == 1 ]; then
+bamToBed -i {input} -bed12 > {output}
+else
+touch {output}
+fi
 
 		'''
+
+rule readBedToGff:
+	input: lambda wildcards: expand("mappings/bed/" + "{techname}_{capDesign}_{barcodesU}.merged.bed", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodesU=wildcards.barcodesU)
+	output: "mappings/gff/" + "{techname}_{capDesign}_{barcodesU}.merged.gff"
+	shell:
+		'''
+sameBarcodeCapDesign=$(echo "{wildcards.capDesign} {wildcards.barcodesU}" | perl -slane 'if($F[1]=~/$F[0]/ || $F[1] eq "Undeter"){{print "1"}} else {{print "0"}}')
+if [ $sameBarcodeCapDesign == 1 ]; then
+cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {output}
+else
+touch {output}
+fi
+		'''
+
+
+rule mergeCapDesignBams:
+	input: lambda wildcards: expand("mappings/" + "{techname}_{capDesign}_{barcodes}.merged.bam", techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
+	output: temp("mappings/" + "{techname}_{capDesign}.merged2.bam")
+	shell:
+		'''
+samtools merge {output} {input}
+samtools index {output}
+
+		'''
+
+rule qualimap:
+	input: "mappings/" + "{techname}_{capDesign}.merged2.bam"
+	output: "mappings/qualimap_reports/" + "{techname}_{capDesign}.merged2/genome_results.txt"
+	shell:
+		'''
+~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}_{wildcards.capDesign}.merged2
+touch {output}
+		'''
+

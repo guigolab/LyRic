@@ -40,7 +40,7 @@ rule blastDemultiplex:
 		dbprefix=config["DEMULTIPLEX_DIR"] + "blastdb/" + "{techname}_{capDesign}_{sizeFrac}.fastq"
 	threads: 12
 	output:
-		config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv"
+		temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv")
 	shell:
 		'''
 #-dust no
@@ -52,7 +52,7 @@ rule processBlastDemultiplex:
 	input:
 		blastOut=config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv",
 		adaptersTsv=config["DEMULTIPLEX_DIR"] + "all_adapters.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
+	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv")
 	shell:
 		'''
 cat {input.blastOut}| demultiplexFromBlastTab.pl - | barcodeSeqTobarcodeId.pl {input.adaptersTsv} - {wildcards.capDesign} > {output}
@@ -63,7 +63,7 @@ rule discardErroneousandBarcodesAndUP:
 #remove records with barcodes from wrong capture design
 #this will also exclude "UP" records
 	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv"
+	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv")
 	shell:
 		'''
 cat {input} | fgrep "{wildcards.capDesign}_" |sort|uniq > {output}
@@ -275,7 +275,7 @@ dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 rule detectReadChimeras:
 	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list"
+	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list")
 	shell:
 		'''
 cat {input} | awk '$2>0.1 && $2<0.9' | cut -f1 |sort|uniq > {output}
@@ -333,7 +333,7 @@ rule selectNonAmbiguousNonChimericReads:
 		demulFiltered = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv",
 		chim = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list",
 		ambig = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
+	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv")
 	shell:
 		'''
 cat {input.chim} {input.ambig} | sort|uniq | fgrep -w -v -f - {input.demulFiltered} |sort|uniq> {output}
@@ -396,7 +396,7 @@ rule checkForOnlyOneBarcodePerRead:
 	shell:
 		'''
 cut -f1,5 {input} | sort|uniq | cut -f1 |sort|uniq -d |wc -l > {output}
-cat {output} | while read count; do if [ $count >= 0 ]; then echo "$count duplicates found"; exit 1; fi; done
+cat {output} | while read count; do if [ $count -gt 0 ]; then echo "$count duplicates found";mv {output} {output}.tmp;  exit 1; fi; done
 		'''
 
 rule convertFastqToTsv:
@@ -411,7 +411,7 @@ rule demultiplexFastqs:
 	input:
 		tsvFastq = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv",
 		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq"
+	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq")
 	shell:
 		'''
 #trick to avoid crashing the script when grep doesn't find a pattern in a file (which returns exit status 1)
@@ -424,7 +424,7 @@ rule getUndeterminedReads:
 	input:
 		tsvFastq = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv",
 		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq"
+	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq")
 	shell:
 		'''
 cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl > {output}
@@ -441,7 +441,7 @@ rule checkTotalsDemultiplexed:
 total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq '$1==f' | cut -f2)
 demul=$(cat {input.demul} | fastq2tsv.pl | wc -l)
 echo -e "{wildcards.capDesign}.{wildcards.sizeFrac}\t$total\t$demul" | awk '{{print $2-$3}}' > {output}
-cat {output}| while read diff; do if [ $diff != 0 ]; then echo "Read count is different before/after demultiplexing (diff: $diff)"; exit 1; fi; done
+cat {output}| while read diff; do if [ $diff != 0 ]; then echo "Read count is different before/after demultiplexing (diff: $diff)";mv {output} {output}.tmp;  exit 1; fi; done
 
 		'''
 
@@ -459,6 +459,7 @@ if [ {wildcards.capDesign} != $bcCapdesign ]; then
 cat {output}| while read count; do
 if [ $count != 0 ]; then
 echo "{input} contains reads, it shouldn't";
+mv {output} {output}.tmp;
 exit 1;
 #else
 #rm {input}
