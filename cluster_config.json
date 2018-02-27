@@ -17,6 +17,14 @@
         "queue" : "rg-el7,short-sl7",
         "threads" : "-pe smp 12"
     },
+    "hiSeqReadMapping" :
+    {
+        "virtual_free" : "70G",
+        "h_rt" : "20:00:00",
+        "queue" : "rg-el7,long-sl7",
+        "threads" : "-pe smp 12"
+        },
+
     "blastDemultiplex" :
     {
         "virtual_free" : "120G",

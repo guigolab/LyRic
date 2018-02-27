@@ -54,13 +54,13 @@
 # fi
 # 		'''
 
-# GMAP mapping of reads:
+# mapping of long reads:
 rule readMapping:
 #	wildcard_constraints:
 #		 barcodesU = lambda wildcards: {wildcards.capDesign} + "_.+"
 	input:
 #		reads = returnCapDesignBarcodesFastqs,
-		reads = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq",
+		reads = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq.gz",
 		genome = lambda wildcards: "/users/rg/jlagarde/genomes/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 #	params:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
@@ -92,13 +92,13 @@ fi
 rule getMappingStats:
 	input:
 		bams = "mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam",
-		fastqs = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq"
+		fastqs = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq.gz"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.mapping.perSample.perFraction.stats.tsv")
 	shell:
 		'''
 sameBarcodeCapDesign=$(echo "{wildcards.capDesign} {wildcards.barcodesU}" | perl -slane 'if($F[1]=~/$F[0]/ || $F[1] eq "Undeter"){{print "1"}} else {{print "0"}}')
 if [ $sameBarcodeCapDesign == 1 ]; then
-totalReads=$(cat {input.fastqs} | fastq2tsv.pl | wc -l)
+totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
 mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort|uniq|wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodesU}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$5/$4}}' > {output}
 else

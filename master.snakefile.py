@@ -9,6 +9,7 @@ DROPBOX_PLOTS=config["DROPBOX_PLOTSDIR"]
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
 #TECHNAME=config["TECHNAME"]
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
+CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
 #mappingDir=config["PB_MAPPINGS"]
 sizeFrac_Rpalette=config["SIZEFRACTION_RPALETTE"]
 #print(CAPDESIGNTOGENOME)
@@ -22,7 +23,7 @@ wildcard_constraints:
  #	barcodesU ="[^_/]+"
 
 # get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries):
-(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq")
+(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz")
 # remove duplicate entries:
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
@@ -36,7 +37,7 @@ TECHNAMES=set(TECHNAMES)
 AUTHORIZEDCOMBINATIONS = []
 
 for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS):
-	if(os.path.isfile(config["FQPATH"] + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq")):
+	if(os.path.isfile(config["FQPATH"] + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz")):
 		tup=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]))
 		AUTHORIZEDCOMBINATIONS.append(tup)
 
@@ -105,6 +106,7 @@ BARCODESUNDETER=set(BARCODESUNDETER)
 include: "demultiplex.snakefile.py"
 include: "fastqStats.snakefile.py"
 include: "lrMapping.snakefile.py"
+include: "srMapping.snakefile.py"
 
 #to avoid AmbiguousRuleException: (and in that order, otherwise {capDesign}_{sizeFrac}.Undeter.fastq will be generated using rule demultiplexFastqs and not getUndeterminedReads, which will always give empty Undeter files :
 ruleorder: getUndeterminedReads > demultiplexFastqs
@@ -114,12 +116,14 @@ rule all:
 	input:
 		expand(config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, ext=config["PLOTFORMATS"]), # facetted histograms of read length
 		expand(config["FQPATH"] + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),
-		expand(config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv", techname=TECHNAMES), #read counts per fastq
+#		expand(config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv", techname=TECHNAMES), #read counts per fastq
  		expand(config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # UP reads plots
  		expand(config["PLOTSDIR"] + "{techname}.fastq.BC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # barcode reads plots
  		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
  		#expand ("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # mapped reads
+ 		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS),  # mapped short reads
  		expand ("mappings/" + "{techname}_{capDesign}_{barcodesU}.merged.bam", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # mapped reads
+
  		expand("mappings/" + "qc/{techname}_{capDesign}_{barcodesU}.merged.bam.dupl.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),
  		expand ("mappings/gff/" + "{techname}_{capDesign}_{barcodesU}.merged.gff", techname=TECHNAMES, capDesign=CAPDESIGNS, barcodesU=BARCODESUNDETER),
  		expand("mappings/qualimap_reports/" + "{techname}_{capDesign}.merged2/genome_results.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),

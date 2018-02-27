@@ -14,14 +14,14 @@
 # 		'''
 
 rule makeReadsBlastDB:
-	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq"
+	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
 	params:
 		dbprefix=config["DEMULTIPLEX_DIR"] + "blastdb/" + "{techname}_{capDesign}_{sizeFrac}.fastq"
 	output: config["DEMULTIPLEX_DIR"] + "blastdb/" + "{techname}_{capDesign}_{sizeFrac}.fastq.nal"
 	shell:
 		'''
 
-fastq2fasta.pl {input} | makeblastdb -in - -dbtype nucl -out {params.dbprefix} -title {params.dbprefix}
+zcat {input} | fastq2fasta.pl | makeblastdb -in - -dbtype nucl -out {params.dbprefix} -title {params.dbprefix}
 if [ ! -f {output} ]; then
 echoerr "File {output} not created. Making one"
 echo -e "#
@@ -78,7 +78,7 @@ rule getBasicDemultiplexingStats:
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.basicDemultiplexing.stats.tsv")
 	shell:
 		'''
-total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq '$1==f' | cut -f2)
+total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq.gz '$1==f' | cut -f2)
 withUP=$(cat {input.demul} | awk '$5=="UP"'| cut -f1|sort|uniq|wc -l)
 withBarcode=$(cat {input.demul} | fgrep -v -w "UP" | cut -f1|sort|uniq|wc -l)
 withSameCapDesignBarcode=$(cat {input.demulFiltered}| cut -f1|sort|uniq|wc -l)
@@ -289,7 +289,7 @@ rule getRateOfReadChimeras:
 	output:temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.chimeric.reads.stats.tsv")
 	shell:
 		'''
-total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq '$1==f' | cut -f2)
+total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq.gz '$1==f' | cut -f2)
 chimeric=$(cat {input.chim} | wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$total\t$chimeric" | awk '{{print $0"\t"$4/$3}}' > {output}
 		'''
@@ -348,7 +348,7 @@ rule getNonAmbiguousNonChimericReadsStats:
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.finalDemul.reads.stats.tsv")
 	shell:
 		'''
-total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq '$1==f' | cut -f2)
+total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq.gz '$1==f' | cut -f2)
 finalDemul=$(cat {input.noAmbigNoChim} | cut -f1 |sort|uniq|wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$total\t$finalDemul" | awk '{{print $0"\t"$4/$3}}' > {output}
 
@@ -400,23 +400,23 @@ cat {output} | while read count; do if [ $count -gt 0 ]; then echo "$count dupli
 		'''
 
 rule convertFastqToTsv:
-	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq"
+	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
 	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv")
 	shell:
 		'''
-cat  {input} | fastq2tsv.pl > {output}
+zcat  {input} | fastq2tsv.pl > {output}
 		'''
 
 rule demultiplexFastqs:
 	input:
 		tsvFastq = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv",
 		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq")
+	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	shell:
 		'''
 #trick to avoid crashing the script when grep doesn't find a pattern in a file (which returns exit status 1)
 set +e
-cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq | fgrep -w -f - {input.tsvFastq} | tsv2fastq.pl > {output}
+cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq | fgrep -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip> {output}
 set -e
 		'''
 
@@ -424,22 +424,23 @@ rule getUndeterminedReads:
 	input:
 		tsvFastq = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv",
 		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq")
+	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq.gz"
 	shell:
 		'''
-cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl > {output}
+cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip > {output}
 		'''
 
 rule checkTotalsDemultiplexed:
 	input:
-		demul= lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodesU=BARCODESUNDETER),
+		demul= lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodesU=BARCODESUNDETER),
 			#expand(config["DEMULTIPLEX_DIR"] + "{{techname}}_{{capDesign}}_{{sizeFrac}}.{barcodesU}.fastq", barcodesU=BARCODESUNDETER),
 		totals=config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv"
 	output: config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt"
 	shell:
 		'''
-total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq '$1==f' | cut -f2)
-demul=$(cat {input.demul} | fastq2tsv.pl | wc -l)
+total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq.gz '$1==f' | cut -f2)
+for file in `echo {input.demul}`; do zcat $file; done > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.demul.fastq
+demul=$(cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.demul.fastq | fastq2tsv.pl | wc -l)
 echo -e "{wildcards.capDesign}.{wildcards.sizeFrac}\t$total\t$demul" | awk '{{print $2-$3}}' > {output}
 cat {output}| while read diff; do if [ $diff != 0 ]; then echo "Read count is different before/after demultiplexing (diff: $diff)";mv {output} {output}.tmp;  exit 1; fi; done
 
@@ -448,12 +449,12 @@ cat {output}| while read diff; do if [ $diff != 0 ]; then echo "Read count is di
 
 #quick check that demultiplexed FASTQs don't contain reads demultiplexed with foreign barcodes. If FASTQ file is empty, remove it
 rule checkForeignBarcodes:
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq"
+	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.demul.QC3.txt"
 #	wildcard_constraints: barcodes="^($!Undeter)$"
 	shell:
 		'''
-head {input} | wc -l > {output}
+zhead {input} | wc -l > {output}
 bcCapdesign=$(echo {wildcards.barcodes} | cut -d "_" -f1)
 if [ {wildcards.capDesign} != $bcCapdesign ]; then
 cat {output}| while read count; do
@@ -470,11 +471,11 @@ fi
 
 
 rule getDemultiplexingStatsPerSample:
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq"
+	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.demultiplexing.perSample.stats.tsv")
 	shell:
 		'''
-demul=$(cat {input} | fastq2tsv.pl | wc -l)
+demul=$(zcat {input} | fastq2tsv.pl | wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$demul" > {output}
 
 		'''
