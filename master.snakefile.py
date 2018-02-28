@@ -107,6 +107,7 @@ include: "demultiplex.snakefile.py"
 include: "fastqStats.snakefile.py"
 include: "lrMapping.snakefile.py"
 include: "srMapping.snakefile.py"
+include: "polyAmapping.snakefile.py"
 
 #to avoid AmbiguousRuleException: (and in that order, otherwise {capDesign}_{sizeFrac}.Undeter.fastq will be generated using rule demultiplexFastqs and not getUndeterminedReads, which will always give empty Undeter files :
 ruleorder: getUndeterminedReads > demultiplexFastqs
@@ -123,6 +124,9 @@ rule all:
  		#expand ("mappings/" + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # mapped reads
  		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS),  # mapped short reads
  		expand ("mappings/" + "{techname}_{capDesign}_{barcodesU}.merged.bam", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),  # mapped reads
+		expand ("mappings/polyA/" + "{techname}_{capDesign}_{barcodesU}.polyAsites.clusters.bed", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),
+		expand("mappings/polyA/" + "{techname}_{capDesign}_{barcodesU}.polyAreads.list", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),
+		expand("mappings/polyA/" + "{techname}_{capDesign}_{barcodesU}.polyAsitesNoErcc.{strand}.bw", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER, strand=config["STRANDS"]),
 
  		expand("mappings/" + "qc/{techname}_{capDesign}_{barcodesU}.merged.bam.dupl.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodesU=BARCODESUNDETER),
  		expand ("mappings/gff/" + "{techname}_{capDesign}_{barcodesU}.merged.gff", techname=TECHNAMES, capDesign=CAPDESIGNS, barcodesU=BARCODESUNDETER),

@@ -13,6 +13,7 @@
             "Hv2": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
             "Mv1": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/versionM7/gencode.vM7.annotation.gtf"},
         "PLOTFORMATS" : ["png", "pdf"],
+        "STRANDS" : ["+", "-"],
     "DEMULTIPLEX_DIR" : "demultiplexing/",
     "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))"
 }
