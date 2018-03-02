@@ -1,18 +1,4 @@
 
-# rule all_demultiplex:
-# 	input:
-# 		expand (config["DEMULTIPLEX_DIR"] + "all_adapters.tsv"),
-# 		config["STATSDATADIR"] + "blastdb/" + "{capDesign}_{sizeFrac}.fastq.nhr"
-
-# rule makeAdaptersTSV:
-# 	input: config["DEMULTIPLEX_DIR"] + "all_adapters.fa"
-# 	output: config["DEMULTIPLEX_DIR"] + "all_adapters.tsv"
-# 	shell:
-# 		'''
-# 		cat {input} |FastaToTbl |ssv2tsv > {output}
-
-# 		'''
-
 rule makeReadsBlastDB:
 	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
 	params:
@@ -40,7 +26,7 @@ rule blastDemultiplex:
 		dbprefix=config["DEMULTIPLEX_DIR"] + "blastdb/" + "{techname}_{capDesign}_{sizeFrac}.fastq"
 	threads: 12
 	output:
-		temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv")
+		temp(config["DEMULTIPLEX_DIR"] + "blastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv")
 	shell:
 		'''
 #-dust no
@@ -50,9 +36,9 @@ blastn -query {input.adapters} -task blastn -soft_masking false -word_size 4 -qc
 
 rule processBlastDemultiplex:
 	input:
-		blastOut=config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv",
+		blastOut=config["DEMULTIPLEX_DIR"] + "blastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv",
 		adaptersTsv=config["DEMULTIPLEX_DIR"] + "all_adapters.tsv"
-	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv")
+	output: temp(config["DEMULTIPLEX_DIR"] + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv")
 	shell:
 		'''
 cat {input.blastOut}| demultiplexFromBlastTab.pl - | barcodeSeqTobarcodeId.pl {input.adaptersTsv} - {wildcards.capDesign} > {output}
@@ -62,8 +48,8 @@ cat {input.blastOut}| demultiplexFromBlastTab.pl - | barcodeSeqTobarcodeId.pl {i
 rule discardErroneousandBarcodesAndUP:
 #remove records with barcodes from wrong capture design
 #this will also exclude "UP" records
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
-	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv")
+	input: config["DEMULTIPLEX_DIR"] + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
+	output: temp(config["DEMULTIPLEX_DIR"] + "discardErroneousandBarcodesAndUP/{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv")
 	shell:
 		'''
 cat {input} | fgrep "{wildcards.capDesign}_" |sort|uniq > {output}
@@ -73,8 +59,8 @@ cat {input} | fgrep "{wildcards.capDesign}_" |sort|uniq > {output}
 rule getBasicDemultiplexingStats:
 	input:
 		totals = config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv",
-		demul = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv",
-		demulFiltered = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv"
+		demul = config["DEMULTIPLEX_DIR"] + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv",
+		demulFiltered = config["DEMULTIPLEX_DIR"] + "discardErroneousandBarcodesAndUP/{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.basicDemultiplexing.stats.tsv")
 	shell:
 		'''
@@ -118,7 +104,7 @@ ylab('% reads with UP') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 		'''
 
 rule plotBcStats:
@@ -141,7 +127,7 @@ ylab('% reads with any barcode') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
@@ -166,7 +152,7 @@ ylab('% reads with foreign barcode') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
@@ -174,8 +160,8 @@ dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 rule discardAmbiguousBarcodes:
 #make list of reads with multiple distinct barcodes
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
+	input: config["DEMULTIPLEX_DIR"] + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
+	output: config["DEMULTIPLEX_DIR"] + "discardAmbiguousBarcodes/{techname}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
 	shell:
 		'''
 cat {input} | awk '$5!="UP"'|cut -f1,5 |sort|uniq | cut -f1|sort|uniq -d > {output}
@@ -184,8 +170,8 @@ cat {input} | awk '$5!="UP"'|cut -f1,5 |sort|uniq | cut -f1|sort|uniq -d > {outp
 
 rule getAmbiguousBarcodeStats:
 	input:
-		demul=config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv",
-		ambig=config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
+		demul=config["DEMULTIPLEX_DIR"] + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv",
+		ambig=config["DEMULTIPLEX_DIR"] + "discardAmbiguousBarcodes/{techname}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.ambiguousBarcodes.reads.stats.tsv")
 	shell:
 		'''
@@ -225,13 +211,13 @@ ylab('% reads with multiple\ndistinct barcodes') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 		'''
 
 rule getAdaptersLocationOverReads:
 #	params:
 #		sizeFrac=expand(SIZEFRACS)
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
+	input: config["DEMULTIPLEX_DIR"] + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.adapters.location.stats.tsv")
 	shell:
 		'''
@@ -269,13 +255,13 @@ theme_bw(base_size=17) +
 ggsave('{output}', width=9, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
 rule detectReadChimeras:
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
-	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list")
+	input: config["DEMULTIPLEX_DIR"] + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
+	output: temp(config["DEMULTIPLEX_DIR"] + "detectReadChimeras/{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list")
 	shell:
 		'''
 cat {input} | awk '$2>0.1 && $2<0.9' | cut -f1 |sort|uniq > {output}
@@ -285,7 +271,7 @@ cat {input} | awk '$2>0.1 && $2<0.9' | cut -f1 |sort|uniq > {output}
 rule getRateOfReadChimeras:
 	input:
 		totals=config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv",
-		chim=config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list"
+		chim=config["DEMULTIPLEX_DIR"] + "detectReadChimeras/{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list"
 	output:temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.chimeric.reads.stats.tsv")
 	shell:
 		'''
@@ -324,16 +310,16 @@ ylab('% chimeric reads') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
 rule selectNonAmbiguousNonChimericReads:
 	input:
-		demulFiltered = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv",
-		chim = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list",
-		ambig = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
-	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv")
+		demulFiltered = config["DEMULTIPLEX_DIR"] + "discardErroneousandBarcodesAndUP/{techname}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv",
+		chim = config["DEMULTIPLEX_DIR"] + "detectReadChimeras/{techname}_{capDesign}_{sizeFrac}.fastq.chimeras.list",
+		ambig = config["DEMULTIPLEX_DIR"] + "discardAmbiguousBarcodes/{techname}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
+	output: temp(config["DEMULTIPLEX_DIR"] + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv")
 	shell:
 		'''
 cat {input.chim} {input.ambig} | sort|uniq | fgrep -w -v -f - {input.demulFiltered} |sort|uniq> {output}
@@ -344,7 +330,7 @@ cat {input.chim} {input.ambig} | sort|uniq | fgrep -w -v -f - {input.demulFilter
 rule getNonAmbiguousNonChimericReadsStats:
 	input:
 		totals=config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv",
-		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
+		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.finalDemul.reads.stats.tsv")
 	shell:
 		'''
@@ -384,14 +370,14 @@ ylab('% unambiguously demultiplexed,\nnon-chimeric reads') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
 
 rule checkForOnlyOneBarcodePerRead:
 	input:
-		config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
+		config["DEMULTIPLEX_DIR"] + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
 	output: config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt"
 	shell:
 		'''
@@ -401,7 +387,7 @@ cat {output} | while read count; do if [ $count -gt 0 ]; then echo "$count dupli
 
 rule convertFastqToTsv:
 	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
-	output: temp(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv")
+	output: temp(config["DEMULTIPLEX_DIR"] + "convertFastqToTsv/{techname}_{capDesign}_{sizeFrac}.tsv")
 	shell:
 		'''
 zcat  {input} | fastq2tsv.pl > {output}
@@ -409,9 +395,9 @@ zcat  {input} | fastq2tsv.pl > {output}
 
 rule demultiplexFastqs:
 	input:
-		tsvFastq = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv",
-		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+		tsvFastq = config["DEMULTIPLEX_DIR"] + "convertFastqToTsv/{techname}_{capDesign}_{sizeFrac}.tsv",
+		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
+	output: config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	shell:
 		'''
 #trick to avoid crashing the script when grep doesn't find a pattern in a file (which returns exit status 1)
@@ -420,19 +406,19 @@ cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|
 set -e
 		'''
 
-rule getUndeterminedReads:
-	input:
-		tsvFastq = config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.tsv",
-		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.Undeter.fastq.gz"
-	shell:
-		'''
-cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip > {output}
-		'''
+# rule getUndeterminedReads:
+# 	input:
+# 		tsvFastq = config["DEMULTIPLEX_DIR"] + "convertFastqToTsv/{techname}_{capDesign}_{sizeFrac}.tsv",
+# 		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
+# 	output: temp(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.Undeter.fastq.gz")
+# 	shell:
+# 		'''
+# cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip > {output}
+# 		'''
 
 rule checkTotalsDemultiplexed:
 	input:
-		demul= lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodesU}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodesU=BARCODESUNDETER),
+		demul= lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES),
 			#expand(config["DEMULTIPLEX_DIR"] + "{{techname}}_{{capDesign}}_{{sizeFrac}}.{barcodesU}.fastq", barcodesU=BARCODESUNDETER),
 		totals=config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv"
 	output: config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt"
@@ -442,14 +428,14 @@ total=$(cat {input.totals} | awk -v f={wildcards.techname}_{wildcards.capDesign}
 for file in `echo {input.demul}`; do zcat $file; done > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.demul.fastq
 demul=$(cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}.demul.fastq | fastq2tsv.pl | wc -l)
 echo -e "{wildcards.capDesign}.{wildcards.sizeFrac}\t$total\t$demul" | awk '{{print $2-$3}}' > {output}
-cat {output}| while read diff; do if [ $diff != 0 ]; then echo "Read count is different before/after demultiplexing (diff: $diff)";mv {output} {output}.tmp;  exit 1; fi; done
+cat {output}| while read diff; do if [ $diff -lt 1 ]; then echo "Number of demultiplexed reads is greater than number of input reads (diff: $diff)";mv {output} {output}.tmp;  exit 1; fi; done
 
 		'''
 
 
 #quick check that demultiplexed FASTQs don't contain reads demultiplexed with foreign barcodes. If FASTQ file is empty, remove it
 rule checkForeignBarcodes:
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	input: config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.demul.QC3.txt"
 #	wildcard_constraints: barcodes="^($!Undeter)$"
 	shell:
@@ -471,7 +457,7 @@ fi
 
 
 rule getDemultiplexingStatsPerSample:
-	input: config["DEMULTIPLEX_DIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	input: config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.demultiplexing.perSample.stats.tsv")
 	shell:
 		'''
@@ -510,7 +496,7 @@ theme_bw(base_size=17) +
 ggsave('{output}', width=13, height=9)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 

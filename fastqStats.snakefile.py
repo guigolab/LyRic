@@ -61,7 +61,7 @@ theme_bw(base_size=17) +
 ggsave('{output}', width=10, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
+#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 	 	'''
 
