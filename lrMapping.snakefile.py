@@ -7,7 +7,7 @@ rule readMapping:
 	input:
 #		reads = returnCapDesignBarcodesFastqs,
 #		reads = config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
-		reads = lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", capDesignBarcodeMatch, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		reads = lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: "/users/rg/jlagarde/genomes/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 #	params:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
@@ -111,7 +111,7 @@ cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {outp
 
 
 rule mergeCapDesignBams:
-	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
+	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
 	output: temp("mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam")
 	shell:
 		'''
