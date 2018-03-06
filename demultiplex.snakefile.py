@@ -433,28 +433,6 @@ cat {output}| while read diff; do if [ $diff -lt 1 ]; then echo "Number of demul
 		'''
 
 
-#quick check that demultiplexed FASTQs don't contain reads demultiplexed with foreign barcodes. If FASTQ file is empty, remove it
-rule checkForeignBarcodes:
-	input: config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.demul.QC3.txt"
-#	wildcard_constraints: barcodes="^($!Undeter)$"
-	shell:
-		'''
-zhead {input} | wc -l > {output}
-bcCapdesign=$(echo {wildcards.barcodes} | cut -d "_" -f1)
-if [ {wildcards.capDesign} != $bcCapdesign ]; then
-cat {output}| while read count; do
-if [ $count != 0 ]; then
-echo "{input} contains reads, it shouldn't";
-mv {output} {output}.tmp;
-exit 1;
-#else
-#rm {input}
-fi; done
-fi
-		'''
-
-
 
 rule getDemultiplexingStatsPerSample:
 	input: config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
