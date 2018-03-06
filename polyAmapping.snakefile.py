@@ -25,6 +25,18 @@ rule getPolyAreadsList:
 cat {input} | cut -f4 | sort|uniq > {output}
 		'''
 
+rule getPolyAreadsStats:
+	input:
+		mappedReads= "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam",
+		polyAreads = "mappings/" + "getPolyAreadsList/{techname}_{capDesign}_{barcodes}.polyAreads.list"
+	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.polyAreads.stats.tsv"
+	shell:
+		'''
+mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort|uniq|wc -l)
+polyA=$(cat {input.polyAreads} | wc -l)
+echo -e "{wildcards.capDesign}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$4/$3}}' > {output}
+
+		'''
 
 rule clusterPolyAsites:
 	input: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"

@@ -400,10 +400,10 @@ rule demultiplexFastqs:
 	output: config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	shell:
 		'''
-#trick to avoid crashing the script when grep doesn't find a pattern in a file (which returns exit status 1)
-set +e
-cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq | fgrep -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip> {output}
-set -e
+cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq > $TMPDIR/tmp
+fgrep -w -f $TMPDIR/tmp {input.tsvFastq} || true > $TMPDIR/tmp.fastq
+cat $TMPDIR/tmp.fastq | tsv2fastq.pl | gzip> {output}
+
 		'''
 
 # rule getUndeterminedReads:
