@@ -8,7 +8,7 @@ rule readMapping:
 #		reads = returnCapDesignBarcodesFastqs,
 #		reads = config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
 		reads = lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
-		genome = lambda wildcards: "/users/rg/jlagarde/genomes/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome = lambda wildcards: GENOMESDIR + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 #	params:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
 	threads: 12

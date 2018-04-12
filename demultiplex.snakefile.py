@@ -401,7 +401,9 @@ rule demultiplexFastqs:
 	shell:
 		'''
 cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq > $TMPDIR/tmp
-fgrep -w -f $TMPDIR/tmp {input.tsvFastq} || true > $TMPDIR/tmp.fastq
+set +e
+fgrep -w -f $TMPDIR/tmp {input.tsvFastq} > $TMPDIR/tmp.fastq
+set -e
 cat $TMPDIR/tmp.fastq | tsv2fastq.pl | gzip> {output}
 
 		'''

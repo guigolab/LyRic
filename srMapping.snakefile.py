@@ -1,7 +1,7 @@
 rule hiSeqReadMapping:
 	input:
 		reads = "fastqs/" + "hiSeq_{capDesign}.fastq.gz",
-		genome = lambda wildcards: "/users/rg/jlagarde/genomes/STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/"
+		genome = lambda wildcards: GENOMESDIR + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/"
 	params:
 		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
