@@ -42,10 +42,22 @@
         "virtual_free" : "20G",
         "h_rt" : "1:00:00"
     },
-    "nonAnchoredMergeReads":
+    "nonAnchoredMergeReadsPerChr":
     {
-        "virtual_free" : "20G",
-        "h_rt" : "6:00:00"
+        "virtual_free" : "50G",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "60:00:00"
+    },
+    "poolNonAnchoredMergeReadsPerChr":
+    {
+        "virtual_free" : "30G",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "60:00:00"
+    },
+    "splitHcrByChr":
+    {
+        "virtual_free" : "4G",
+        "h_rt" : "0:15:00"
     }
 
 }

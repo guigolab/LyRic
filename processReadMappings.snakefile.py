@@ -110,14 +110,98 @@ cat {output}.r | R --slave
 # #cat $TMPDIR/$(basename {output}) | processCompmerge.pl - {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.noAnchor. |sortgff > {output}
 # 		'''
 
-rule nonAnchoredMergeReads:
+rule splitHcrByChr:
 	input: "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
+	output: "mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff"
+	shell:
+		'''
+zcat {input} | awk '$1=="{wildcards.chrom}"' >{output}
+		'''
+
+rule nonAnchoredMergeReadsPerChr:
+	input: "mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff"
+	shell:
+		'''
+cat {input} |sortgff | tmerge.pl --tmPrefix {wildcards.chrom}.{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ -  > {output}
+		'''
+
+rule nonAnchoredMergeReadsMergeByChr:
+	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes, chrom=GENOMECHROMS)
 	output: "mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff"
 	shell:
 		'''
-zcat {input} > $TMPDIR/$(basename {input})
-tmerge.pl $TMPDIR/$(basename {input}) |sortgff > {output}
-#$TMPDIR/$(basename {output})
-#cat $TMPDIR/$(basename {output}) | processCompmerge.pl - {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.noAnchor. |sortgff > {output}
+cat {input} |sortgff > {output}
 		'''
 
+rule checkNonAnchoredMerging:
+	input:
+		before="mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz",
+		after="mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/qc/{techname}_{capDesign}_{barcodes}.tmerge.qc.txt"
+	shell:
+		'''
+#nt coverage should be equal before/after
+zcat {input.before} |awk '$3=="exon"' |sortgff| bedtools merge >$TMPDIR/before.merged.bed
+cat {input.after} |awk '$3=="exon"' |sortgff| bedtools merge > $TMPDIR/after.merged.bed
+beforeNts=$(cat $TMPDIR/before.merged.bed| awk '{{print $3-$2}}' |sum.sh)
+afterNts=$(cat $TMPDIR/after.merged.bed| awk '{{print $3-$2}}' |sum.sh)
+let diff=$beforeNts-$afterNts || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
+echo diff nts: $diff
+if [ ! $diff -eq 0 ]; then echoerr "ERROR: Nucleotide coverage differ before/after merging";  exit 1; fi
+
+#all transcript_ids should be present before/after
+zcat {input.before} | extractGffAttributeValue.pl transcript_id | sort|uniq > $TMPDIR/before.list
+cat {input.after} |extractGffAttributeValue.pl contains |sed 's/,/\\n/g' | sort|uniq > $TMPDIR/after.list
+diffLines=$(diff -q $TMPDIR/before.list $TMPDIR/after.list |wc -l)
+
+echo difflines: $diffLines
+if [ ! $diffLines -eq 0 ]; then echoerr "ERROR: List of transcripts differ before/after";  exit 1; fi
+
+touch {output}
+
+		'''
+
+rule poolNonAnchoredMergeReadsPerChr:
+	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES, chrom=wildcards.chrom)
+	output: "mappings/" + "nonAnchoredMergeReads/chr/pooled/{techname}_{capDesign}.tmerge.{chrom}.gff"
+	shell:
+		'''
+cat {input} |sortgff | tmerge.pl --tmPrefix {wildcards.chrom}.{wildcards.techname}_{wildcards.capDesign}_pooled.NAM_ -  > {output}
+		'''
+
+rule poolNonAnchoredMergeReadsMergeByChr:
+	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/pooled/{techname}_{capDesign}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, chrom=GENOMECHROMS)
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
+	shell:
+		'''
+cat {input} |sortgff > {output}
+		'''
+
+rule checkPooledNonAnchoredMerging:
+	input:
+		before=lambda wildcards: expand("mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES),
+		after="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt"
+	shell:
+		'''
+#nt coverage should be equal before/after
+zcat {input.before} |awk '$3=="exon"' |sortgff| bedtools merge >$TMPDIR/before.merged.bed
+cat {input.after} |awk '$3=="exon"' |sortgff| bedtools merge > $TMPDIR/after.merged.bed
+beforeNts=$(cat $TMPDIR/before.merged.bed| awk '{{print $3-$2}}' |sum.sh)
+afterNts=$(cat $TMPDIR/after.merged.bed| awk '{{print $3-$2}}' |sum.sh)
+let diff=$beforeNts-$afterNts || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
+echo diff nts: $diff
+if [ ! $diff -eq 0 ]; then echoerr "ERROR: Nucleotide coverage differ before/after merging";  exit 1; fi
+
+#all transcript_ids should be present before/after
+zcat {input.before} | extractGffAttributeValue.pl transcript_id | sort|uniq > $TMPDIR/before.list
+cat {input.after} |extractGffAttributeValue.pl contains |sed 's/,/\\n/g' | sort|uniq > $TMPDIR/after.list
+diffLines=$(diff -q $TMPDIR/before.list $TMPDIR/after.list |wc -l)
+
+echo difflines: $diffLines
+if [ ! $diffLines -eq 0 ]; then echoerr "ERROR: List of transcripts differ before/after";  exit 1; fi
+
+touch {output}
+
+		'''

@@ -9,7 +9,7 @@ cat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/juli
 rule getIntronMotif:
 	input:
 		introns = "mappings/" + "makeIntrons/{techname}_{capDesign}_{barcodes}.introns.gff.gz",
-		genome = lambda wildcards: GENOMESDIR + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	output:
 		gff = "mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.introns.gff",
 		tsv = "mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv"

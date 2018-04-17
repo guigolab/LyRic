@@ -43,6 +43,26 @@ BARCODESUNDETER.append("Undeter")
 BARCODES=set(BARCODES)
 BARCODESUNDETER=set(BARCODESUNDETER)
 
+### list of chromosomes for each genome
+GENOMES=[]
+
+for k, v in config["capDesignToGenome"].items():
+	GENOMES.append(v)
+GENOMES=set(GENOMES)
+
+GENOMECHROMS=[]
+for genome in GENOMES:
+	print(genome)
+	f = open(config["GENOMESDIR"] + genome + ".genome", 'r')
+	for line in f:
+		columns = line.split("\t")
+		#print("\t", columns[0])
+		GENOMECHROMS.append(columns[0])
+
+GENOMECHROMS=set(GENOMECHROMS)
+#GENCOMECHROMS contains full list of chr for all genomes. this is not optimal.
+#print(GENOMECHROMS)
+
 ########################
 ### make list of authorized wildcard combinations
 ### inspired by https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
@@ -67,6 +87,11 @@ for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 			for strand in config["STRANDS"]:
 				tup5=(("techname", comb[0]),("capDesign", comb[1]),("barcodes",comb[3]),("strand", strand))
 				AUTHORIZEDCOMBINATIONS.append(tup5)
+			for chrom in GENOMECHROMS:
+				tup6=(("techname", comb[0]),("capDesign", comb[1]),("barcodes",comb[3]),("chrom", chrom))
+				AUTHORIZEDCOMBINATIONS.append(tup6)
+				tup7=(("techname", comb[0]),("capDesign", comb[1]),("chrom", chrom))
+				AUTHORIZEDCOMBINATIONS.append(tup7)
 
 
 AUTHORIZEDCOMBINATIONS=set(AUTHORIZEDCOMBINATIONS)
@@ -109,7 +134,13 @@ rule all:
 #		expand("mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 #		expand("mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 		#expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.compmerge.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		#expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		#expand("mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, chrom=GENOMECHROMS),
+		#expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, chrom=GENOMECHROMS),
 		expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		expand("mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff", techname=TECHNAMES, capDesign=CAPDESIGNS),
+		expand("mappings/" + "nonAnchoredMergeReads/qc/{techname}_{capDesign}_{barcodes}.tmerge.qc.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		expand("mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt", techname=TECHNAMES, capDesign=CAPDESIGNS),
 		expand(config["PLOTSDIR"] + "all.polyAreads.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "all.HCGMs.stats.{ext}", ext=config["PLOTFORMATS"]),
 		 expand("mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, strand=config["STRANDS"]),
@@ -129,3 +160,5 @@ rule all:
 
 
 
+rule debug:
+	input: expand("mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt", techname=TECHNAMES, capDesign=CAPDESIGNS)

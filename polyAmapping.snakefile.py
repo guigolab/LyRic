@@ -1,7 +1,7 @@
 rule polyAmapping:
 	input:
 		reads = "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam",
-		genome = lambda wildcards: GENOMESDIR + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 
 	output: "mappings/" + "polyAmapping/{techname}_{capDesign}_{barcodes}.polyAsites.bed.gz"
 	shell:
@@ -86,7 +86,7 @@ cat {input} | $HOME/bin/bedtools2/bin/bedtools merge -s -d 5 -c 4 -o collapse -i
 rule makePolyABigWigs:
 	input:
 		sites = "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed",
-		genome = lambda wildcards: GENOMESDIR + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output: "mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	shell:
 		'''
