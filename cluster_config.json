@@ -8,6 +8,7 @@
         "notify" : "ae",
         "err" : "{workflow.basedir}/qsub_logs/",
         "out" : "{workflow.basedir}/qsub_logs/",
+        "project": "prj006070",
         "threads" : ""
     },
     "readMapping" :
@@ -46,18 +47,26 @@
     {
         "virtual_free" : "50G",
         "queue" : "rg-el7,long-sl7",
-        "h_rt" : "60:00:00"
+        "h_rt" : "200:00:00",
+        "threads" : "-pe smp 3"
     },
     "poolNonAnchoredMergeReadsPerChr":
     {
-        "virtual_free" : "30G",
-        "queue" : "rg-el7,long-sl7",
-        "h_rt" : "60:00:00"
+        "virtual_free" : "20G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "6:00:00",
+        "threads" : "-pe smp 3"
     },
     "splitHcrByChr":
     {
         "virtual_free" : "4G",
         "h_rt" : "0:15:00"
+    },
+    "getHiSeqCanonicalIntronsList":
+    {
+        "virtual_free" : "120G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "6:00:00",
+        "threads" : "-pe smp 6"
     }
-
 }

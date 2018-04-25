@@ -5,7 +5,7 @@ from itertools import product
 import sys
 
 
-print ("TODO:\n ## for UCSC, filter out non-chr lines and gene_id attributes (some are ultra long and lead to buffer overflow): | fgrep chr | perl -slane ' $_=~s/gene_id \S+//g; print' \n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)")
+print ("TODO:\n ## for UCSC, filter out non-chr lines and gene_id attributes (some are ultra long and lead to buffer overflow): | fgrep chr | perl -slane ' $_=~s/gene_id \S+//g; print' \n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)\n ## pooled TMS: include 'pooled' keyword in filename, ie pacBioCorr0_Hv1_pooled.tmerge.gff instead of pacBioCorr0_Hv1.tmerge.gff")
 
 
 # # path to dropbox folder where to sync output R plots:
@@ -127,6 +127,7 @@ rule all:
  		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
  		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS),  # mapped short reads
  #		expand ("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),  # mapped reads
+ 		#expand ("mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list", capDesign=CAPDESIGNS),
  		expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
 		expand ("mappings/" + "clusterPolyAsites/{techname}_{capDesign}_{barcodes}.polyAsites.clusters.bed", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 #		expand("mappings/" + "getPolyAreadsList/{techname}_{capDesign}_{barcodes}.polyAreads.list", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
@@ -137,12 +138,16 @@ rule all:
 		#expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 		#expand("mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, chrom=GENOMECHROMS),
 		#expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, chrom=GENOMECHROMS),
-		expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		#expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 		expand("mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff", techname=TECHNAMES, capDesign=CAPDESIGNS),
+		expand("mappings/" + "nonAnchoredMergeReads/pooled/HiSS/{techname}_{capDesign}.tmerge.HiSS.gff", techname=TECHNAMES, capDesign=CAPDESIGNS),
 		expand("mappings/" + "nonAnchoredMergeReads/qc/{techname}_{capDesign}_{barcodes}.tmerge.qc.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
-		expand("mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt", techname=TECHNAMES, capDesign=CAPDESIGNS),
+		expand( "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.{chrom}.qc.txt", techname=TECHNAMES, capDesign=CAPDESIGNS, chrom=GENOMECHROMS),
+		expand(config["PLOTSDIR"] + "all.pooled.merged.stats.{ext}", ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "all.polyAreads.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "all.HCGMs.stats.{ext}", ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.splicedLength.stats.{ext}", ext=config["PLOTFORMATS"]),
 		 expand("mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, strand=config["STRANDS"]),
 
  		expand("mappings/" + "qc/{techname}_{capDesign}_{barcodes}.merged.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
@@ -159,6 +164,3 @@ rule all:
  		expand(config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}.HCGMs.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES)
 
 
-
-rule debug:
-	input: expand("mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt", techname=TECHNAMES, capDesign=CAPDESIGNS)
