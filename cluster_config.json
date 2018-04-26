@@ -43,24 +43,19 @@
         "virtual_free" : "20G",
         "h_rt" : "1:00:00"
     },
-    "nonAnchoredMergeReadsPerChr":
+    "nonAnchoredMergeReads":
     {
-        "virtual_free" : "50G",
+        "virtual_free" : "30G",
         "queue" : "rg-el7,long-sl7",
         "h_rt" : "200:00:00",
-        "threads" : "-pe smp 3"
+        "threads" : "-pe smp 8"
     },
-    "poolNonAnchoredMergeReadsPerChr":
+    "poolNonAnchoredMergeReads":
     {
         "virtual_free" : "20G",
         "queue" : "rg-el7,short-sl7",
         "h_rt" : "6:00:00",
-        "threads" : "-pe smp 3"
-    },
-    "splitHcrByChr":
-    {
-        "virtual_free" : "4G",
-        "h_rt" : "0:15:00"
+        "threads" : "-pe smp 8"
     },
     "getHiSeqCanonicalIntronsList":
     {

@@ -110,30 +110,30 @@ cat {output}.r | R --slave
 # #cat $TMPDIR/$(basename {output}) | processCompmerge.pl - {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.noAnchor. |sortgff > {output}
 # 		'''
 
-rule splitHcrByChr:
+# rule splitHcrByChr:
+# 	input: "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
+# 	output: "mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff"
+# 	shell:
+# 		'''
+# zcat {input} | awk '$1=="{wildcards.chrom}"' >{output}
+# 		'''
+
+rule nonAnchoredMergeReads:
 	input: "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
-	output: "mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff"
-	shell:
-		'''
-zcat {input} | awk '$1=="{wildcards.chrom}"' >{output}
-		'''
-
-rule nonAnchoredMergeReadsPerChr:
-	input: "mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff"
-	threads:3
-	shell:
-		'''
-cat {input} |sortgff | tmerge.pl --cpu {threads} --tmPrefix {wildcards.chrom}.{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ -  > {output}
-		'''
-
-rule nonAnchoredMergeReadsMergeByChr:
-	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes, chrom=GENOMECHROMS)
 	output: "mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff"
+	threads:8
 	shell:
 		'''
-cat {input} |sortgff > {output}
+zcat {input} |sortgff | tmerge.pl --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 		'''
+
+# rule nonAnchoredMergeReadsMerge:
+# 	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
+# 	output: "mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff"
+# 	shell:
+# 		'''
+# cat {input} |sortgff > {output}
+# 		'''
 
 rule checkNonAnchoredMerging:
 	input:
@@ -173,28 +173,28 @@ echo XXdoneXX  >> {output}
 
 		'''
 
-rule poolNonAnchoredMergeReadsPerChr:
-	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES, chrom=wildcards.chrom)
-	output: "mappings/" + "nonAnchoredMergeReads/chr/pooled/{techname}_{capDesign}.tmerge.{chrom}.gff"
-	threads: 3
+rule poolNonAnchoredMergeReads:
+	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
+	threads: 8
 	shell:
 		'''
-cat {input} |sortgff | tmerge.pl --cpu {threads} --tmPrefix {wildcards.chrom}.{wildcards.techname}_{wildcards.capDesign}_pooled.NAM_ -  > {output}
+cat {input} |sortgff | tmerge.pl --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_pooled.NAM_ - |sortgff > {output}
 		'''
 
-rule poolNonAnchoredMergeReadsMergeByChr:
-	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/pooled/{techname}_{capDesign}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, chrom=GENOMECHROMS)
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
-	shell:
-		'''
-cat {input} |sortgff > {output}
-		'''
+# rule poolNonAnchoredMergeReadsMergeByChr:
+# 	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/pooled/{techname}_{capDesign}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, chrom=GENOMECHROMS)
+# 	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
+# 	shell:
+# 		'''
+# cat {input} |sortgff > {output}
+# 		'''
 
 rule checkPooledNonAnchoredMerging:
 	input:
-		before=lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES, chrom=wildcards.chrom),
-		after="mappings/" + "nonAnchoredMergeReads/chr/pooled/{techname}_{capDesign}.tmerge.{chrom}.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.{chrom}.qc.txt"
+		before=lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES),
+		after="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt"
 	shell:
 		'''
 #nt coverage should be equal before/after
