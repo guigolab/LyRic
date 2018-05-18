@@ -45,7 +45,7 @@
     },
     "nonAnchoredMergeReads":
     {
-        "virtual_free" : "30G",
+        "virtual_free" : "20G",
         "queue" : "rg-el7,long-sl7",
         "h_rt" : "200:00:00",
         "threads" : "-pe smp 8"

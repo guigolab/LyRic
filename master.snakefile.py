@@ -120,14 +120,13 @@ include: "processReadMappings.snakefile.py"
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
-		expand(config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), # facetted histograms of read length
+		expand(config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}", techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), # facetted histograms of read length
 		expand(config["FQPATH"] + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),
  		expand(config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # UP reads plots
  		expand(config["PLOTSDIR"] + "{techname}.fastq.BC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # barcode reads plots
  		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
  		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS),  # mapped short reads
  #		expand ("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),  # mapped reads
- 		#expand ("mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list", capDesign=CAPDESIGNS),
  		expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
 		expand ("mappings/" + "clusterPolyAsites/{techname}_{capDesign}_{barcodes}.polyAsites.clusters.bed", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 #		expand("mappings/" + "getPolyAreadsList/{techname}_{capDesign}_{barcodes}.polyAreads.list", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
@@ -139,15 +138,16 @@ rule all:
 		#expand("mappings/" + "highConfidenceReads/tmp/{techname}_{capDesign}_{barcodes}.strandedHCGMs.{chrom}.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, chrom=GENOMECHROMS),
 		#expand("mappings/" + "nonAnchoredMergeReads/chr/{techname}_{capDesign}_{barcodes}.tmerge.{chrom}.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, chrom=GENOMECHROMS),
 		#expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
-		expand("mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff", techname=TECHNAMES, capDesign=CAPDESIGNS),
-		expand("mappings/" + "nonAnchoredMergeReads/pooled/HiSS/{techname}_{capDesign}.tmerge.HiSS.gff", techname=TECHNAMES, capDesign=CAPDESIGNS),
+		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.stats.{ext}", ext=config["PLOTFORMATS"]),
+		expand("mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam", techname=TECHNAMES, capDesign=CAPDESIGNS),
+		expand("mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff", techname=TECHNAMES, capDesign=CAPDESIGNS),
 		expand("mappings/" + "nonAnchoredMergeReads/qc/{techname}_{capDesign}_{barcodes}.tmerge.qc.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 		expand( "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt", techname=TECHNAMES, capDesign=CAPDESIGNS),
 		expand(config["PLOTSDIR"] + "all.pooled.merged.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.stats.{ext}", ext=config["PLOTFORMATS"]),
+#		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "all.polyAreads.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand(config["PLOTSDIR"] + "all.HCGMs.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.splicedLength.stats.{ext}", ext=config["PLOTFORMATS"]),
+		#expand(config["PLOTSDIR"] + "all.HCGMs.stats.{ext}", ext=config["PLOTFORMATS"]),
+#		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.splicedLength.stats.{ext}", ext=config["PLOTFORMATS"]),
 		 expand("mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, strand=config["STRANDS"]),
 
  		expand("mappings/" + "qc/{techname}_{capDesign}_{barcodes}.merged.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
@@ -161,6 +161,6 @@ rule all:
  		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
  		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
  		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
- 		expand(config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}.HCGMs.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES)
+ 		#expand(config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}.HCGMs.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES)
 
 

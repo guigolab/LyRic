@@ -112,10 +112,12 @@ cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {outp
 
 rule mergeCapDesignBams:
 	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: temp("mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam")
+	output: "mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam"
 	shell:
 		'''
 samtools merge {output} {input}
+#sleep so latency doesn't make bai younger than bam
+sleep 60s
 samtools index {output}
 
 		'''
@@ -125,6 +127,7 @@ rule qualimap:
 	output: "mappings/qualimap_reports/" + "{techname}_{capDesign}.merged2/genome_results.txt"
 	shell:
 		'''
+unset DISPLAY
 ~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}_{wildcards.capDesign}.merged2
 touch {output}
 		'''
