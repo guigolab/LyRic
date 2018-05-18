@@ -408,15 +408,15 @@ cat $TMPDIR/tmp.fastq | tsv2fastq.pl | gzip> {output}
 
 		'''
 
-# rule getUndeterminedReads:
-# 	input:
-# 		tsvFastq = config["DEMULTIPLEX_DIR"] + "convertFastqToTsv/{techname}_{capDesign}_{sizeFrac}.tsv",
-# 		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-# 	output: temp(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.Undeter.fastq.gz")
-# 	shell:
-# 		'''
-# cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip > {output}
-# 		'''
+rule getUndeterminedReads:
+	input:
+		tsvFastq = config["DEMULTIPLEX_DIR"] + "convertFastqToTsv/{techname}_{capDesign}_{sizeFrac}.tsv",
+		noAmbigNoChim= config["DEMULTIPLEX_DIR"] + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
+	output: config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.Undeter.fastq.gz"
+	shell:
+		'''
+cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip > {output}
+		'''
 
 rule checkTotalsDemultiplexed:
 	input:

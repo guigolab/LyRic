@@ -70,7 +70,7 @@ BARCODESUNDETER=set(BARCODESUNDETER)
 
 AUTHORIZEDCOMBINATIONS = []
 
-for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
+for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODESUNDETER):
 	if(os.path.isfile(config["FQPATH"] + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz")): #allow only combinations corresponding to existing FASTQs
 		tup=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]))
 		AUTHORIZEDCOMBINATIONS.append(tup)
@@ -78,7 +78,7 @@ for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 			tup2=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]),("ext",ext))
 			AUTHORIZEDCOMBINATIONS.append(tup2)
 #		print(comb[3], comb[1], sep=",")
-		if (comb[3]).find(comb[1]) == 0: # check that barcode ID's prefix matches capDesign (i.e. ignore demultiplexed FASTQs with unmatched barcode/capDesign)
+		if (comb[3]).find(comb[1]) == 0 or comb[3] == 'Undeter': # check that barcode ID's prefix matches capDesign (i.e. ignore demultiplexed FASTQs with unmatched barcode/capDesign)
 #			print ("MATCH")
 			tup3=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]))
 			tup4=(("techname", comb[0]),("capDesign", comb[1]),("barcodes",comb[3]))
@@ -117,6 +117,9 @@ include: "polyAmapping.snakefile.py"
 include: "introns.snakefile.py"
 include: "processReadMappings.snakefile.py"
 
+
+ruleorder: getUndeterminedReads > demultiplexFastqs
+
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
@@ -127,8 +130,8 @@ rule all:
  		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
  		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS),  # mapped short reads
  #		expand ("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),  # mapped reads
- 		expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand ("mappings/" + "clusterPolyAsites/{techname}_{capDesign}_{barcodes}.polyAsites.clusters.bed", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+ 		expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESUNDETER),
+		expand ("mappings/" + "clusterPolyAsites/{techname}_{capDesign}_{barcodes}.polyAsites.clusters.bed", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODESUNDETER),
 #		expand("mappings/" + "getPolyAreadsList/{techname}_{capDesign}_{barcodes}.polyAreads.list", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 #		expand("mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.introns.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 #		expand("mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
@@ -141,16 +144,16 @@ rule all:
 		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand("mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam", techname=TECHNAMES, capDesign=CAPDESIGNS),
 		expand("mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff", techname=TECHNAMES, capDesign=CAPDESIGNS),
-		expand("mappings/" + "nonAnchoredMergeReads/qc/{techname}_{capDesign}_{barcodes}.tmerge.qc.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		expand("mappings/" + "nonAnchoredMergeReads/qc/{techname}_{capDesign}_{barcodes}.tmerge.qc.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODESUNDETER),
 		expand( "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt", techname=TECHNAMES, capDesign=CAPDESIGNS),
 		expand(config["PLOTSDIR"] + "all.pooled.merged.stats.{ext}", ext=config["PLOTFORMATS"]),
 #		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "all.polyAreads.stats.{ext}", ext=config["PLOTFORMATS"]),
 		#expand(config["PLOTSDIR"] + "all.HCGMs.stats.{ext}", ext=config["PLOTFORMATS"]),
 #		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.splicedLength.stats.{ext}", ext=config["PLOTFORMATS"]),
-		 expand("mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, strand=config["STRANDS"]),
+		 expand("mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODESUNDETER, strand=config["STRANDS"]),
 
- 		expand("mappings/" + "qc/{techname}_{capDesign}_{barcodes}.merged.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
+ 		expand("mappings/" + "qc/{techname}_{capDesign}_{barcodes}.merged.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODESUNDETER),
 # 		expand ("mappings/" + "readBedToGff/{techname}_{capDesign}_{barcodes}.merged.gff",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
  		expand("mappings/qualimap_reports/" + "{techname}_{capDesign}.merged2/genome_results.txt", techname=TECHNAMES, capDesign=CAPDESIGNS),
  		expand(config["PLOTSDIR"] + "{techname}.ambiguousBarcodes.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # ambiguous barcodes plots
