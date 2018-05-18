@@ -37,7 +37,7 @@ mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort|uniq|wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$5/$4}}' > {output}
 		'''
 rule aggMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv",filtered_product, techname=wildcards.techname, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESUNDETER)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv",filtered_product, techname=wildcards.techname, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: config["STATSDATADIR"] + "{techname}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
@@ -111,7 +111,7 @@ cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {outp
 
 
 rule mergeCapDesignBams:
-	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODESUNDETER)
+	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
 	output: "mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam"
 	shell:
 		'''

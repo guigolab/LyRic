@@ -144,7 +144,7 @@ echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.barcodes}\t$HiS
 		'''
 
 rule aggHiSSCapDesignStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.HiSS.stats.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODESUNDETER)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.HiSS.stats.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}.HiSS.stats.tsv"
 	shell:
 		'''
