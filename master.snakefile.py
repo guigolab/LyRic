@@ -5,7 +5,7 @@ from itertools import product
 import sys
 
 
-print ("TODO:\n ## for UCSC, filter out non-chr lines and gene_id attributes (some are ultra long and lead to buffer overflow): | fgrep chr | perl -slane ' $_=~s/gene_id \S+//g; print' \n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)\n ## pooled TMS: include 'pooled' keyword in filename, ie pacBioCorr0_Hv1_pooled.tmerge.gff instead of pacBioCorr0_Hv1.tmerge.gff")
+print ("TODO:\n ## for UCSC, filter out non-chr lines and gene_id attributes (some are ultra long and lead to buffer overflow): | fgrep chr | perl -slane ' $_=~s/gene_id \S+//g; print' \n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)")
 
 
 # # path to dropbox folder where to sync output R plots:
@@ -116,6 +116,7 @@ include: "srMapping.snakefile.py"
 include: "polyAmapping.snakefile.py"
 include: "introns.snakefile.py"
 include: "processReadMappings.snakefile.py"
+include: "tmClassification.snakefile.py"
 
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
@@ -161,6 +162,7 @@ rule all:
  		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
  		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
  		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
- 		#expand(config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}.HCGMs.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES)
+ 		expand("mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_pooled.tmerge.gfftsv.gz", techname=TECHNAMES, capDesign=CAPDESIGNS),
+ 		expand(config["PLOTSDIR"] + "all_pooled.targetCoverage.stats.{ext}", ext=config["PLOTFORMATS"]),
 
 
