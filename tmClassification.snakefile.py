@@ -28,7 +28,7 @@ rule aggTargetCoverageStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {output}
-cat {input} | grep -v erccSpikein | sed 's/Corr/\t/'| sort >> {output}
+cat {input} | grep -v erccSpikein |grep -v Corr40 |grep -v Corr60 | sed 's/Corr/\t/'| sort >> {output}
 		'''
 
 rule plotTargetCoverageStats:
@@ -47,7 +47,7 @@ geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_brewer(palette='Set3') +
  facet_grid( seqTech ~ capDesign) +
  geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7) +
- geom_text(aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=1, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
+ geom_text(aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=2.5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
  ylab('% targeted regions detected') + xlab('Correction level (k-mer size)') + scale_y_continuous(limits = c(0, 1), labels = scales::percent)+
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=8, height=3)

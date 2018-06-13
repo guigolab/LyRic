@@ -3,6 +3,7 @@
        "GENOMESDIR": "/users/rg/jlagarde/genomes/",
        "TARGETSDIR": "targets/",
        "PLOTSDIR" : "plots/",
+       "SPLICE_SITE_SCORES_DIR": "/users/rg/jlagarde/projects/splice_sites/geneid/",
        "SIZEFRACTION_RPALETTE": "c('1-1.5' ='#f765ac','1.5-2.5' ='#b370f9', '2.5+'='#CCC914')",
        "DROPBOX_PLOTSDIR" :"/RNACapture/phase2/plots/",
        "STATSDATADIR" : "Rinput/",

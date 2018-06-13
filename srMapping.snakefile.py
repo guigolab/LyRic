@@ -49,7 +49,7 @@ rule getHiSeqCanonicalIntronsList:
 	shell:
 		'''
 echoerr "making bed"
-samtools view -b -F 256 -F4 -F 2048 {input}  |bamToBed -i stdin -bed12 | fgrep -v ERCC- > $TMPDIR/hiSeq_{wildcards.capDesign}.bed
+samtools view -b -F 256 -F4 -F 2048 {input}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > $TMPDIR/hiSeq_{wildcards.capDesign}.bed
 echoerr "splitting"
 split -a 3 -d -e -n l/24 $TMPDIR/hiSeq_{wildcards.capDesign}.bed $TMPDIR/hiSeq_{wildcards.capDesign}.bed.split
 rm $TMPDIR/hiSeq_{wildcards.capDesign}.bed

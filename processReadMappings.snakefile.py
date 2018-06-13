@@ -2,7 +2,7 @@ rule integratePolyaAndSjInfo:
 	input:
 		polyA = "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed",
 		SJs = "mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv"
-	output: temp("mappings/" + "integratePolyaAndSjInfo/{techname}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv")
+	output: "mappings/" + "integratePolyaAndSjInfo/{techname}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv"
 	shell:
 		'''
 cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort > $TMPDIR/reads.polyA.strandInfo.tsv
@@ -14,7 +14,7 @@ rule strandGffs:
 	input:
 		gff = "mappings/" + "readBedToGff/{techname}_{capDesign}_{barcodes}.merged.gff",
 		strandInfo = "mappings/" + "integratePolyaAndSjInfo/{techname}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv"
-	output: temp("mappings/" + "strandGffs/{techname}_{capDesign}_{barcodes}.stranded.gff")
+	output: "mappings/" + "strandGffs/{techname}_{capDesign}_{barcodes}.stranded.gff"
 	shell:
 		'''
 get_right_transcript_strand.pl {input.gff} {input.strandInfo} | fgrep -v ERCC- | sortgff> {output}
@@ -127,7 +127,7 @@ rule getHiSSStats:
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.HiSS.stats.tsv"
 	shell:
 		'''
-bamToBed -i {input.reads} -bed12 > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed
+bedtools bamtobed -i {input.reads} -bed12 > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed
 zcat {input.HiSSGTF} | gff2bed_full.pl - > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.HiSS.bed
 
 mappedReadsMono=$(cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed | awk '$10<=1'|cut -f4 |sort|uniq|wc -l)
@@ -197,7 +197,7 @@ rule nonAnchoredMergeReads:
 	threads:8
 	shell:
 		'''
-zcat {input} |sortgff | tmerge.pl --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+zcat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 		'''
 
 
@@ -245,7 +245,7 @@ rule poolNonAnchoredMergeReads:
 	threads: 8
 	shell:
 		'''
-cat {input} |sortgff | tmerge.pl --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_pooled.NAM_ - |sortgff > {output}
+cat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_pooled.NAM_ - |sortgff > {output}
 		'''
 
 # rule poolNonAnchoredMergeReadsMergeByChr:

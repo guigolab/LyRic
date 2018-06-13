@@ -43,6 +43,9 @@ BARCODESUNDETER.append("Undeter")
 BARCODES=set(BARCODES)
 BARCODESUNDETER=set(BARCODESUNDETER)
 
+SPLICE_SITE_TYPES=["Donor", "Acceptor"]
+
+
 # ### list of chromosomes for each genome
 # GENOMES=[]
 
@@ -164,5 +167,5 @@ rule all:
  		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
  		expand("mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_pooled.tmerge.gfftsv.gz", techname=TECHNAMES, capDesign=CAPDESIGNS),
  		expand(config["PLOTSDIR"] + "all_pooled.targetCoverage.stats.{ext}", ext=config["PLOTFORMATS"]),
-
+ 		expand(config["STATSDATADIR"] + "all.splice.sites.stats.tsv"),
 

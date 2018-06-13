@@ -97,7 +97,7 @@ rule readBamToBed:
 	output: "mappings/" + "readBamToBed/{techname}_{capDesign}_{barcodes}.merged.bed"
 	shell:
 		'''
-bamToBed -i {input} -bed12 > {output}
+bedtools bamtobed -i {input} -bed12 > {output}
 
 		'''
 
