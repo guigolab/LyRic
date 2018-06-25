@@ -53,8 +53,8 @@
     "poolNonAnchoredMergeReads":
     {
         "virtual_free" : "20G",
-        "queue" : "rg-el7,short-sl7",
-        "h_rt" : "6:00:00",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "16:00:00",
         "threads" : "-pe smp 8"
     },
     "getHiSeqCanonicalIntronsList":

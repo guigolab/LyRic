@@ -8,8 +8,6 @@ import sys
 print ("TODO:\n ## for UCSC, filter out non-chr lines and gene_id attributes (some are ultra long and lead to buffer overflow): | fgrep chr | perl -slane ' $_=~s/gene_id \S+//g; print' \n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)")
 
 
-# # path to dropbox folder where to sync output R plots:
-DROPBOX_PLOTS=config["DROPBOX_PLOTSDIR"]
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
 CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
@@ -167,5 +165,5 @@ rule all:
  		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
  		expand("mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_pooled.tmerge.gfftsv.gz", techname=TECHNAMES, capDesign=CAPDESIGNS),
  		expand(config["PLOTSDIR"] + "all_pooled.targetCoverage.stats.{ext}", ext=config["PLOTFORMATS"]),
- 		expand(config["STATSDATADIR"] + "all.splice.sites.stats.tsv"),
-
+ 		expand(config["PLOTSDIR"] + "all.splice.sites.stats.{ext}", ext=config["PLOTFORMATS"]),
+ 		expand(config["PLOTSDIR"] + "all.pooled.tmerge.vs.gencode.stats.{ext}",  ext=config["PLOTFORMATS"]),

@@ -54,7 +54,7 @@ rule aggPolyAreadsStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\tnonPolyA\\t"$3-$4"\\n"$1"\\t"$2"\\tpolyA\\t"$4}}' | sed 's/Corr/\t/' | sort -r >> {output}
+cat {input} | awk '{{print $1"\\t"$2"\\tnonPolyA\\t"$3-$4"\\n"$1"\\t"$2"\\tpolyA\\t"$4}}' | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' | sort -r >> {output}
 		'''
 
 rule plotPolyAreadsStats:
@@ -67,7 +67,7 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#25804C', 'nonPolyA' = '#FB3B24')) + facet_grid( seqTech ~ capDesign)+ ylab('# mapped reads') + xlab('Correction level (k-mer size)') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
+geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#25804C', 'nonPolyA' = '#FB3B24')) + facet_grid( seqTech ~ capDesign)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=3)
 " > {output}.r
@@ -81,7 +81,7 @@ rule clusterPolyAsites:
 	output: "mappings/" + "clusterPolyAsites/{techname}_{capDesign}_{barcodes}.polyAsites.clusters.bed"
 	shell:
 		'''
-cat {input} | $HOME/bin/bedtools2/bin/bedtools merge -s -d 5 -c 4 -o collapse -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$5"\t0\t"$4}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sortbed > {output}
+cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sortbed > {output}
 		'''
 rule makePolyABigWigs:
 	input:
@@ -90,7 +90,7 @@ rule makePolyABigWigs:
 	output: "mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	shell:
 		'''
-genomeCoverageBed -strand {wildcards.strand} -split -bg -i {input.sites} -g {input.genome} > {output}.bedgraph
+bedtools genomecov -strand {wildcards.strand} -split -bg -i {input.sites} -g {input.genome} > {output}.bedgraph
 bedGraphToBigWig {output}.bedgraph {input.genome} {output}
 rm -f {output}.bedgraph
 		'''

@@ -28,7 +28,7 @@ rule aggTargetCoverageStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {output}
-cat {input} | grep -v erccSpikein |grep -v Corr40 |grep -v Corr60 | sed 's/Corr/\t/'| sort >> {output}
+cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/'| sort >> {output}
 		'''
 
 rule plotTargetCoverageStats:
@@ -48,14 +48,74 @@ scale_fill_brewer(palette='Set3') +
  facet_grid( seqTech ~ capDesign) +
  geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7) +
  geom_text(aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=2.5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
- ylab('% targeted regions detected') + xlab('Correction level (k-mer size)') + scale_y_continuous(limits = c(0, 1), labels = scales::percent)+
+ ylab('% targeted regions detected') + xlab('Error correction') + scale_y_continuous(limits = c(0, 1), labels = scales::percent)+
 {GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=8, height=3)
+ggsave('{output}', width=8, height=4)
 " > {output}.r
 cat {output}.r | R --slave
 
 
 		'''
 
+
+rule gffcompareToAnnotation:
+	input:
+		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
+		tm="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/gffcompare/{techname}_{capDesign}_pooled.tmerge.vs.gencode.simple.tsv"
+	shell:
+		'''
+pref=$(basename {output} .simple.tsv)
+annotFullPath=$(fullpath {input.annot})
+tmFullPath=$(fullpath {input.tm})
+cd $(dirname {output})
+gffcompare -T -o $pref -r $annotFullPath $tmFullPath
+cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
+
+		'''
+
+rule getGffCompareStats:
+	input: "mappings/" + "nonAnchoredMergeReads/pooled/gffcompare/{techname}_{capDesign}_pooled.tmerge.vs.gencode.simple.tsv"
+	output: config["STATSDATADIR"] + "{techname}_{capDesign}_pooled.tmerge.vs.gencode.stats.tsv"
+	shell:
+		'''
+cat {input} |cut -f4 | sort|uniq -c | awk -v s={wildcards.techname} -v c={wildcards.capDesign} '{{print s"\t"c"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/'>> {output}
+		'''
+
+
+#echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
+
+rule aggGffCompareStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_pooled.tmerge.vs.gencode.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
+	output: config["STATSDATADIR"] + "all.pooled.tmerge.vs.gencode.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
+cat {input} >> {output}
+		'''
+
+rule plotGffCompareStats:
+	input: config["STATSDATADIR"] + "all.pooled.tmerge.vs.gencode.stats.tsv"
+	output: config["PLOTSDIR"] + "all.pooled.tmerge.vs.gencode.stats.{ext}"
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('Intergenic', 'Extends', 'Intronic', 'Overlaps', 'Antisense', 'Equal', 'Included')))
+palette <- c('Intergenic' = '#0099cc', 'Extends' ='#00bfff', 'Intronic' = '#4dd2ff', 'Overlaps' = '#80dfff', 'Antisense' = '#ccf2ff', 'Equal' = '#c65353', 'Included' ='#d98c8c')
+ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+geom_bar(stat='identity') +
+scale_fill_manual(values=palette) +
+facet_grid( seqTech ~ capDesign)+ ylab('# TMs') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
+scale_y_continuous(labels=scientific)+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=7, height=3)
+" > {output}.r
+cat {output}.r | R --slave
+
+		'''
 
 #calculate amount of novel nucleotides

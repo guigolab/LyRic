@@ -13,7 +13,7 @@ rule readMapping:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
 	threads: 12
 	output:
-		temp("mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam")
+		"mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	shell:
 		'''
 echoerr "Mapping"
@@ -29,7 +29,7 @@ rule getMappingStats:
 	input:
 		bams = "mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		fastqs = config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv")
+	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
 totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
@@ -117,7 +117,7 @@ rule mergeCapDesignBams:
 		'''
 samtools merge {output} {input}
 #sleep so latency doesn't make bai younger than bam
-sleep 60s
+sleep 120s
 samtools index {output}
 
 		'''

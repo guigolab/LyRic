@@ -11,7 +11,7 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 
 rule getFastqReadCounts:
 	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
-	output: temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv")
+	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv"
 	shell:
 		'''
 let total=$(zcat {input} | wc -l)/4 || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
@@ -27,7 +27,7 @@ rule aggFastqReadCounts:
 #get read lengths for all FASTQ files:
 rule getReadLength:
 	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
-	output: temp("{techname}_{capDesign}_{sizeFrac}.readlength.tsv")
+	output: "{techname}_{capDesign}_{sizeFrac}.readlength.tsv"
 	shell: "zcat {input} | fastq2tsv.pl | awk -v s={wildcards.sizeFrac} '{{print s\"\\t\"length($2)}}' > {output}"
 
 #aggregate read length data over all fractions of a given capDesign:
