@@ -47,55 +47,6 @@ cat $TMPDIR/gtag.gff $TMPDIR/monoPolyA.gff | sortgff |gzip> {output}
 		'''
 
 
-# rule getHCGMstats:
-# 	input:
-# 		reads = "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam",
-# 		hcgms = "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
-# 	output: config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}.HCGMs.stats.tsv"
-# 	shell:
-# 		'''
-# mappedReads=$(samtools view  -F 4 {input.reads}|cut -f1|sort|uniq|wc -l)
-# hcgms=$(zcat {input.hcgms} | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
-# echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.barcodes}\t$mappedReads\t$hcgms" | awk '{{print $0"\t"$5/$4}}' > {output}
-# 		'''
-
-# rule aggHCGMCapDesignStats:
-# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}.HCGMs.stats.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
-# 	output: config["STATSDATADIR"] + "{techname}_{capDesign}.HCGMs.stats.tsv"
-# 	shell:
-# 		'''
-# totalMapped=$(cat {input} | cut -f4 | sum.sh)
-# totalHCGMs=$(cat {input} | cut -f5 | sum.sh)
-# echo -e "{wildcards.techname}\t{wildcards.capDesign}\t$totalMapped\t$totalHCGMs" | awk '{{print $0"\t"$4/$3}}' > {output}
-# 		'''
-
-# rule aggHCGMStats:
-# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.HCGMs.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
-# 	output: config["STATSDATADIR"] + "all.HCGMs.stats.tsv"
-# 	shell:
-# 		'''
-# echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
-# cat {input} | awk '{{print $1"\\t"$2"\\tnonHCGM\\t"$3-$4"\\n"$1"\\t"$2"\\tHCGM\\t"$4}}' | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' | sort >> {output}
-# 		'''
-
-# rule plotHCGMStats:
-# 	input: config["STATSDATADIR"] + "all.HCGMs.stats.tsv"
-# 	output: config["PLOTSDIR"] + "all.HCGMs.stats.{ext}"
-# 	shell:
-# 		'''
-# echo "library(ggplot2)
-# library(plyr)
-# library(scales)
-# dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-# ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
-# geom_bar(stat='identity') + scale_fill_manual(values=c('HCGM' = '#25804C', 'nonHCGM' = '#FB3B24')) + facet_grid( seqTech ~ capDesign)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
-# {GGPLOT_PUB_QUALITY}
-# ggsave('{output}', width=7, height=3)
-# " > {output}.r
-# cat {output}.r | R --slave
-
-# 		'''
-
 rule getHCGMintrons:
 	input: "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
 	output: "mappings/" + "highConfidenceReads/introns/{techname}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv"

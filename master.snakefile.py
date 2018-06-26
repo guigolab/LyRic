@@ -26,7 +26,7 @@ wildcard_constraints:
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
-adaptersTSV = "demultiplexing/all_adapters.tsv"
+adaptersTSV = config["adaptersTSV"]
 f = open(adaptersTSV, 'r')
 BARCODES = []
 BARCODESUNDETER = []
