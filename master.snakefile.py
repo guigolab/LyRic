@@ -20,26 +20,31 @@ wildcard_constraints:
 # 	barcodes = "[^\.]",
 # 	barcodesU ="^(merged)"
 
-# get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries so "set" them afterwards):
-(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz")
-# remove duplicate entries:
-CAPDESIGNS=set(CAPDESIGNS)
-SIZEFRACS=set(SIZEFRACS)
-TECHNAMES=set(TECHNAMES)
-adaptersTSV = config["adaptersTSV"]
-f = open(adaptersTSV, 'r')
-BARCODES = []
-BARCODESUNDETER = []
-for line in f:
-	columns = line.split("\t")
-	barcodeId = columns[0].split("_")
-	if columns[0] != 'UP':
-		BARCODES.append(columns[0])
-		BARCODESUNDETER.append(columns[0])
+if config["DEMULTIPLEX"]:
+	# get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries so "set" them afterwards):
+	DEMULTIPLEX_DIR=config["DEMULTIPLEX_DIR"]
+	(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz")
+	# remove duplicate entries:
+	CAPDESIGNS=set(CAPDESIGNS)
+	SIZEFRACS=set(SIZEFRACS)
+	TECHNAMES=set(TECHNAMES)
+	adaptersTSV = config["adaptersTSV"]
+	f = open(adaptersTSV, 'r')
+	BARCODES = []
+	BARCODESUNDETER = []
+	for line in f:
+		columns = line.split("\t")
+		barcodeId = columns[0].split("_")
+		if columns[0] != 'UP':
+			BARCODES.append(columns[0])
+			BARCODESUNDETER.append(columns[0])
 
-BARCODESUNDETER.append("Undeter")
-BARCODES=set(BARCODES)
-BARCODESUNDETER=set(BARCODESUNDETER)
+	BARCODESUNDETER.append("Undeter")
+	BARCODES=set(BARCODES)
+	BARCODESUNDETER=set(BARCODESUNDETER)
+
+else:
+	DEMULTIPLEX_DIR=config["FQPATH"]
 
 SPLICE_SITE_TYPES=["Donor", "Acceptor"]
 
@@ -129,7 +134,7 @@ rule all:
  		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #foreign barcode reads plots
  		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS),  # mapped short reads
  #		expand ("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),  # mapped reads
- 		expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
+ 		expand(DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
 		expand ("mappings/" + "clusterPolyAsites/{techname}_{capDesign}_{barcodes}.polyAsites.clusters.bed", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 #		expand("mappings/" + "getPolyAreadsList/{techname}_{capDesign}_{barcodes}.polyAreads.list", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
 #		expand("mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.introns.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES),
@@ -159,8 +164,8 @@ rule all:
  		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.adapters.location.stats.{ext}",techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]), #location of adapters over reads
  		expand(config["PLOTSDIR"] + "{techname}.chimeric.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), # stats on chimeric reads
  		expand(config["PLOTSDIR"] + "{techname}.finalDemul.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]), #final demultiplexing stats
- 		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
- 		expand(config["DEMULTIPLEX_DIR"] + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
+ 		expand(DEMULTIPLEX_DIR + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
+ 		expand(DEMULTIPLEX_DIR + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS), # QC on demultiplexing (checks that there is only one barcode assigned per read
  		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
  		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
  		expand("mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_pooled.tmerge.gfftsv.gz", techname=TECHNAMES, capDesign=CAPDESIGNS),

@@ -6,8 +6,8 @@ rule readMapping:
 #		 barcodesU = lambda wildcards: {wildcards.capDesign} + "_.+"
 	input:
 #		reads = returnCapDesignBarcodesFastqs,
-#		reads = config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
-		reads = lambda wildcards: expand(config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+#		reads = DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
+		reads = lambda wildcards: expand(DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 #	params:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
@@ -28,7 +28,7 @@ rm {output}.tmp
 rule getMappingStats:
 	input:
 		bams = "mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		fastqs = config["DEMULTIPLEX_DIR"] + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+		fastqs = DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
