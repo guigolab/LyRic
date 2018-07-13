@@ -1,5 +1,5 @@
 {
-       "FQPATH" :"fastqs/def/",
+       "FQPATH" :"fastqs/",
        "GENOMESDIR": "/users/rg/jlagarde/genomes/",
        "TARGETSDIR": "targets/",
        "PLOTSDIR" : "plots/",
@@ -8,17 +8,15 @@
        "LONG_RPALETTE":"c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')",
        "STATSDATADIR" : "Rinput/",
        "capDesignToGenome" : {
-           "Hv1": "hg38",
-            "Hv2": "hg38",
-            "Mv1": "mm10"},
+           "HpreCap": "hg38",
+            "MpreCap": "mm10"},
        "capDesignToAnnotGtf" : {
-           "Hv1": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
-            "Hv2": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
-            "Mv1": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/versionM7/gencode.vM7.annotation.gtf"},
+           "HpreCap": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
+            "MpreCap": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/versionM7/gencode.vM7.annotation.gtf"},
         "PLOTFORMATS" : ["png", "pdf"],
         "STRANDS" : ["+", "-"],
-    "DEMULTIPLEX": true,
-    "USE_MATCHED_ILLUMINA": true,
-    "DEMULTIPLEX_DIR" : "demultiplexing/",
+    "DEMULTIPLEX": false,
+    "USE_MATCHED_ILLUMINA": false,
+    "SUPPORT_INTRONS_DB":"/users/rg/jlagarde/projects/splice_sites/intropolis/intropolis.intron.coord.hg38.tsv",
     "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))"
 }

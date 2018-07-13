@@ -58,7 +58,7 @@ zcat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/jul
 
 rule getHiSeqSupportedHCGMs:
 	input:
-		hiSeqIntrons="mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list",
+		hiSeqIntrons="mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] else config["SUPPORT_INTRONS_DB"],
 		lrIntrons="mappings/" + "highConfidenceReads/introns/{techname}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv",
 		#mergedGTF="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
 		hcgmGTF= "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"

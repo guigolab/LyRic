@@ -40,11 +40,9 @@ echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-#nrTypes <- length(unique(dat\$targetType))
-#darkcols <- brewer.pal(nrTypes, "Dark2")
 ggplot(dat, aes(x=factor(correctionLevel), y=percentDetectedTargets, fill=targetType)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
-scale_fill_brewer(palette='Set3') +
+scale_fill_manual(values={long_Rpalette}) +
  facet_grid( seqTech ~ capDesign) +
  geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7) +
  geom_text(aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=2.5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +

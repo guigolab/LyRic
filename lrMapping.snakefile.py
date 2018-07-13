@@ -7,7 +7,7 @@ rule readMapping:
 	input:
 #		reads = returnCapDesignBarcodesFastqs,
 #		reads = DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
-		reads = lambda wildcards: expand(DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 #	params:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
@@ -28,7 +28,7 @@ rm {output}.tmp
 rule getMappingStats:
 	input:
 		bams = "mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		fastqs = DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+		fastqs = DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
@@ -67,7 +67,6 @@ theme_bw(base_size=17) +
 ggsave('{output}', width=13, height=9)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 

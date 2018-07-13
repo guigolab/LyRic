@@ -37,7 +37,7 @@ blastn -query {input.adapters} -task blastn -soft_masking false -word_size 4 -qc
 rule processBlastDemultiplex:
 	input:
 		blastOut=DEMULTIPLEX_DIR + "blastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv",
-		adaptersTsv=DEMULTIPLEX_DIR + "all_adapters.tsv"
+		adaptersTsv=adaptersTSV
 	output: DEMULTIPLEX_DIR + "processBlastDemultiplex/{techname}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
 	shell:
 		'''
@@ -86,7 +86,7 @@ cat {input} | sort >> {output}
 
 rule plotUpStats:
 	input: config["STATSDATADIR"] + "{techname}.fastq.basicDemultiplexing.stats.tsv"
-	output: config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}"
+	output: config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}" if config["DEMULTIPLEX"] else "dummy1.txt"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -104,7 +104,6 @@ ylab('% reads with UP') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 		'''
 
 rule plotBcStats:
@@ -127,7 +126,6 @@ ylab('% reads with any barcode') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
@@ -152,7 +150,6 @@ ylab('% reads with foreign barcode') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
@@ -211,7 +208,6 @@ ylab('% reads with multiple\ndistinct barcodes') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 		'''
 
 rule getAdaptersLocationOverReads:
@@ -255,7 +251,6 @@ theme_bw(base_size=17) +
 ggsave('{output}', width=9, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
@@ -310,7 +305,6 @@ ylab('% chimeric reads') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
@@ -370,7 +364,6 @@ ylab('% unambiguously demultiplexed,\nnon-chimeric reads') +
 ggsave('{output}', width=7, height=3)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
@@ -397,7 +390,7 @@ rule demultiplexFastqs:
 	input:
 		tsvFastq = DEMULTIPLEX_DIR + "convertFastqToTsv/{techname}_{capDesign}_{sizeFrac}.tsv",
 		noAmbigNoChim= DEMULTIPLEX_DIR + "selectNonAmbiguousNonChimericReads/{techname}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	output: DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	shell:
 		'''
 cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq > $TMPDIR/tmp
@@ -420,7 +413,7 @@ cat $TMPDIR/tmp.fastq | tsv2fastq.pl | gzip> {output}
 
 rule checkTotalsDemultiplexed:
 	input:
-		demul= lambda wildcards: expand(DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES),
+		demul= lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES),
 			#expand(DEMULTIPLEX_DIR + "{{techname}}_{{capDesign}}_{{sizeFrac}}.{barcodesU}.fastq", barcodesU=BARCODESUNDETER),
 		totals=config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv"
 	output: DEMULTIPLEX_DIR + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt"
@@ -437,7 +430,7 @@ cat {output}| while read diff; do if [ $diff -lt 1 ]; then echo "Number of demul
 
 
 rule getDemultiplexingStatsPerSample:
-	input: DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	input: DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.demultiplexing.perSample.stats.tsv"
 	shell:
 		'''
@@ -476,7 +469,6 @@ theme_bw(base_size=17) +
 ggsave('{output}', width=13, height=9)
 " > {output}.r
 cat {output}.r | R --slave
-#dropbox_uploader.sh upload {output} {DROPBOX_PLOTS};
 
 		'''
 
