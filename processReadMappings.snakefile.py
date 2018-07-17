@@ -210,6 +210,15 @@ cat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}_{w
 # cat {input} |sortgff > {output}
 # 		'''
 
+rule poolNonAnchoredMergeReadsToBed:
+	input: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed"
+	shell:
+		'''
+cat {input} | gff2bed_full.pl - > {output}
+		'''
+
+
 rule checkPooledNonAnchoredMerging:
 	input:
 		before=lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES),

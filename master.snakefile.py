@@ -13,6 +13,7 @@ CAPDESIGNTOGENOME=config["capDesignToGenome"]
 CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
 sizeFrac_Rpalette=config["SIZEFRACTION_RPALETTE"]
 long_Rpalette=config["LONG_RPALETTE"]
+CAPDESIGNTOCAGEPEAKS=config["capDesignToCAGEpeaks"]
 DUMMY_DIR="dummy/"
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 wildcard_constraints:
@@ -142,6 +143,7 @@ include: "polyAmapping.snakefile.py"
 include: "introns.snakefile.py"
 include: "processReadMappings.snakefile.py"
 include: "tmClassification.snakefile.py"
+include: "tmEndSupport.py"
 
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
@@ -177,6 +179,7 @@ rule all:
   		expand(config["PLOTSDIR"] + "all_pooled.targetCoverage.stats.{ext}", ext=config["PLOTFORMATS"]),
   		expand(config["PLOTSDIR"] + "all.splice.sites.stats.{ext}", ext=config["PLOTFORMATS"]),
   		expand(config["PLOTSDIR"] + "all.pooled.tmerge.vs.gencode.stats.{ext}",  ext=config["PLOTFORMATS"]),
+  		expand("mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}_{capDesign}_pooled.tmerge.cageSupported.bed", techname=TECHNAMES, capDesign=CAPDESIGNS),
 
 
 
