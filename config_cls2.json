@@ -20,5 +20,17 @@
     "DEMULTIPLEX": true,
     "USE_MATCHED_ILLUMINA": true,
     "DEMULTIPLEX_DIR" : "demultiplexing/",
-    "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))"
+    "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))",
+    "capDesignToCAGEpeaks": {
+      "Hv1": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
+      "Hv2": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
+      "Mv1": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
+
+    },
+    "capDesignToGenomePAS": {
+      "Hv1": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
+      "Hv2": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
+      "Mv1": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed",
+    }
+
 }

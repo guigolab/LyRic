@@ -14,6 +14,7 @@ CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
 sizeFrac_Rpalette=config["SIZEFRACTION_RPALETTE"]
 long_Rpalette=config["LONG_RPALETTE"]
 CAPDESIGNTOCAGEPEAKS=config["capDesignToCAGEpeaks"]
+CAPDESIGNTOPAS=config["capDesignToGenomePAS"]
 DUMMY_DIR="dummy/"
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 wildcard_constraints:
@@ -60,6 +61,11 @@ TECHNAMES=set(TECHNAMES)
 #print (DEMULTIPLEXED_FASTQS, TECHNAMES, CAPDESIGNS, SIZEFRACS,BARCODES)
 
 SPLICE_SITE_TYPES=["Donor", "Acceptor"]
+
+# for polyA calling calibration:
+minPolyAlength = []
+for x in range(5, 30, 1):
+	minPolyAlength.append(x)
 
 
 # ### list of chromosomes for each genome
@@ -180,6 +186,7 @@ rule all:
   		expand(config["PLOTSDIR"] + "all.splice.sites.stats.{ext}", ext=config["PLOTFORMATS"]),
   		expand(config["PLOTSDIR"] + "all.pooled.tmerge.vs.gencode.stats.{ext}",  ext=config["PLOTFORMATS"]),
   		expand("mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}_{capDesign}_pooled.tmerge.cageSupported.bed", techname=TECHNAMES, capDesign=CAPDESIGNS),
+  		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.polyA.vs.PAS.precisionRecall.stats.{ext}", techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]),
 
 
 

@@ -63,5 +63,9 @@
         "queue" : "rg-el7,short-sl7",
         "h_rt" : "6:00:00",
         "threads" : "-pe smp 6"
+    },
+    "compareToPASTestPolyAmapping":
+    {
+        "virtual_free" : "30G"
     }
 }

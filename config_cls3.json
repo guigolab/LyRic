@@ -23,5 +23,10 @@
       "HpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
       "MpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
 
+    },
+    "capDesignToGenomePAS": {
+      "HpreCap": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
+      "MpreCap": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed",
     }
+
 }
