@@ -14,7 +14,7 @@ samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPo
 
 rule getPolyANonPolyAsitesTestPolyAmapping:
 	input:
-		reads="mappings/mergeCapDesignBams/{techname}_{capDesign}.merged2.bam",
+		reads=lambda wildcards: expand("mappings/" + "strandGffs/{techname}_{capDesign}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES),
 		inPolyA="mappings/polyAmapping/calibration/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.bed"
 	params:
 		minAcontent=0.8
@@ -24,20 +24,13 @@ rule getPolyANonPolyAsitesTestPolyAmapping:
 	shell:
 		'''
 cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort | uniq > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list
-samtools view -H {input.reads} > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.header.sam
 
 #non polyA:
-samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -v -w -f $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.nonpolyA.minClipped.{wildcards.minA}.sam
-
-cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.header.sam $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.nonpolyA.minClipped.{wildcards.minA}.sam | samtools view -b - > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.nonpolyA.minClipped.{wildcards.minA}.bam
-
-bedtools bamtobed -i $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.nonpolyA.minClipped.{wildcards.minA}.bam -bed12 | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outNonPolyA}
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -v -w -f $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outNonPolyA}
 
 #polyA:
-samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.sam
-cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.header.sam $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.sam | samtools view -b - > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.bam
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outPolyA}
 
-bedtools bamtobed -i $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.bam -bed12 | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' >  {output.outPolyA}
 
 		'''
 
