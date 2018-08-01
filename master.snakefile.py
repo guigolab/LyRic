@@ -186,7 +186,7 @@ rule all:
   		expand(config["PLOTSDIR"] + "all.splice.sites.stats.{ext}", ext=config["PLOTFORMATS"]),
   		expand(config["PLOTSDIR"] + "all.pooled.tmerge.vs.gencode.stats.{ext}",  ext=config["PLOTFORMATS"]),
   		expand("mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}_{capDesign}_pooled.tmerge.cageSupported.bed", techname=TECHNAMES, capDesign=CAPDESIGNS),
-  		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.polyA.vs.PAS.precisionRecall.stats.{ext}", techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]),
+  		expand(config["PLOTSDIR"] + "all.polyA.vs.PAS.precisionRecall.stats.{ext}", ext=config["PLOTFORMATS"]),
 
 
 
