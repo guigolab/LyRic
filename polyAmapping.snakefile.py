@@ -67,8 +67,10 @@ let denomPr=$closePolyA+$farPolyA || true
 pr=$(echo $closePolyA $denomPr | awk '{{print $1/$2}}')
 let denomSn=$closePolyA+$closeNonPolyA || true
 sn=$(echo $closePolyA $denomSn | awk '{{print $1/$2}}')
+snPr=$(echo $sn $pr | awk '{{print ($1+$2)/2}}')
 echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.minA}\tPr\t$pr
-{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.minA}\tSn\t$sn" | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' > {output}
+{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.minA}\tSn\t$sn
+{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.minA}\tSnPr\t$snPr" | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' > {output}
 		'''
 
 rule aggPrecisionRecallTestPolyAmapping:
@@ -87,8 +89,10 @@ rule plotPrecisionRecallTestPolyAmapping:
 echo "library(ggplot2)
 dat <- read.table('{input}', header=F, as.is=T, sep='\\t')
 colnames(dat)<-c('techname', 'correction', 'capDesign', 'minClipped','measure','value')
+palette <- c('Sn' = '#b3ccff', 'Pr' = '#ffb399', 'SnPr' = '#009933')
 ggplot(data=dat, aes(x=minClipped, y=value, group=measure, color=measure)) +
 geom_point() +
+scale_color_manual(values=palette) +
 geom_line() + facet_grid( techname + capDesign ~ correction) + ylab('Pr/Sn') + xlab('minimum required A(n) length') + ylim(0, 1)
 ggsave('{output}', width=7, height=8)
 "  > {output}.r
