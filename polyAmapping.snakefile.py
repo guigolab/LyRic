@@ -116,7 +116,7 @@ samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={param
 
 rule removePolyAERCCs:
 	input: "mappings/" + "polyAmapping/{techname}_{capDesign}_{barcodes}.polyAsites.bed.gz"
-	output: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed"
 	shell:
 		'''
 zcat {input} | fgrep -v ERCC > {output}

@@ -1,13 +1,30 @@
 rule integratePolyaAndSjInfo:
 	input:
-		polyA = "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed",
-		SJs = "mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv"
-	output: "mappings/" + "integratePolyaAndSjInfo/{techname}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv"
+		polyA = "mappings/removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		SJs = "mappings/getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv"
+	output:
+		strandInfo="mappings/integratePolyaAndSjInfo/{techname}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv",
+		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.wrongPolyAs.list"
 	shell:
 		'''
-cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort > $TMPDIR/reads.polyA.strandInfo.tsv
 cat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort> $TMPDIR/reads.SJ.strandInfo.tsv
-cat $TMPDIR/reads.polyA.strandInfo.tsv $TMPDIR/reads.SJ.strandInfo.tsv | awk '$2!="."'| sort|uniq > {output}
+cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort > $TMPDIR/reads.polyA.strandInfo.tsv
+join -a1 -a2 -e '.' -o '0,1.2,2.2' $TMPDIR/reads.SJ.strandInfo.tsv  $TMPDIR/reads.polyA.strandInfo.tsv > $TMPDIR/reads.SJ.polyA.strandInfo.tsv
+
+#make list of reads with wrongly called polyA sites (i.e. their strand is different from the one inferred using SJs):
+cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[2] ne "." && $F[1] ne "." && $F[1] ne $F[2]){{print join ("\\t", $F[0])}}' |sort|uniq > {output.wrongPolyAs}
+#get strand info, prioritizing SJ inference
+cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print "$F[0]\\t$F[1]"}} else{{print "$F[0]\t$F[2]"}}' |sort|uniq > {output.strandInfo}
+		'''
+
+rule removeWrongPolyAs:
+	input:
+		polyA="mappings/removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.wrongPolyAs.list"
+	output: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
+	shell:
+		'''
+cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
 		'''
 
 rule strandGffs:
