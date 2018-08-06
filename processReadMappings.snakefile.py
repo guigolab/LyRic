@@ -168,6 +168,9 @@ rule nonAnchoredMergeReads:
 	threads:8
 	shell:
 		'''
+runid=$(uuidgen)
+export TMPDIR=$PWD/tmpdir/$runid/
+mkdir -p $TMPDIR
 zcat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 		'''
 
