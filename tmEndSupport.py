@@ -40,3 +40,58 @@ cat {input.polyAsites} |sortbed > $TMPDIR/polyAsites.bed
 cat {input.threePends} | sortbed | bedtools slop -s -l 5 -r 5 -i stdin -g {params.genome} | bedtools intersect -u -s -a stdin -b $TMPDIR/polyAsites.bed | cut -f4 | fgrep -w -f - {input.tms} > {output}
 		'''
 
+rule getCagePolyASupport:
+	input:
+		polyA="mappings/nonAnchoredMergeReads/pooled/polyASupported/{techname}_{capDesign}_pooled.tmerge.polyASupported.bed",
+		cage="mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}_{capDesign}_pooled.tmerge.cageSupported.bed",
+		tms="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed"
+	output:
+		stats=temp(config["STATSDATADIR"] + "{techname}_{capDesign}.tmerge.cagePolyASupport.stats.tsv"),
+		FLbed="mappings/nonAnchoredMergeReads/pooled/cage+polyASupported/{techname}_{capDesign}_pooled.tmerge.cage+polyASupported.bed"
+	shell:
+		'''
+cat {input.polyA} | cut -f4 | sort|uniq > $TMPDIR/polyA.list
+cat {input.cage} | cut -f4 | sort|uniq > $TMPDIR/cage.list
+cat {input.tms} | cut -f4 | sort|uniq > $TMPDIR/all.list
+cat $TMPDIR/polyA.list $TMPDIR/cage.list |sort|uniq > $TMPDIR/cageOrPolyA.list
+comm -1 -2 $TMPDIR/polyA.list $TMPDIR/cage.list |sort|uniq > $TMPDIR/cage+PolyA.list
+noCageNoPolyA=$(comm -2 -3 $TMPDIR/all.list $TMPDIR/cageOrPolyA.list |wc -l)
+cageOnly=$(comm -2 -3 $TMPDIR/cage.list $TMPDIR/polyA.list |wc -l)
+polyAOnly=$(comm -2 -3 $TMPDIR/polyA.list $TMPDIR/cage.list |wc -l)
+cageAndPolyA=$(cat $TMPDIR/cage+PolyA.list | wc -l)
+fgrep -w -f $TMPDIR/cage+PolyA.list {input.tms} > {output.FLbed}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\tcageOnly\t$cageOnly
+{wildcards.techname}\t{wildcards.capDesign}\tcageAndPolyA\t$cageAndPolyA
+{wildcards.techname}\t{wildcards.capDesign}\tpolyAOnly\t$polyAOnly
+{wildcards.techname}\t{wildcards.capDesign}\tnoCageNoPolyA\t$noCageNoPolyA" > {output.stats}
+		'''
+
+rule aggCagePolyAStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.tmerge.cagePolyASupport.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
+	output: config["STATSDATADIR"] + "all.tmerge.cagePolyASupport.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' | sort >> {output}
+		'''
+
+rule plotCagePolyAStats:
+	input: config["STATSDATADIR"] + "all.tmerge.cagePolyASupport.stats.tsv"
+	output: config["PLOTSDIR"] + "all.tmerge.cagePolyASupport.stats.{ext}"
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cageAndPolyA', 'polyAOnly', 'noCageNoPolyA')))
+ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+geom_bar(stat='identity') + ylab('# merged CLS reads') +
+scale_y_continuous(labels=comma)+ scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+ facet_grid( seqTech ~ capDesign)+ xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
+geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1), size=2)+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=6, height=3)
+" > {output}.r
+cat {output}.r | R --slave
+
+		'''
