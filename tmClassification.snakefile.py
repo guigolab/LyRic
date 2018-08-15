@@ -1,8 +1,8 @@
 rule compareTargetsToTms:
 	input:
-		tms= "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff",
+		tms= "mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gff",
 		targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
-	output: "mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_pooled.tmerge.gfftsv.gz"
+	output: "mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gfftsv.gz"
 	shell:
 		'''
 bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {output}
@@ -10,25 +10,25 @@ bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {outp
 		'''
 
 rule getTargetCoverageStats:
-	input: "mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_pooled.tmerge.gfftsv.gz"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_pooled.targetCoverage.stats.tsv"
+	input: "mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gfftsv.gz"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_pooled.targetCoverage.stats.tsv"
 	shell:
 		'''
 for type in `zcat {input} | extractGffAttributeValue.pl gene_type | sort|uniq`; do
 all=$(zcat {input} | fgrep "gene_type \\"$type\\";" | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
 detected=$(zcat {input} | fgrep "gene_type \\"$type\\";" | awk '$NF>0' | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
 let undetected=$all-$detected || true
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t$type\t$all\t$detected" | awk '{{print $0"\t"$5/$4}}'
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t$type\t$all\t$detected" | awk '{{print $0"\t"$5/$4}}'
 done > {output}
 		'''
 
 rule aggTargetCoverageStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_pooled.targetCoverage.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_pooled.targetCoverage.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all_pooled.targetCoverage.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {output}
-cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/'| sort >> {output}
+cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'| sort >> {output}
 		'''
 
 rule plotTargetCoverageStats:
@@ -59,8 +59,8 @@ cat {output}.r | R --slave
 rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
-		tm="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/gffcompare/{techname}_{capDesign}_pooled.tmerge.vs.gencode.simple.tsv"
+		tm="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/gffcompare/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.vs.gencode.simple.tsv"
 	shell:
 		'''
 pref=$(basename {output} .simple.tsv)
@@ -73,18 +73,18 @@ cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
 		'''
 
 rule getGffCompareStats:
-	input: "mappings/" + "nonAnchoredMergeReads/pooled/gffcompare/{techname}_{capDesign}_pooled.tmerge.vs.gencode.simple.tsv"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_pooled.tmerge.vs.gencode.stats.tsv"
+	input: "mappings/" + "nonAnchoredMergeReads/pooled/gffcompare/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.vs.gencode.simple.tsv"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.vs.gencode.stats.tsv"
 	shell:
 		'''
-cat {input} |cut -f4 | sort|uniq -c | awk -v s={wildcards.techname} -v c={wildcards.capDesign} '{{print s"\t"c"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/'>> {output}
+cat {input} |cut -f4 | sort|uniq -c | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} '{{print s"\t"c"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'>> {output}
 		'''
 
 
 #echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
 
 rule aggGffCompareStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_pooled.tmerge.vs.gencode.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.vs.gencode.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.pooled.tmerge.vs.gencode.stats.tsv"
 	shell:
 		'''

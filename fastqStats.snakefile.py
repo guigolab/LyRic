@@ -1,6 +1,6 @@
 rule checkNoDuplicateReadIds:
-	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else  FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: FQPATH + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQPATH + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
+	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	output: FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
 	shell:
 		'''
 zcat {input} | fastq2tsv.pl | cut -f1 | sort| uniq -dc > {output}
@@ -10,8 +10,8 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 
 
 rule getFastqReadCounts:
-	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv"
+	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv"
 	shell:
 		'''
 let total=$(zcat {input} | wc -l)/4 || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
@@ -19,28 +19,27 @@ echo -e "$(basename {input})\t$total" > {output}
 		'''
 
 rule aggFastqReadCounts:
-	input: lambda wildcards: expand (config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand (config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-#	input: lambda wildcards: expand("{techname}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS)
-	output: config["STATSDATADIR"] + "{techname}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}.{barcodes}.fastq.readCounts.tsv"
+	input: lambda wildcards: expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}.{barcodes}.fastq.readCounts.tsv"
 	shell: "cat {input} | sort > {output}"
 
 #get read lengths for all FASTQ files:
 rule getReadLength:
-	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv"
+	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv"
 	shell: "zcat {input} | fastq2tsv.pl | awk -v s={wildcards.sizeFrac} '{{print s\"\\t\"length($2)}}' > {output}"
 
 #aggregate read length data over all fractions of a given capDesign:
 rule aggReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
 	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_all.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}_all.readlength.tsv"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_all.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.{barcodes}_all.readlength.tsv"
 	shell: "cat {input} > {output}"
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + "{techname}_{capDesign}_all.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}_{capDesign}.{barcodes}_all.readlength.tsv"
-	output: config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}" if config["DEMULTIPLEX"] else config["PLOTSDIR"] + "{techname}_{capDesign}.{barcodes}_all.readlength.{ext}"
+	input: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_all.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.{barcodes}_all.readlength.tsv"
+	output: config["PLOTSDIR"] + "{techname}Corr{corrLevel}_{capDesign}_all.readlength.{ext}" if config["DEMULTIPLEX"] else config["PLOTSDIR"] + "{techname}Corr{corrLevel}_{capDesign}.{barcodes}_all.readlength.{ext}"
 	shell:
 		'''
 echo "library(ggplot2)

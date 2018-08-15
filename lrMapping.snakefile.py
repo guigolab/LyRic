@@ -6,14 +6,14 @@ rule readMapping:
 #		 barcodesU = lambda wildcards: {wildcards.capDesign} + "_.+"
 	input:
 #		reads = returnCapDesignBarcodesFastqs,
-#		reads = DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
-		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+#		reads = DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
+		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 #	params:
 #		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
 	threads: 12
 	output:
-		"mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+		"mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	shell:
 		'''
 echoerr "Mapping"
@@ -27,9 +27,9 @@ rm {output}.tmp
 
 rule getMappingStats:
 	input:
-		bams = "mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		fastqs = DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv"
+		bams = "mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		fastqs = DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
 totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
@@ -37,16 +37,16 @@ mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort|uniq|wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$5/$4}}' > {output}
 		'''
 rule aggMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv",filtered_product, techname=wildcards.techname, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "{techname}.mapping.perSample.perFraction.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv",filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
 cat {input} | sort > {output}
 		'''
 
 rule plotMappingStats:
-	input: config["STATSDATADIR"] + "{techname}.mapping.perSample.perFraction.stats.tsv"
-	output: config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}"
+	input: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.tsv"
+	output: config["PLOTSDIR"] + "{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.{ext}"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -72,8 +72,8 @@ cat {output}.r | R --slave
 
 
 rule mergeSizeFracBams:
-	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-	output: "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam"
+	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
 	shell:
 		'''
 samtools merge {output} {input}
@@ -81,8 +81,8 @@ samtools index {output}
 		'''
 
 rule checkOnlyOneHit:
-	input: "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam"
-	output: "mappings/" + "qc/{techname}_{capDesign}_{barcodes}.merged.bam.dupl.txt"
+	input: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
+	output: "mappings/" + "qc/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam.dupl.txt"
 	shell:
 		'''
 samtools view {input} | cut -f1 | sort| uniq -dc > {output}
@@ -92,8 +92,8 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 
 
 rule readBamToBed:
-	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
-	output: "mappings/" + "readBamToBed/{techname}_{capDesign}_{barcodes}.merged.bed"
+	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
+	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bed"
 	shell:
 		'''
 bedtools bamtobed -i {input} -bed12 > {output}
@@ -101,8 +101,8 @@ bedtools bamtobed -i {input} -bed12 > {output}
 		'''
 
 rule readBedToGff:
-	input: lambda wildcards: expand("mappings/" + "readBamToBed/{techname}_{capDesign}_{barcodes}.merged.bed", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
-	output: "mappings/" + "readBedToGff/{techname}_{capDesign}_{barcodes}.merged.gff"
+	input: lambda wildcards: expand("mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bed", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
+	output: "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.gff"
 	shell:
 		'''
 cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {output}
@@ -110,8 +110,8 @@ cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {outp
 
 
 rule mergeCapDesignBams:
-	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: "mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam"
+	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
+	output: "mappings/" + "mergeCapDesignBams/{techname}Corr{corrLevel}_{capDesign}.merged2.bam"
 	shell:
 		'''
 samtools merge {output} {input}
@@ -122,12 +122,12 @@ samtools index {output}
 		'''
 
 rule qualimap:
-	input: "mappings/" + "mergeCapDesignBams/{techname}_{capDesign}.merged2.bam"
-	output: "mappings/qualimap_reports/" + "{techname}_{capDesign}.merged2/genome_results.txt"
+	input: "mappings/" + "mergeCapDesignBams/{techname}Corr{corrLevel}_{capDesign}.merged2.bam"
+	output: "mappings/qualimap_reports/" + "{techname}Corr{corrLevel}_{capDesign}.merged2/genome_results.txt"
 	shell:
 		'''
 unset DISPLAY
-~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}_{wildcards.capDesign}.merged2
+~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2
 touch {output}
 		'''
 

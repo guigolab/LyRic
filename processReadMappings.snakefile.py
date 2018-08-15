@@ -1,10 +1,10 @@
 rule integratePolyaAndSjInfo:
 	input:
-		polyA = "mappings/removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		SJs = "mappings/getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv"
+		polyA = "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		SJs = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.transcripts.tsv"
 	output:
-		strandInfo="mappings/integratePolyaAndSjInfo/{techname}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv",
-		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.wrongPolyAs.list"
+		strandInfo="mappings/integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv",
+		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.wrongPolyAs.list"
 	shell:
 		'''
 cat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort> $TMPDIR/reads.SJ.strandInfo.tsv
@@ -19,9 +19,9 @@ cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print
 
 rule removeWrongPolyAs:
 	input:
-		polyA="mappings/removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.wrongPolyAs.list"
-	output: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
+		polyA="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.wrongPolyAs.list"
+	output: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
 	shell:
 		'''
 cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
@@ -29,9 +29,9 @@ cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
 
 rule strandGffs:
 	input:
-		gff = "mappings/" + "readBedToGff/{techname}_{capDesign}_{barcodes}.merged.gff",
-		strandInfo = "mappings/" + "integratePolyaAndSjInfo/{techname}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv"
-	output: "mappings/" + "strandGffs/{techname}_{capDesign}_{barcodes}.stranded.gff"
+		gff = "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.gff",
+		strandInfo = "mappings/" + "integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv"
+	output: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff"
 	shell:
 		'''
 get_right_transcript_strand.pl {input.gff} {input.strandInfo} | fgrep -v ERCC- | sortgff> {output}
@@ -40,10 +40,10 @@ get_right_transcript_strand.pl {input.gff} {input.strandInfo} | fgrep -v ERCC- |
 
 rule highConfidenceReads:
 	input:
-		transcriptStrandInfo = "mappings/" + "getIntronMotif/{techname}_{capDesign}_{barcodes}.transcripts.tsv",
-		strandedReads = "mappings/" + "strandGffs/{techname}_{capDesign}_{barcodes}.stranded.gff"
+		transcriptStrandInfo = "mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.transcripts.tsv",
+		strandedReads = "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff"
 	output:
-		"mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
+		"mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
 	shell:
 		'''
 #select read IDs with canonical GT|GC/AG and high-confidence SJs
@@ -65,8 +65,8 @@ cat $TMPDIR/gtag.gff $TMPDIR/monoPolyA.gff | sortgff |gzip> {output}
 
 
 rule getHCGMintrons:
-	input: "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
-	output: "mappings/" + "highConfidenceReads/introns/{techname}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv"
+	input: "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
+	output: "mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv"
 	shell:
 		'''
 zcat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk | perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $end=$F[4]+1; print $F[11]."\t".$F[0]."_".$start."_".$end."_".$F[6]' | sort -k2,2 > {output}
@@ -76,44 +76,44 @@ zcat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/jul
 rule getHiSeqSupportedHCGMs:
 	input:
 		hiSeqIntrons="mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] else config["SUPPORT_INTRONS_DB"],
-		lrIntrons="mappings/" + "highConfidenceReads/introns/{techname}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv",
-		#mergedGTF="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
-		hcgmGTF= "mappings/" + "highConfidenceReads/{techname}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
-	output:"mappings/" + "highConfidenceReads/HiSS/{techname}_{capDesign}_{barcodes}.HiSS.gff.gz"
+		lrIntrons="mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv",
+		#mergedGTF="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}.tmerge.gff"
+		hcgmGTF= "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
+	output:"mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.gff.gz"
 	shell:
 		'''
-join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.introns.noHiSeq.tsv
+join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.introns.noHiSeq.tsv
 zcat {input.hcgmGTF} > $TMPDIR/$(basename {input.hcgmGTF} .gz)
-cut -f1 $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.introns.noHiSeq.tsv | sort|uniq | fgrep -wv -f - $TMPDIR/$(basename {input.hcgmGTF} .gz) |sortgff |gzip > {output}
+cut -f1 $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.introns.noHiSeq.tsv | sort|uniq | fgrep -wv -f - $TMPDIR/$(basename {input.hcgmGTF} .gz) |sortgff |gzip > {output}
 
 		'''
 
 rule getHiSSStats:
 	input:
-		reads = "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam",
-		HiSSGTF="mappings/" + "highConfidenceReads/HiSS/{techname}_{capDesign}_{barcodes}.HiSS.gff.gz"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.HiSS.stats.tsv"
+		reads = "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam",
+		HiSSGTF="mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.gff.gz"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.stats.tsv"
 	shell:
 		'''
-bedtools bamtobed -i {input.reads} -bed12 > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed
-zcat {input.HiSSGTF} | gff2bed_full.pl - > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.HiSS.bed
+bedtools bamtobed -i {input.reads} -bed12 > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed
+zcat {input.HiSSGTF} | gff2bed_full.pl - > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.HiSS.bed
 
-mappedReadsMono=$(cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed | awk '$10<=1'|cut -f4 |sort|uniq|wc -l)
-mappedReadsSpliced=$(cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed | awk '$10>1'|cut -f4 |sort|uniq|wc -l)
+mappedReadsMono=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed | awk '$10<=1'|cut -f4 |sort|uniq|wc -l)
+mappedReadsSpliced=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.merged.bed | awk '$10>1'|cut -f4 |sort|uniq|wc -l)
 
-HiSSMono=$(cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.HiSS.bed| awk '$10<=1'|cut -f4  | sort|uniq|wc -l)
-HiSSSpliced=$(cat $TMPDIR/{wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.HiSS.bed| awk '$10>1'|cut -f4  | sort|uniq|wc -l)
+HiSSMono=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.HiSS.bed| awk '$10<=1'|cut -f4  | sort|uniq|wc -l)
+HiSSSpliced=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.HiSS.bed| awk '$10>1'|cut -f4  | sort|uniq|wc -l)
 
 #let totalMapped=$mappedReadsMono+$mappedReadsSpliced || true
 let nonHiSSMono=$mappedReadsMono-$HiSSMono || true
 let nonHiSSSPliced=$mappedReadsSpliced-$HiSSSpliced || true
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.barcodes}\t$HiSSMono\t$HiSSSpliced\t$nonHiSSMono\t$nonHiSSSPliced" > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.barcodes}\t$HiSSMono\t$HiSSSpliced\t$nonHiSSMono\t$nonHiSSSPliced" > {output}
 
 		'''
 
 rule aggHiSSCapDesignStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.HiSS.stats.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}.HiSS.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.HiSS.stats.tsv"
 	shell:
 		'''
 totalHiSSMono=$(cat {input} | cut -f4 | sum.sh)
@@ -122,20 +122,20 @@ totalNonHiSSMono=$(cat {input} | cut -f6 | sum.sh)
 totalNonHiSSSpliced=$(cat {input} | cut -f7 | sum.sh)
 
 echo -e "\
-{wildcards.techname}\t{wildcards.capDesign}\tHCGM-mono\t$totalHiSSMono
-{wildcards.techname}\t{wildcards.capDesign}\tHCGM-spliced\t$totalHiSSSpliced
-{wildcards.techname}\t{wildcards.capDesign}\tnonHCGM-mono\t$totalNonHiSSMono
-{wildcards.techname}\t{wildcards.capDesign}\tnonHCGM-spliced\t$totalNonHiSSSpliced" > {output}
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tHCGM-mono\t$totalHiSSMono
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tHCGM-spliced\t$totalHiSSSpliced
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tnonHCGM-mono\t$totalNonHiSSMono
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tnonHCGM-spliced\t$totalNonHiSSSpliced" > {output}
 		'''
 
 
 rule aggHiSSStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.HiSS.stats.tsv",techname=TECHNAMES, capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.HiSS.stats.tsv",techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.pooled.merged.HiSS.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
-cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' | sort >> {output}
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
 
 		'''
 
@@ -163,23 +163,23 @@ cat {output}.r | R --slave
 
 
 rule nonAnchoredMergeReads:
-	input: "mappings/" + "highConfidenceReads/HiSS/{techname}_{capDesign}_{barcodes}.HiSS.gff.gz"
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff"
+	input: "mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.gff.gz"
+	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.tmerge.gff"
 	threads:8
 	shell:
 		'''
 runid=$(uuidgen)
 export TMPDIR=$PWD/tmpdir/$runid/
 mkdir -p $TMPDIR
-zcat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+zcat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 		'''
 
 
 rule checkNonAnchoredMerging:
 	input:
-		before="mappings/" + "highConfidenceReads/HiSS/{techname}_{capDesign}_{barcodes}.HiSS.gff.gz",
-		after="mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/qc/{techname}_{capDesign}_{barcodes}.tmerge.qc.txt"
+		before="mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.gff.gz",
+		after="mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/qc/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.tmerge.qc.txt"
 	shell:
 		'''
 #nt coverage should be equal before/after
@@ -214,25 +214,17 @@ echo XXdoneXX  >> {output}
 		'''
 
 rule poolNonAnchoredMergeReads:
-	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff"
+	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gff"
 	threads: 8
 	shell:
 		'''
-cat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_pooled.NAM_ - |sortgff > {output}
+cat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_pooled.NAM_ - |sortgff > {output}
 		'''
 
-# rule poolNonAnchoredMergeReadsMergeByChr:
-# 	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/chr/pooled/{techname}_{capDesign}.tmerge.{chrom}.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, chrom=GENOMECHROMS)
-# 	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}.tmerge.gff"
-# 	shell:
-# 		'''
-# cat {input} |sortgff > {output}
-# 		'''
-
 rule poolNonAnchoredMergeReadsToBed:
-	input: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed"
+	input: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.bed"
 	shell:
 		'''
 cat {input} | gff2bed_full.pl - > {output}
@@ -241,9 +233,9 @@ cat {input} | gff2bed_full.pl - > {output}
 
 rule checkPooledNonAnchoredMerging:
 	input:
-		before=lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES),
-		after="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}_{capDesign}.tmerge.qc.txt"
+		before=lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES),
+		after="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}Corr{corrLevel}_{capDesign}.tmerge.qc.txt"
 	shell:
 		'''
 #nt coverage should be equal before/after
@@ -280,24 +272,24 @@ echo "XXdoneXX" >> {output}
 
 rule getPooledMergingStats:
 	input:
-		hcgms = lambda wildcards: expand("mappings/" + "highConfidenceReads/HiSS/{techname}_{capDesign}_{barcodes}.HiSS.gff.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES),
-		pooledMerged = "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.gff"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}.pooled.merged.stats.tsv"
+		hcgms = lambda wildcards: expand("mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.gff.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES),
+		pooledMerged = "mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gff"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.pooled.merged.stats.tsv"
 	shell:
 		'''
 hcgms=$(zcat {input.hcgms} | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
 merged=$(cat {input.pooledMerged} | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t$hcgms\t$merged" | awk '{{print $0"\t"$4/$3}}' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t$hcgms\t$merged" | awk '{{print $0"\t"$4/$3}}' > {output}
 
 		'''
 
 rule aggPooledMergingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.pooled.merged.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.pooled.merged.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.pooled.merged.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\tHCGMreads\\t"$3"\\n"$1"\\t"$2"\\tmergedTMs\\t"$4}}' | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' | sort >> {output}
+cat {input} | awk '{{print $1"\\t"$2"\\tHCGMreads\\t"$3"\\n"$1"\\t"$2"\\tmergedTMs\\t"$4}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
 
 		'''
 rule plotPooledMergingStats:
@@ -320,43 +312,3 @@ cat {output}.r | R --slave
 
 
 
-
-# rule getHiSSSplicedLengthStats:
-# 	input: "mappings/" + "nonAnchoredMergeReads/pooled/HiSS/{techname}_{capDesign}.tmerge.HiSS.gff"
-# 	output: config["STATSDATADIR"] + "{techname}_{capDesign}.pooled.merged.HiSS.splicedLength.stats.tsv"
-# 	shell:
-# 		'''
-# cat {input} | gff2bed_full.pl -| perl -slane '@blocksizes=split(",",$F[10]); $splicedLength=0; foreach $exonLength (@blocksizes){{$splicedLength+=$exonLength}}; print "$F[3]\t$splicedLength"' | awk -v t={wildcards.techname} -v c={wildcards.capDesign} '{{print t\"\\t\"c"\\t\"$0}}'> {output}
-# 		'''
-
-# rule aggHiSSSplicedLengthStats:
-# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.pooled.merged.HiSS.splicedLength.stats.tsv",techname=TECHNAMES, capDesign=CAPDESIGNS)
-# 	output: config["STATSDATADIR"] + "all.pooled.merged.HiSS.splicedLength.stats.tsv"
-# 	shell:
-# 		'''
-# cat {input}  | sed 's/Corr/\t/' > {output}
-# 		'''
-
-# rule plotHiSSSplicedLengthStats:
-# 	input: config["STATSDATADIR"] + "all.pooled.merged.HiSS.splicedLength.stats.tsv"
-# 	output: config["PLOTSDIR"] + "all.pooled.merged.HiSS.splicedLength.stats.{ext}"
-# 	shell:
-# 		'''
-# echo "library(ggplot2)
-# library(plyr)
-# library(scales)
-# dat <- read.table('{input}', header=F, as.is=T, sep='\\t')
-# colnames(dat)<-c('seqTech','correctionLevel','capDesign', 'TMid', 'length')
-# ggplot(dat, aes(x=factor(correctionLevel), y=length)) +
-# geom_boxplot() +
-# facet_grid( seqTech ~ capDesign)+
-# coord_cartesian(ylim=c(500, 3000)) +
-# xlab('Error correction') +
-# ylab('Spliced length (nts)') +
-# scale_y_continuous(labels=comma)+
-# {GGPLOT_PUB_QUALITY}
-# ggsave('{output}', width=10, height=3)
-# " > {output}.r
-# cat {output}.r | R --slave
-
-# 		'''

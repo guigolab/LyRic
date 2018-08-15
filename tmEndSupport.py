@@ -1,6 +1,6 @@
 rule extractPooledTmsFivepEnds:
-	input: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed"
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/5pEnds/{techname}_{capDesign}_pooled.tmerge.5pEnds.bed"
+	input: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.bed"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/5pEnds/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.5pEnds.bed"
 	shell:
 		'''
 cat {input} |extractTranscriptEndsFromBed12.pl 5 |sortbed> {output}
@@ -8,11 +8,11 @@ cat {input} |extractTranscriptEndsFromBed12.pl 5 |sortbed> {output}
 
 rule cageSupportedfivepEnds:
 	input:
-		fivePends="mappings/" + "nonAnchoredMergeReads/pooled/5pEnds/{techname}_{capDesign}_pooled.tmerge.5pEnds.bed",
-		tms="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed",
+		fivePends="mappings/" + "nonAnchoredMergeReads/pooled/5pEnds/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.5pEnds.bed",
+		tms="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.bed",
 		cagePeaks=lambda wildcards: CAPDESIGNTOCAGEPEAKS[wildcards.capDesign]
 	params: genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}_{capDesign}_pooled.tmerge.cageSupported.bed"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.cageSupported.bed"
 	shell:
 		'''
 cat {input.fivePends} | sortbed | bedtools slop -s -l 50 -r 50 -i stdin -g {params.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4 | fgrep -w -f - {input.tms} > {output}
@@ -20,8 +20,8 @@ cat {input.fivePends} | sortbed | bedtools slop -s -l 50 -r 50 -i stdin -g {para
 
 
 rule extractPooledTmsThreepEnds:
-	input: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed"
-	output: "mappings/" + "nonAnchoredMergeReads/pooled/3pEnds/{techname}_{capDesign}_pooled.tmerge.3pEnds.bed"
+	input: "mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.bed"
+	output: "mappings/" + "nonAnchoredMergeReads/pooled/3pEnds/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.3pEnds.bed"
 	shell:
 		'''
 cat {input} |extractTranscriptEndsFromBed12.pl 3 |sortbed> {output}
@@ -29,11 +29,11 @@ cat {input} |extractTranscriptEndsFromBed12.pl 3 |sortbed> {output}
 
 rule polyASupportedthreepEnds:
 	input:
-		threePends="mappings/" + "nonAnchoredMergeReads/pooled/3pEnds/{techname}_{capDesign}_pooled.tmerge.3pEnds.bed",
-		tms="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed",
-		polyAsites=lambda wildcards: expand("mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
+		threePends="mappings/" + "nonAnchoredMergeReads/pooled/3pEnds/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.3pEnds.bed",
+		tms="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.bed",
+		polyAsites=lambda wildcards: expand("mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
 	params: genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: "mappings/nonAnchoredMergeReads/pooled/polyASupported/{techname}_{capDesign}_pooled.tmerge.polyASupported.bed"
+	output: "mappings/nonAnchoredMergeReads/pooled/polyASupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.polyASupported.bed"
 	shell:
 		'''
 cat {input.polyAsites} |sortbed > $TMPDIR/polyAsites.bed
@@ -42,12 +42,12 @@ cat {input.threePends} | sortbed | bedtools slop -s -l 5 -r 5 -i stdin -g {param
 
 rule getCagePolyASupport:
 	input:
-		polyA="mappings/nonAnchoredMergeReads/pooled/polyASupported/{techname}_{capDesign}_pooled.tmerge.polyASupported.bed",
-		cage="mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}_{capDesign}_pooled.tmerge.cageSupported.bed",
-		tms="mappings/" + "nonAnchoredMergeReads/pooled/{techname}_{capDesign}_pooled.tmerge.bed"
+		polyA="mappings/nonAnchoredMergeReads/pooled/polyASupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.polyASupported.bed",
+		cage="mappings/" + "nonAnchoredMergeReads/pooled/cageSupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.cageSupported.bed",
+		tms="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.bed"
 	output:
-		stats=temp(config["STATSDATADIR"] + "{techname}_{capDesign}.tmerge.cagePolyASupport.stats.tsv"),
-		FLbed="mappings/nonAnchoredMergeReads/pooled/cage+polyASupported/{techname}_{capDesign}_pooled.tmerge.cage+polyASupported.bed"
+		stats=temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.tmerge.cagePolyASupport.stats.tsv"),
+		FLbed="mappings/nonAnchoredMergeReads/pooled/cage+polyASupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.cage+polyASupported.bed"
 	shell:
 		'''
 cat {input.polyA} | cut -f4 | sort|uniq > $TMPDIR/polyA.list
@@ -60,19 +60,19 @@ cageOnly=$(comm -2 -3 $TMPDIR/cage.list $TMPDIR/polyA.list |wc -l)
 polyAOnly=$(comm -2 -3 $TMPDIR/polyA.list $TMPDIR/cage.list |wc -l)
 cageAndPolyA=$(cat $TMPDIR/cage+PolyA.list | wc -l)
 fgrep -w -f $TMPDIR/cage+PolyA.list {input.tms} > {output.FLbed}
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\tcageOnly\t$cageOnly
-{wildcards.techname}\t{wildcards.capDesign}\tcageAndPolyA\t$cageAndPolyA
-{wildcards.techname}\t{wildcards.capDesign}\tpolyAOnly\t$polyAOnly
-{wildcards.techname}\t{wildcards.capDesign}\tnoCageNoPolyA\t$noCageNoPolyA" > {output.stats}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tcageOnly\t$cageOnly
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tcageAndPolyA\t$cageAndPolyA
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tpolyAOnly\t$polyAOnly
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tnoCageNoPolyA\t$noCageNoPolyA" > {output.stats}
 		'''
 
 rule aggCagePolyAStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.tmerge.cagePolyASupport.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.tmerge.cagePolyASupport.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.tmerge.cagePolyASupport.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
-cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' | sort >> {output}
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
 		'''
 
 rule plotCagePolyAStats:

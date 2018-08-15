@@ -1,11 +1,11 @@
 
 rule getPolyAsitesTestPolyAmapping:
 	input:
-		reads="mappings/mergeCapDesignBams/{techname}_{capDesign}.merged2.bam",
+		reads="mappings/mergeCapDesignBams/{techname}Corr{corrLevel}_{capDesign}.merged2.bam",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	params:
 		minAcontent=0.8
-	output: "mappings/polyAmapping/calibration/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.bed"
+	output: "mappings/polyAmapping/calibration/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed"
 	shell:
 		'''
 samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sortbed | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sortbed > {output}
@@ -14,32 +14,32 @@ samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPo
 
 rule getPolyANonPolyAsitesTestPolyAmapping:
 	input:
-		reads=lambda wildcards: expand("mappings/" + "strandGffs/{techname}_{capDesign}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES),
-		inPolyA="mappings/polyAmapping/calibration/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.bed"
+		reads=lambda wildcards: expand("mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES),
+		inPolyA="mappings/polyAmapping/calibration/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed"
 	params:
 		minAcontent=0.8
 	output:
-		outPolyA="mappings/polyAmapping/calibration/3pends/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed",
-		outNonPolyA="mappings/polyAmapping/calibration/3pends/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed"
+		outPolyA="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed",
+		outNonPolyA="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed"
 	shell:
 		'''
-cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort | uniq > $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list
+cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort | uniq > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list
 
 #non polyA:
-cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -v -w -f $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outNonPolyA}
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -v -w -f $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outNonPolyA}
 
 #polyA:
-cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f $TMPDIR/{wildcards.techname}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outPolyA}
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outPolyA}
 
 
 		'''
 
 rule compareToPASTestPolyAmapping:
 	input:
-		tpend="mappings/polyAmapping/calibration/3pends/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
+		tpend="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
 		PAS=lambda wildcards: CAPDESIGNTOPAS[wildcards.capDesign]
 	params: genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: "mappings/polyAmapping/calibration/3pends/vsPAS/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv"
+	output: "mappings/polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv"
 
 	shell:
 		'''
@@ -49,12 +49,12 @@ cat {input.tpend} | sortbed | bedtools slop -s -l 50 -r -10 -i stdin -g {params.
 
 rule getPrecisionRecallTestPolyAmapping:
 	input:
-		pAvsPAS="mappings/" + "polyAmapping/calibration/3pends/vsPAS/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bedtsv",
-		nonpAvsPAS="mappings/" + "polyAmapping/calibration/3pends/vsPAS/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bedtsv",
-		pA="mappings/" + "polyAmapping/calibration/3pends/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed",
-		nonpA="mappings/" + "polyAmapping/calibration/3pends/" + "{techname}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed"
+		pAvsPAS="mappings/" + "polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bedtsv",
+		nonpAvsPAS="mappings/" + "polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bedtsv",
+		pA="mappings/" + "polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed",
+		nonpA="mappings/" + "polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed"
 
-	output:temp(config["STATSDATADIR"] + "{techname}_{capDesign}_{minA}.polyA.vs.PAS.precisionRecall.stats.tsv")
+	output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{minA}.polyA.vs.PAS.precisionRecall.stats.tsv")
 	shell:
 		'''
 closePolyA=$(cat {input.pAvsPAS} | cut -f4 | sort|uniq | wc -l)
@@ -68,13 +68,13 @@ pr=$(echo $closePolyA $denomPr | awk '{{print $1/$2}}')
 let denomSn=$closePolyA+$closeNonPolyA || true
 sn=$(echo $closePolyA $denomSn | awk '{{print $1/$2}}')
 snPr=$(echo $sn $pr | awk '{{print ($1+$2)/2}}')
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.minA}\tPr\t$pr
-{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.minA}\tSn\t$sn
-{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.minA}\tSnPr\t$snPr" | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.minA}\tPr\t$pr
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.minA}\tSn\t$sn
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.minA}\tSnPr\t$snPr" | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
 		'''
 
 rule aggPrecisionRecallTestPolyAmapping:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{minA}.polyA.vs.PAS.precisionRecall.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS, minA=minPolyAlength)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{minA}.polyA.vs.PAS.precisionRecall.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, minA=minPolyAlength)
 	output: config["STATSDATADIR"] + "all.polyA.vs.PAS.precisionRecall.stats.tsv"
 	shell:
 		'''
@@ -104,27 +104,27 @@ cat {output}.r| R --slave
 
 rule polyAmapping:
 	input:
-		reads = "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam",
+		reads = "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	params:
 		minAcontent=0.8
-	output: "mappings/" + "polyAmapping/{techname}_{capDesign}_{barcodes}.polyAsites.bed.gz"
+	output: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsites.bed.gz"
 	shell:
 		'''
 samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sortbed |gzip > {output}
 		'''
 
 rule removePolyAERCCs:
-	input: "mappings/" + "polyAmapping/{techname}_{capDesign}_{barcodes}.polyAsites.bed.gz"
-	output: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed"
+	input: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsites.bed.gz"
+	output: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed"
 	shell:
 		'''
 zcat {input} | fgrep -v ERCC > {output}
 		'''
 
 rule getPolyAreadsList:
-	input: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/" + "getPolyAreadsList/{techname}_{capDesign}_{barcodes}.polyAreads.list"
+	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.list"
 	shell:
 		'''
 cat {input} | cut -f4 | sort|uniq > {output}
@@ -132,34 +132,34 @@ cat {input} | cut -f4 | sort|uniq > {output}
 
 rule getPolyAreadsStats:
 	input:
-		mappedReads= "mappings/" + "mergeSizeFracBams/{techname}_{capDesign}_{barcodes}.merged.bam",
-		polyAreads = "mappings/" + "getPolyAreadsList/{techname}_{capDesign}_{barcodes}.polyAreads.list"
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.polyAreads.stats.tsv"
+		mappedReads= "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam",
+		polyAreads = "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.list"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.stats.tsv"
 	shell:
 		'''
 mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort|uniq|wc -l)
 polyA=$(cat {input.polyAreads} | wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$5/$4}}' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$5/$4}}' > {output}
 
 		'''
 
 rule aggPolyAreadsCapDesignStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "{techname}_{capDesign}.polyAreads.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.polyAreads.stats.tsv"
 	shell:
 		'''
 totalMapped=$(cat {input} | cut -f4 | sum.sh)
 totalPolyA=$(cat {input} | cut -f5 | sum.sh)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$4/$3}}' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$4/$3}}' > {output}
 		'''
 
 rule aggPolyAreadsStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}_{capDesign}.polyAreads.stats.tsv", techname=TECHNAMES, capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.polyAreads.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\tnonPolyA\\t"$3-$4"\\n"$1"\\t"$2"\\tpolyA\\t"$4}}' | sed 's/Corr0/\tNo/' | sed 's/Corr90/\tYes/' | sort -r >> {output}
+cat {input} | awk '{{print $1"\\t"$2"\\tnonPolyA\\t"$3-$4"\\n"$1"\\t"$2"\\tpolyA\\t"$4}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -r >> {output}
 		'''
 
 rule plotPolyAreadsStats:
@@ -182,17 +182,17 @@ cat {output}.r | R --slave
 
 
 rule clusterPolyAsites:
-	input: "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/" + "clusterPolyAsites/{techname}_{capDesign}_{barcodes}.polyAsites.clusters.bed"
+	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "mappings/" + "clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsites.clusters.bed"
 	shell:
 		'''
 cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sortbed > {output}
 		'''
 rule makePolyABigWigs:
 	input:
-		sites = "mappings/" + "removePolyAERCCs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed",
+		sites = "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: "mappings/" + "makePolyABigWigs/{techname}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
+	output: "mappings/" + "makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	shell:
 		'''
 bedtools genomecov -strand {wildcards.strand} -split -bg -i {input.sites} -g {input.genome} > {output}.bedgraph
