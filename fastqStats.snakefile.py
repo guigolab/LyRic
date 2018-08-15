@@ -1,6 +1,6 @@
 rule checkNoDuplicateReadIds:
-	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else  config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["FQPATH"] + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  config["FQPATH"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
+	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else  FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	output: FQPATH + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQPATH + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
 	shell:
 		'''
 zcat {input} | fastq2tsv.pl | cut -f1 | sort| uniq -dc > {output}
@@ -10,7 +10,7 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 
 
 rule getFastqReadCounts:
-	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv"
 	shell:
 		'''
@@ -26,7 +26,7 @@ rule aggFastqReadCounts:
 
 #get read lengths for all FASTQ files:
 rule getReadLength:
-	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv"
 	shell: "zcat {input} | fastq2tsv.pl | awk -v s={wildcards.sizeFrac} '{{print s\"\\t\"length($2)}}' > {output}"
 

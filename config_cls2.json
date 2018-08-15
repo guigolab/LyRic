@@ -1,5 +1,5 @@
 {
-       "FQPATH" :"fastqs/def/",
+       "FQPATH" :"fastqs/def2/",
        "GENOMESDIR": "/users/rg/jlagarde/genomes/",
        "TARGETSDIR": "targets/",
        "PLOTSDIR" : "plots/",
@@ -19,6 +19,7 @@
         "STRANDS" : ["+", "-"],
     "DEMULTIPLEX": true,
     "USE_MATCHED_ILLUMINA": true,
+    "LORDEC_CORRECT": true,
     "DEMULTIPLEX_DIR" : "demultiplexing/",
     "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))",
     "capDesignToCAGEpeaks": {

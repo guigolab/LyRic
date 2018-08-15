@@ -1,9 +1,9 @@
 import glob
 from collections import defaultdict
-import os.path
+import os
 from itertools import product
 import sys
-
+import re
 
 print ("TODO:\n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)")
 
@@ -16,6 +16,7 @@ long_Rpalette=config["LONG_RPALETTE"]
 CAPDESIGNTOCAGEPEAKS=config["capDesignToCAGEpeaks"]
 CAPDESIGNTOPAS=config["capDesignToGenomePAS"]
 DUMMY_DIR="dummy/"
+FQPATH=config["FQPATH"]
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 wildcard_constraints:
  	capDesign = "[^_/]+",
@@ -24,12 +25,41 @@ wildcard_constraints:
 # 	barcodes = "[^\.]",
 # 	barcodesU ="^(merged)"
 
+def stripCorr0FromTechname(techname):
+	strip=re.sub('Corr0', "", techname)
+	return(strip)
+
+
+# make directory for corrected fastqs. Link uncorrected fastqs there as well
+FQ_CORR_PATH=FQPATH +"corr/"
+os.makedirs(FQ_CORR_PATH, exist_ok=True)
+fastq_files=glob.glob(FQPATH + '*.fastq.gz')
+print(fastq_files)
+for fastq in fastq_files:
+	bn=os.path.basename(fastq)
+	print(bn)
+	pref_search = re.search('(\S+?)(_\S+\.fastq\.gz)', bn)
+	if pref_search:
+		pref=pref_search.group(1)
+		suff=pref_search.group(2)
+		print(pref)
+		pref=stripCorr0FromTechname(pref)
+		newBn=pref + "Corr0" + suff
+		newPath=FQ_CORR_PATH + newBn
+		if os.path.islink(newPath):
+			os.remove(newPath)
+			os.symlink(os.path.relpath(fastq, FQ_CORR_PATH), newPath)
+		else:
+			os.symlink(os.path.relpath(fastq, FQ_CORR_PATH), newPath)
+
+
+FQPATH=FQ_CORR_PATH
 
 if config["DEMULTIPLEX"]:
 	# get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries so "set" them afterwards):
 	DEMULTIPLEX_DIR=config["DEMULTIPLEX_DIR"]
 	DEMULTIPLEXED_FASTQS= DEMULTIPLEX_DIR + "demultiplexFastqs/"
-	(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz")
+	(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz")
 	# remove duplicate entries:
 	adaptersTSV = DEMULTIPLEX_DIR + "all_adapters.tsv"
 	f = open(adaptersTSV, 'r')
@@ -47,9 +77,9 @@ if config["DEMULTIPLEX"]:
 	BARCODESUNDETER=set(BARCODESUNDETER)
 
 else:
-#	DEMULTIPLEX_DIR=config["FQPATH"]
-	DEMULTIPLEXED_FASTQS=config["FQPATH"]
-	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz")
+#	DEMULTIPLEX_DIR=FQPATH
+	DEMULTIPLEXED_FASTQS=FQPATH
+	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz")
 	BARCODES=set(BARCODES)
 	BARCODESUNDETER=BARCODES
 
@@ -57,8 +87,13 @@ else:
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
+TECHNAMESNOCORR=[]
+for tech in TECHNAMES:
+	techNoCorr=stripCorr0FromTechname(tech)
+	TECHNAMESNOCORR.append(techNoCorr)
+TECHNAMESNOCORR=set(TECHNAMESNOCORR)
 
-#print (DEMULTIPLEXED_FASTQS, TECHNAMES, CAPDESIGNS, SIZEFRACS,BARCODES)
+print (TECHNAMES, CAPDESIGNS, SIZEFRACS,BARCODES)
 
 SPLICE_SITE_TYPES=["Donor", "Acceptor"]
 
@@ -68,26 +103,6 @@ for x in range(5, 30, 1):
 	minPolyAlength.append(x)
 
 
-# ### list of chromosomes for each genome
-# GENOMES=[]
-
-# for k, v in config["capDesignToGenome"].items():
-# 	GENOMES.append(v)
-# GENOMES=set(GENOMES)
-
-# GENOMECHROMS=[]
-# for genome in GENOMES:
-# 	print(genome)
-# 	f = open(config["GENOMESDIR"] + genome + ".genome", 'r')
-# 	for line in f:
-# 		columns = line.split("\t")
-# 		#print("\t", columns[0])
-# 		GENOMECHROMS.append(columns[0])
-
-# GENOMECHROMS=set(GENOMECHROMS)
-#GENCOMECHROMS contains full list of chr for all genomes. this is not optimal.
-#print(GENOMECHROMS)
-
 ########################
 ### make list of authorized wildcard combinations
 ### inspired by https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
@@ -96,9 +111,13 @@ for x in range(5, 30, 1):
 AUTHORIZEDCOMBINATIONS = []
 
 for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
-	if(os.path.isfile(config["FQPATH"] + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or os.path.isfile(config["FQPATH"] + comb[0] + "_" + comb[1] + "_" + comb[2]  + "." + comb[3] + ".fastq.gz")): #allow only combinations corresponding to existing FASTQs
+	if(os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2]  + "." + comb[3] + ".fastq.gz")): #allow only combinations corresponding to existing FASTQs
 		tup=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]))
 		AUTHORIZEDCOMBINATIONS.append(tup)
+		tupNoCorr=(("techname", stripCorr0FromTechname(comb[0])),("capDesign", comb[1]),("sizeFrac", comb[2]))
+		#print(tupNoCorr)
+		AUTHORIZEDCOMBINATIONS.append(tupNoCorr)
+
 		for ext in config["PLOTFORMATS"]:
 			tup2=(("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]),("ext",ext))
 			AUTHORIZEDCOMBINATIONS.append(tup2)
@@ -124,7 +143,7 @@ for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 
 AUTHORIZEDCOMBINATIONS=set(AUTHORIZEDCOMBINATIONS)
 
-#print ("AUTHORIZEDCOMBINATIONS:", AUTHORIZEDCOMBINATIONS)
+print ("AUTHORIZEDCOMBINATIONS:", AUTHORIZEDCOMBINATIONS)
 
 def filtered_product(*args):
 	for wc_comb in product(*args):
@@ -140,8 +159,20 @@ def filtered_product(*args):
 #def fastqStatsDemul:
 
 
+if config["LORDEC_CORRECT"]:
+	graph_kmers=["17", "18", "19", "20", "21", "30", "40", "50", "60", "70", "80", "90"]
+	#make string to interpolate into bash script in "lordecCorrectLr" rule
+	graph_kmers_string= "(" + " ".join(graph_kmers) + ")"
+	solid_kmer_abundance_threshold="3"
+	splitFastqsInto=99
+	splitFasta =[]
+	for x in range(0, splitFastqsInto, 1):
+		splitFasta.append(str(x).zfill(4))
+	include: "lrCorrection.snakefile.py"
+
 if config["DEMULTIPLEX"]:
 	include: "demultiplex.snakefile.py"
+
 include: "fastqStats.snakefile.py"
 include: "lrMapping.snakefile.py"
 include: "srMapping.snakefile.py"
@@ -154,8 +185,11 @@ include: "tmEndSupport.py"
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
+#		expand(FQPATH + "corr/{techname}Corr0_{capDesign}_{sizeFrac}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),
+		expand(FQPATH + "{techname}Corr" + graph_kmers[-1] + "_{capDesign}_{sizeFrac}.fastq.gz", filtered_product, techname=TECHNAMESNOCORR, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["LORDEC_CORRECT"] else expand( DUMMY_DIR + "dummy{number}.txt", number='13'),
+
 		expand(config["PLOTSDIR"] + "{techname}_{capDesign}_all.readlength.{ext}", techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"] else expand(config["PLOTSDIR"] + "{techname}_{capDesign}.{barcodes}_all.readlength.{ext}",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES, ext=config["PLOTFORMATS"]), # facetted histograms of read length
- 		expand(config["FQPATH"] + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["FQPATH"] + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
+ 		expand(FQPATH + "qc/{techname}_{capDesign}_{sizeFrac}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(FQPATH + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
   		expand(config["PLOTSDIR"] + "{techname}.fastq.UP.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"] else expand( DUMMY_DIR + "dummy{number}.txt", number='1'), # UP reads plots
   		expand(config["PLOTSDIR"] + "{techname}.fastq.BC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='2') , # barcode reads plots
   		expand(config["PLOTSDIR"] + "{techname}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='3') , #foreign barcode reads plots
@@ -176,10 +210,10 @@ rule all:
   		expand(config["PLOTSDIR"] + "{techname}.ambiguousBarcodes.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='6'), # ambiguous barcodes plots
   		expand(config["PLOTSDIR"] + "{techname}_{capDesign}.adapters.location.stats.{ext}",techname=TECHNAMES, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='7'), #location of adapters over reads
   		expand(config["PLOTSDIR"] + "{techname}.chimeric.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='8'), # stats on chimeric reads
-  		expand(config["PLOTSDIR"] + "{techname}.finalDemul.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='8'), #final demultiplexing stats
-  		expand(DEMULTIPLEX_DIR + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='9'), # QC on demultiplexing (checks that there is only one barcode assigned per read
-  		expand(DEMULTIPLEX_DIR + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='10'), # QC on demultiplexing (checks that there is only one barcode assigned per read
-  		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"])  if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='11'),
+  		expand(config["PLOTSDIR"] + "{techname}.finalDemul.reads.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='9'), #final demultiplexing stats
+  		expand(DEMULTIPLEX_DIR + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC1.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='10'), # QC on demultiplexing (checks that there is only one barcode assigned per read
+  		expand(DEMULTIPLEX_DIR + "qc/{techname}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='11'), # QC on demultiplexing (checks that there is only one barcode assigned per read
+  		expand(config["PLOTSDIR"] + "{techname}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"])  if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='12'),
   		expand(config["PLOTSDIR"] + "{techname}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, ext=config["PLOTFORMATS"]),
   		expand("mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_pooled.tmerge.gfftsv.gz", techname=TECHNAMES, capDesign=CAPDESIGNS),
   		expand(config["PLOTSDIR"] + "all_pooled.targetCoverage.stats.{ext}", ext=config["PLOTFORMATS"]),
@@ -203,3 +237,11 @@ rule dummy:
 		'''
 touch {output}
 		'''
+
+# rule softlinkFastqs:
+# 	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
+# 	output: FQPATH + "corr/{techname}Corr0_{capDesign}_{sizeFrac}.fastq.gz"
+# 	shell:
+# 		'''
+# ln -sr {input} {output}
+# 		'''

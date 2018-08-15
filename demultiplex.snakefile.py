@@ -1,6 +1,6 @@
 
 rule makeReadsBlastDB:
-	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
+	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
 	params:
 		dbprefix=DEMULTIPLEX_DIR + "blastdb/" + "{techname}_{capDesign}_{sizeFrac}.fastq"
 	output: DEMULTIPLEX_DIR + "blastdb/" + "{techname}_{capDesign}_{sizeFrac}.fastq.nal"
@@ -379,7 +379,7 @@ cat {output} | while read count; do if [ $count -gt 0 ]; then echo "$count dupli
 		'''
 
 rule convertFastqToTsv:
-	input: config["FQPATH"] + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
+	input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz"
 	output: DEMULTIPLEX_DIR + "convertFastqToTsv/{techname}_{capDesign}_{sizeFrac}.tsv"
 	shell:
 		'''
