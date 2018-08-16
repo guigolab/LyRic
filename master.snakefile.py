@@ -54,7 +54,7 @@ if config["DEMULTIPLEX"]:
 else:
 #	DEMULTIPLEX_DIR=FQPATH
 	DEMULTIPLEXED_FASTQS=FQ_CORR_PATH
-	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz")
+	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(FQPATH + "{techname, [^_/]+}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz")
 	BARCODES=set(BARCODES)
 	BARCODESUNDETER=BARCODES
 
