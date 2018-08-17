@@ -19,7 +19,7 @@ echo -e "$(basename {input})\t$total" > {output}
 		'''
 
 rule aggFastqReadCounts:
-	input: lambda wildcards: expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	input: lambda wildcards: expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}.{barcodes}.fastq.readCounts.tsv"
 	shell: "cat {input} | sort > {output}"
 
@@ -31,7 +31,7 @@ rule getReadLength:
 
 #aggregate read length data over all fractions of a given capDesign:
 rule aggReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
 	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_all.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.{barcodes}_all.readlength.tsv"
 	shell: "cat {input} > {output}"
