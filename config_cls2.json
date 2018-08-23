@@ -4,7 +4,7 @@
        "TARGETSDIR": "targets/",
        "PLOTSDIR" : "plots/",
        "SPLICE_SITE_SCORES_DIR": "/users/rg/jlagarde/projects/splice_sites/geneid/",
-       "SIZEFRACTION_RPALETTE": "c('0+'='#b0a19d', '1-1.5' ='#f765ac','1.5-2.5' ='#b370f9', '2.5+'='#CCC914')",
+       "SIZEFRACTION_RPALETTE": "c('1-1.5' ='#f765ac','1.5-2.5' ='#b370f9', '2.5+'='#CCC914')",
        "LONG_RPALETTE":"c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')",
        "STATSDATADIR" : "Rinput/",
        "capDesignToGenome" : {

@@ -46,12 +46,14 @@ echo "library(ggplot2)
 library(plyr)
 dat <- read.table('{input}', header=F, as.is=T, sep='\\t')
 colnames(dat)<-c('fraction','length')
-medians <- ddply(dat, 'fraction', summarise, grp.median=median(length))
-sizes <- ddply(dat, 'fraction', summarise, grp.length=length(length))
+dat\$fraction_f=factor(dat\$fraction, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
+medians <- ddply(dat, 'fraction_f', summarise, grp.median=median(length))
+sizes <- ddply(dat, 'fraction_f', summarise, grp.length=length(length))
 ggplot(dat, aes(x=length)) +
-geom_histogram(binwidth=200, aes(fill=fraction)) +
+geom_histogram(binwidth=200, aes(fill=fraction_f)) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-facet_grid( . ~ fraction) +
+#facet_grid( . ~ names({sizeFrac_Rpalette})) +
+facet_grid( . ~ fraction_f) +
 annotate(geom='text', label=c(paste('n= ', sizes[,'grp.length'])), hjust=0, vjust=c(3.8), x=10, y=c(Inf), color=c('black'), size=6) +
 annotate(geom='text', label=c(paste('Median (nt)= ', medians[,'grp.median'])), hjust=0, vjust=c(5.8), x=10, y=c(Inf), color=c('black'), size=6) +
 coord_cartesian(xlim=c(0, 5000)) +
