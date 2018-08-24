@@ -5,7 +5,7 @@ from itertools import product
 import sys
 
 
-print ("TODO:\n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)")
+print ("TODO:\n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)\n\ninclude basic HiSeq mapping stats\n\n")
 
 
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
@@ -129,7 +129,7 @@ for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 
 AUTHORIZEDCOMBINATIONS=set(AUTHORIZEDCOMBINATIONS)
 
-print ("AUTHORIZEDCOMBINATIONS:", AUTHORIZEDCOMBINATIONS)
+#print ("AUTHORIZEDCOMBINATIONS:", AUTHORIZEDCOMBINATIONS)
 
 def filtered_product(*args):
 	for wc_comb in product(*args):
