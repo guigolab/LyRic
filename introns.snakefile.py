@@ -90,7 +90,7 @@ library(data.table)
 library(ggplot2)
 library(scales)
 library(plyr)
-palette <- c('random' = '#666666', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#1a8cff', 'CLS_TMs' = '#990099')
+palette <- c('random' = '#666666', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
 dat<-fread('$summfile', header=T, sep='\\t')
 
 fun_length <- function(x){{

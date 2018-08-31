@@ -86,7 +86,7 @@ library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cageAndPolyA', 'polyAOnly', 'noCageNoPolyA')))
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity') + ylab('# merged CLS reads') +
+geom_bar(stat='identity') + ylab('# CLS TMs') +
 scale_y_continuous(labels=comma)+ scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+ facet_grid( seqTech ~ capDesign)+ xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
 geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1), size=2)+
 {GGPLOT_PUB_QUALITY}
