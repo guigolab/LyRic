@@ -5,7 +5,7 @@ from itertools import product
 import sys
 
 
-print ("TODO:\n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)\n\ninclude basic HiSeq mapping stats\n\n")
+print ("TODO:\n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)\n\ninclude basic HiSeq mapping stats\n\nWhat is the intersection between PacBio TMs and ONT TMs???")
 
 
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
