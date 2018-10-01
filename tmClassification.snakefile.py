@@ -107,13 +107,18 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('Intergenic', 'Extends', 'Intronic', 'Overlaps', 'Antisense', 'Equal', 'Included')))
 palette <- c('Intergenic' = '#0099cc', 'Extends' ='#00bfff', 'Intronic' = '#4dd2ff', 'Overlaps' = '#80dfff', 'Antisense' = '#ccf2ff', 'Equal' = '#c65353', 'Included' ='#d98c8c')
+horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
+vertCats <- length(unique(dat\$seqTech))
+plotWidth = horizCats + 3
+plotHeight = vertCats +2
+
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual(values=palette) +
 facet_grid( seqTech ~ capDesign)+ ylab('# TMs') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
 scale_y_continuous(labels=scientific)+
 {GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=7, height=3)
+ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
 cat {output}.r | R --slave
 

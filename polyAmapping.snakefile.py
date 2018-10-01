@@ -172,10 +172,15 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
+horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
+vertCats <- length(unique(dat\$seqTech))
+plotWidth = horizCats + 3
+plotHeight = vertCats +2
+
 ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#25804C', 'nonPolyA' = '#FB3B24')) + facet_grid( seqTech ~ capDesign)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
 {GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=7, height=3)
+ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
 cat {output}.r | R --slave
 

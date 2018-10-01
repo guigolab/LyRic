@@ -85,12 +85,17 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cageAndPolyA', 'polyAOnly', 'noCageNoPolyA')))
+dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
+horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
+vertCats <- length(unique(dat\$seqTech))
+plotWidth = horizCats + 3
+plotHeight = vertCats +2
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') + ylab('# CLS TMs') +
 scale_y_continuous(labels=comma)+ scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+ facet_grid( seqTech ~ capDesign)+ xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
-geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1), size=2)+
+geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1))+
 {GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=6, height=3)
+ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
 cat {output}.r | R --slave
 

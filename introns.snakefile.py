@@ -93,6 +93,13 @@ library(plyr)
 palette <- c('random' = '#666666', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
 dat<-fread('$summfile', header=T, sep='\\t')
 
+horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
+vertCats <- length(unique(dat\$seqTech))
+plotWidth = horizCats + 3
+plotHeight = vertCats +2
+
+dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
+
 fun_length <- function(x){{
 return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
 }}
@@ -102,11 +109,11 @@ geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(-9, 4.5)) +
 scale_color_manual(values=palette, name='Category', labels = c(random = 'Random', GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_reads='CLS raw reads')) +
 facet_grid( seqTech ~ capDesign)+
-stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, size = 2.5, angle=90, show.legend=FALSE) +
+stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE) +
 geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
 ylab('Splice site score') + xlab('Error correction') +
 {GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=8, height=4)
+ggsave('{output}', width=plotWidth, height=plotHeight)
 
 " > {output}.r
 cat {output}.r | R --slave

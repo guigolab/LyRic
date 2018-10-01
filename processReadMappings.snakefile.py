@@ -150,12 +150,16 @@ library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('HCGM-mono', 'HCGM-spliced', 'nonHCGM-mono', 'nonHCGM-spliced')))
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
+horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
+vertCats <- length(unique(dat\$seqTech))
+plotWidth = horizCats + 3
+plotHeight = vertCats +2
 
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') + scale_fill_manual(values=c('HCGM-mono' = '#9ce2bb', 'HCGM-spliced' = '#39c678', 'nonHCGM-mono' = '#fda59b', 'nonHCGM-spliced' = '#fa341e')) + facet_grid( seqTech ~ capDesign)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
-geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1), size=2)+ scale_y_continuous(labels=scientific)+
+geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1))+ scale_y_continuous(labels=scientific)+
 {GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=7, height=3)
+ggsave('{output}', , width=plotWidth, height=plotHeight)
 " > {output}.r
 cat {output}.r | R --slave
 
@@ -300,10 +304,15 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
+horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
+vertCats <- length(unique(dat\$seqTech))
+plotWidth = horizCats + 3
+plotHeight = vertCats +2
+
 ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity', position=position_dodge()) + geom_text(position = position_dodge(width = 0.9), aes(x = factor(correctionLevel), y = 1, ymax=count, label = comma(count), hjust = 0, vjust = 0.5), angle=90, size=4) + scale_fill_manual(values=c('HCGMreads' = '#d98cb3', 'mergedTMs' = '#cc9966')) + facet_grid( seqTech ~ capDesign)+ ylab('# objects') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=comma)+
+geom_bar(stat='identity', position=position_dodge()) + geom_text(position = position_dodge(width = 0.9), aes(x = factor(correctionLevel), y = 1, ymax=count, label = comma(count), hjust = 0, vjust = 0.5), angle=90) + scale_fill_manual(values=c('HCGMreads' = '#d98cb3', 'mergedTMs' = '#cc9966')) + facet_grid( seqTech ~ capDesign)+ ylab('# objects') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=comma)+
 {GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=7, height=3)
+ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
 cat {output}.r | R --slave
 
