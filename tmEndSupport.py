@@ -59,11 +59,12 @@ noCageNoPolyA=$(comm -2 -3 $TMPDIR/all.list $TMPDIR/cageOrPolyA.list |wc -l)
 cageOnly=$(comm -2 -3 $TMPDIR/cage.list $TMPDIR/polyA.list |wc -l)
 polyAOnly=$(comm -2 -3 $TMPDIR/polyA.list $TMPDIR/cage.list |wc -l)
 cageAndPolyA=$(cat $TMPDIR/cage+PolyA.list | wc -l)
+let total=$noCageNoPolyA+$cageOnly+$polyAOnly+$cageAndPolyA
 fgrep -w -f $TMPDIR/cage+PolyA.list {input.tms} > {output.FLbed}
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tcageOnly\t$cageOnly
 {wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tcageAndPolyA\t$cageAndPolyA
 {wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tpolyAOnly\t$polyAOnly
-{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tnoCageNoPolyA\t$noCageNoPolyA" > {output.stats}
+{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tnoCageNoPolyA\t$noCageNoPolyA" | awk -v t=$total '{{print $0"\t"$4/t}}'> {output.stats}
 		'''
 
 rule aggCagePolyAStats:
@@ -71,7 +72,7 @@ rule aggCagePolyAStats:
 	output: config["STATSDATADIR"] + "all.tmerge.cagePolyASupport.stats.tsv"
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount\tpercent" > {output}
 cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
 		'''
 
@@ -88,12 +89,12 @@ dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cag
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
 vertCats <- length(unique(dat\$seqTech))
-plotWidth = horizCats + 3
+plotWidth = horizCats + 3.5
 plotHeight = vertCats +2
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') + ylab('# CLS TMs') +
 scale_y_continuous(labels=comma)+ scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+ facet_grid( seqTech ~ capDesign)+ xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
-geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1))+
+geom_text(position = 'stack', aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
