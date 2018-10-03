@@ -380,7 +380,7 @@ cat {output} | while read count; do if [ $count -gt 0 ]; then echo "$count dupli
 
 rule convertFastqToTsv:
 	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz"
-	output: DEMULTIPLEX_DIR + "convertFastqToTsv/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.tsv"
+	output: temp(DEMULTIPLEX_DIR + "convertFastqToTsv/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.tsv")
 	shell:
 		'''
 zcat  {input} | fastq2tsv.pl > {output}
@@ -400,16 +400,6 @@ set -e
 cat $TMPDIR/tmp.fastq | tsv2fastq.pl | gzip> {output}
 
 		'''
-
-# rule getUndeterminedReads:
-# 	input:
-# 		tsvFastq = DEMULTIPLEX_DIR + "convertFastqToTsv/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.tsv",
-# 		noAmbigNoChim= DEMULTIPLEX_DIR + "selectNonAmbiguousNonChimericReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-# 	output: temp(DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.Undeter.fastq.gz")
-# 	shell:
-# 		'''
-# cat {input.noAmbigNoChim} | cut -f1 | sort | uniq | fgrep -v -w -f - {input.tsvFastq} | tsv2fastq.pl | gzip > {output}
-# 		'''
 
 rule checkTotalsDemultiplexed:
 	input:
