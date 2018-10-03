@@ -5,7 +5,7 @@ rule getPolyAsitesTestPolyAmapping:
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	params:
 		minAcontent=0.8
-	output: "mappings/polyAmapping/calibration/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed"
+	output: temp("mappings/polyAmapping/calibration/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed")
 	shell:
 		'''
 samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sortbed | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sortbed > {output}
@@ -19,8 +19,8 @@ rule getPolyANonPolyAsitesTestPolyAmapping:
 	params:
 		minAcontent=0.8
 	output:
-		outPolyA="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed",
-		outNonPolyA="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed"
+		outPolyA=temp("mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed"),
+		outNonPolyA=temp("mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed")
 	shell:
 		'''
 cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort | uniq > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list
@@ -39,7 +39,7 @@ rule compareToPASTestPolyAmapping:
 		tpend="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
 		PAS=lambda wildcards: CAPDESIGNTOPAS[wildcards.capDesign]
 	params: genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: "mappings/polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv"
+	output: temp("mappings/polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv")
 
 	shell:
 		'''
