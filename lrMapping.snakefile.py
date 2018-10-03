@@ -73,16 +73,44 @@ cat {output}.r | R --slave
 
 rule mergeSizeFracBams:
 	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-	output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
+	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
+	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
 	shell:
 		'''
+
 samtools merge {output} {input}
+sleep 120s
 samtools index {output}
 		'''
 
+rule mergeBarcodeBams:
+	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
+	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
+	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam"
+	shell:
+		'''
+
+samtools merge {output} {input}
+sleep 120s
+samtools index {output}
+		'''
+
+
+rule mergeCapDesignBams:
+	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
+	shell:
+		'''
+samtools merge {output} {input}
+sleep 120s
+samtools index {output}
+
+		'''
+
+
 rule checkOnlyOneHit:
-	input: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
-	output: "mappings/" + "qc/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam.dupl.txt"
+	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
+	output: "mappings/readMapping/" + "qc/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam.dupl.txt"
 	shell:
 		'''
 samtools view {input} | cut -f1 | sort| uniq -dc > {output}
@@ -92,8 +120,8 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 
 
 rule readBamToBed:
-	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
-	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bed"
+	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	shell:
 		'''
 bedtools bamtobed -i {input} -bed12 > {output}
@@ -108,18 +136,6 @@ rule readBedToGff:
 cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {output}
 		'''
 
-
-rule mergeCapDesignBams:
-	input: lambda wildcards: expand("mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: "mappings/" + "mergeCapDesignBams/{techname}Corr{corrLevel}_{capDesign}.merged2.bam"
-	shell:
-		'''
-samtools merge {output} {input}
-#sleep so latency doesn't make bai younger than bam
-sleep 120s
-samtools index {output}
-
-		'''
 
 rule qualimap:
 	input: "mappings/" + "mergeCapDesignBams/{techname}Corr{corrLevel}_{capDesign}.merged2.bam"
