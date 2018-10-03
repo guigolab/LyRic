@@ -26,11 +26,11 @@ rule blastDemultiplex:
 		dbprefix=DEMULTIPLEX_DIR + "blastdb/" + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq"
 	threads: 12
 	output:
-		DEMULTIPLEX_DIR + "blastDemultiplex/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv"
+		DEMULTIPLEX_DIR + "blastDemultiplex/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv.gz"
 	shell:
 		'''
 #-dust no
-blastn -query {input.adapters} -task blastn -soft_masking false -word_size 4 -qcov_hsp_perc 70 -evalue 1 -max_target_seqs 100000000 -num_threads {threads} -db {params.dbprefix} -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen score gaps" > {output}
+blastn -query {input.adapters} -task blastn -soft_masking false -word_size 4 -qcov_hsp_perc 70 -evalue 1 -max_target_seqs 100000000 -num_threads {threads} -db {params.dbprefix} -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qlen slen score gaps" | gzip > {output}
 
 		'''
 
@@ -41,7 +41,7 @@ rule processBlastDemultiplex:
 	output: DEMULTIPLEX_DIR + "processBlastDemultiplex/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
 	shell:
 		'''
-cat {input.blastOut}| demultiplexFromBlastTab.pl - | barcodeSeqTobarcodeId.pl {input.adaptersTsv} - {wildcards.capDesign} > {output}
+zcat {input.blastOut}| demultiplexFromBlastTab.pl - | barcodeSeqTobarcodeId.pl {input.adaptersTsv} - {wildcards.capDesign} > {output}
 
 		'''
 
