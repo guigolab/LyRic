@@ -1,0 +1,79 @@
+{
+    "__default__" :
+    {
+        "queue" : "rg-el7,short-sl7",
+        "virtual_free" : "15G",
+        "h_rt" : "1:30:00",
+        "email" : "julien.lagarde@crg.eu",
+        "notify" : "ae",
+        "err" : "{workflow.basedir}/qsub_logs/",
+        "out" : "{workflow.basedir}/qsub_logs/",
+        "project": "prj006070",
+        "threads" : "",
+        "disk" :""
+    },
+    "readMapping" :
+    {
+        "virtual_free" : "40G",
+        "h_rt" : "6:00:00",
+        "queue" : "rg-el7,short-sl7",
+        "threads" : "-pe smp 12"
+    },
+    "hiSeqReadMapping" :
+    {
+        "virtual_free" : "70G",
+        "h_rt" : "20:00:00",
+        "queue" : "rg-el7,long-sl7",
+        "threads" : "-pe smp 12"
+        },
+
+    "blastDemultiplex" :
+    {
+        "virtual_free" : "120G",
+        "h_rt" : "6:00:00",
+        "threads" : "-pe smp 12"
+
+    },
+    "processBlastDemultiplex":
+    {
+        "virtual_free" : "15G",
+        "h_rt" : "1:00:00"
+    },
+    "getUndeterminedReads":
+    {
+        "virtual_free" : "20G",
+        "h_rt" : "1:00:00"
+    },
+    "nonAnchoredMergeReads":
+    {
+        "virtual_free" : "20G",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "400:00:00",
+        "threads" : "-pe smp 8"
+    },
+    "poolNonAnchoredMergeReads":
+    {
+        "virtual_free" : "20G",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "46:00:00",
+        "threads" : "-pe smp 8"
+    },
+    "getHiSeqCanonicalIntronsList":
+    {
+        "virtual_free" : "120G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "6:00:00",
+        "threads" : "-pe smp 6"
+    },
+    "compareToPASTestPolyAmapping":
+    {
+        "virtual_free" : "30G"
+    },
+    "lordecCorrectLr":
+    {
+        "threads" : "-pe smp 6",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "20:00:00",
+        "disk": "20G"
+    }
+}
