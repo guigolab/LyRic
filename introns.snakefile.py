@@ -11,8 +11,8 @@ rule getIntronMotif:
 		introns = "mappings/" + "makeIntrons/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.introns.gff.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	output:
-		gff = "mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.introns.gff",
-		tsv = "mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.transcripts.tsv"
+		gff = temp("mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.introns.gff"),
+		tsv = temp("mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.transcripts.tsv")
 	shell:
 		'''
 zcat {input.introns} | grep -vP "^ERCC"| extract_intron_strand_motif.pl - {input.genome} $(dirname {output.gff})/$(basename {output.gff} .introns.gff)
