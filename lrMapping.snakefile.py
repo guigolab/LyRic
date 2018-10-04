@@ -15,7 +15,8 @@ rule readMapping:
 	output:
 		"mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
-		sizeFrac="^allFracs" #to avoid ambiguity with downstream merging rules
+		sizeFrac='[^(allFracs)][\S]+', #to avoid ambiguity with downstream merging rules
+		barcodes='[^(allTissues)][\S]+'
 	shell:
 		'''
 echoerr "Mapping"
@@ -75,10 +76,11 @@ cat {output}.r | R --slave
 
 rule mergeSizeFracBams:
 	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+#	input: lambda wildcards: expand("mappings/" + "readMapping/{{techname}}Corr{{corrLevel}}_{{capDesign}}_{sizeFrac}_{{barcodes}}.bam", filtered_product, sizeFrac=SIZEFRACS)
 	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
-	output:  "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
+	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
 	wildcard_constraints:
-		barcodes="^allTissues" #to avoid ambiguity with downstream merging rules
+		barcodes='[^(allTissues)][\S]+' #to avoid ambiguity with downstream merging rules
 	shell:
 		'''
 
@@ -92,7 +94,7 @@ rule mergeBarcodeBams:
 	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam"
 	wildcard_constraints:
-		sizeFrac="^allFracs" #to avoid ambiguity with downstream merging rules
+		sizeFrac='[^(allFracs)][\S]+' #to avoid ambiguity with downstream merging rules
 	shell:
 		'''
 
@@ -102,7 +104,7 @@ samtools index {output}
 		'''
 
 
-rule mergeCapDesignBams:
+rule mergeSizeFracAndBarcodeBams:
 	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
 	shell:
