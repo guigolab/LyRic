@@ -56,21 +56,22 @@ else:
 	DEMULTIPLEXED_FASTQS=FQ_CORR_PATH
 	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(FQPATH + "{techname, [^_/]+}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz")
 	BARCODES=set(BARCODES)
-	BARCODESUNDETER=BARCODES
+	BARCODESUNDETER=list(BARCODES)
 
 
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
 
-print (TECHNAMES, CAPDESIGNS, SIZEFRACS,BARCODES)
 
-BARCODESpluSMERGED=BARCODES
+BARCODESpluSMERGED=set(BARCODES)
 BARCODESpluSMERGED.add("allTissues")
-SIZEFRACSpluSMERGED=SIZEFRACS
+SIZEFRACSpluSMERGED=set(SIZEFRACS)
 SIZEFRACSpluSMERGED.add("allFracs")
 
-print (TECHNAMES, CAPDESIGNS, SIZEFRACSpluSMERGED,BARCODESpluSMERGED)
+print ("NONMERGED: ", TECHNAMES, CAPDESIGNS, SIZEFRACS,BARCODES)
+
+print ("MERGED: ", TECHNAMES, CAPDESIGNS, SIZEFRACSpluSMERGED,BARCODESpluSMERGED)
 
 
 SPLICE_SITE_TYPES=["Donor", "Acceptor"]
@@ -103,48 +104,51 @@ else:
 ###
 
 AUTHORIZEDCOMBINATIONS = []
+AUTHORIZEDCOMBINATIONSMERGE = []
 
 for comb in product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 	if(os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2]  + "." + comb[3] + ".fastq.gz")): #allow only combinations corresponding to existing FASTQs
 		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2])))
-		#AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", "allFracs")))
+		AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", "allFracs")))
 		for corrLevel in FINALCORRECTIONLEVELS:
 			AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2])))
-#			AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs")))
+			AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs")))
 		for ext in config["PLOTFORMATS"]:
 			for corrLevel in FINALCORRECTIONLEVELS:
 				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("ext",ext)))
-#				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs"),("ext",ext)))
+				AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs"),("ext",ext)))
 #		print(comb[3], comb[1], sep=",")
 		if (comb[3]).find(comb[1]) == 0 or config["DEMULTIPLEX"] is False: # check that barcode ID's prefix matches capDesign (i.e. ignore demultiplexed FASTQs with unmatched barcode/capDesign)
 #			print ("MATCH")
 			for corrLevel in FINALCORRECTIONLEVELS:
 				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3])))
-#				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs"),("barcodes",comb[3])))
-#				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs"),("barcodes","allTissues")))
-#				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes","allTissues")))
+				AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs"),("barcodes",comb[3])))
+				AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", "allFracs"),("barcodes","allTissues")))
+				AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes","allTissues")))
 				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes",comb[3])))
-#				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes","allTissues")))
+				AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes","allTissues")))
 
 			for strand in config["STRANDS"]:
 				for corrLevel in FINALCORRECTIONLEVELS:
 					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes",comb[3]),("strand", strand)))
-#					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes","allTissues"),("strand", strand)))
+					AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes","allTissues"),("strand", strand)))
 			for ext in config["PLOTFORMATS"]:
 				for corrLevel in FINALCORRECTIONLEVELS:
 					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes",comb[3]),("ext", ext)))
-#					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes","allTissues"),("ext", ext)))
+					AUTHORIZEDCOMBINATIONSMERGE.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes","allTissues"),("ext", ext)))
 
 
 
 AUTHORIZEDCOMBINATIONS=set(AUTHORIZEDCOMBINATIONS)
+AUTHORIZEDCOMBINATIONSMERGE=set(AUTHORIZEDCOMBINATIONSMERGE)
 
-print ("AUTHORIZEDCOMBINATIONS:", AUTHORIZEDCOMBINATIONS)
+#print ("AUTHORIZEDCOMBINATIONS:", AUTHORIZEDCOMBINATIONS)
+#print ("AUTHORIZEDCOMBINATIONSMERGE:", AUTHORIZEDCOMBINATIONSMERGE)
 
 def filtered_product(*args):
 	for wc_comb in product(*args):
 		found=False
-		#print (wc_comb)
+		print (wc_comb)
 		if wc_comb in AUTHORIZEDCOMBINATIONS:
 			#print ("AUTH")
 			found=True
@@ -152,7 +156,14 @@ def filtered_product(*args):
 		#if not found:
 			#print ("NONAUTH")
 
-#def fastqStatsDemul:
+def filtered_product_merge(*args):
+	for wc_comb in product(*args):
+		found=False
+		#print (wc_comb)
+		if wc_comb in AUTHORIZEDCOMBINATIONS or wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
+			#print ("AUTH")
+			found=True
+			yield(wc_comb)
 
 
 
@@ -214,7 +225,10 @@ rule all:
    		expand(config["PLOTSDIR"] + "all.tmerge.cagePolyASupport.stats.{ext}", ext=config["PLOTFORMATS"]),
   		expand(config["PLOTSDIR"] + "all.polyA.vs.PAS.precisionRecall.stats.{ext}", ext=config["PLOTFORMATS"]),
 
-  		expand("mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+  		#expand("mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+		expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
+		expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		#expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
 
 
 

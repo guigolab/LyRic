@@ -14,6 +14,8 @@ rule readMapping:
 	threads: 12
 	output:
 		"mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	wildcard_constraints:
+		sizeFrac="^allFracs" #to avoid ambiguity with downstream merging rules
 	shell:
 		'''
 echoerr "Mapping"
@@ -74,7 +76,9 @@ cat {output}.r | R --slave
 rule mergeSizeFracBams:
 	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
 	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
-	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
+	output:  "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
+	wildcard_constraints:
+		barcodes="^allTissues" #to avoid ambiguity with downstream merging rules
 	shell:
 		'''
 
@@ -87,6 +91,8 @@ rule mergeBarcodeBams:
 	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
 	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam"
+	wildcard_constraints:
+		sizeFrac="^allFracs" #to avoid ambiguity with downstream merging rules
 	shell:
 		'''
 
@@ -121,7 +127,9 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 
 rule readBamToBed:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed"
+	#input: "mappings/readMapping/{basename}.bam"
+	#output: "mappings/" + "readBamToBed/{basename}.bed"
 	shell:
 		'''
 bedtools bamtobed -i {input} -bed12 > {output}
