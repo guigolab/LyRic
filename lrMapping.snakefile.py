@@ -134,7 +134,7 @@ rule readBamToBed:
 	#output: "mappings/" + "readBamToBed/{basename}.bed"
 	shell:
 		'''
-bedtools bamtobed -i {input} -bed12 > {output}
+bedtools bamtobed -i {input} -bed12 | sortbed > {output}
 
 		'''
 
