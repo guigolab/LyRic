@@ -117,8 +117,8 @@ samtools index {output}
 
 
 rule checkOnlyOneHit:
-	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
-	output: "mappings/readMapping/" + "qc/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam.dupl.txt"
+	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/readMapping/" + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
 	shell:
 		'''
 samtools view {input} | cut -f1 | sort| uniq -dc > {output}
@@ -129,31 +129,32 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 
 rule readBamToBed:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed"
+	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
 	#input: "mappings/readMapping/{basename}.bam"
 	#output: "mappings/" + "readBamToBed/{basename}.bed"
 	shell:
 		'''
-bedtools bamtobed -i {input} -bed12 | sortbed > {output}
+bedtools bamtobed -i {input} -bed12 | sortbed | gzip > {output}
 
 		'''
 
 rule readBedToGff:
-	input: lambda wildcards: expand("mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bed", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
-	output: "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.gff"
+#	input: lambda wildcards: expand("mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
+	input: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	output: "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
 	shell:
 		'''
-cat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff> {output}
+zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff | gzip > {output}
 		'''
 
 
-rule qualimap:
-	input: "mappings/" + "mergeCapDesignBams/{techname}Corr{corrLevel}_{capDesign}.merged2.bam"
-	output: "mappings/qualimap_reports/" + "{techname}Corr{corrLevel}_{capDesign}.merged2/genome_results.txt"
-	shell:
-		'''
-unset DISPLAY
-~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2
-touch {output}
-		'''
+# rule qualimap:
+# 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+# 	output: "mappings/qualimap_reports/" + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
+# 	shell:
+# 		'''
+# unset DISPLAY
+# ~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2
+# touch {output}
+# 		'''
 

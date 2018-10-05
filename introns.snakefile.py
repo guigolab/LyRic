@@ -1,18 +1,18 @@
 rule makeIntrons:
-	input: "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.gff"
-	output: "mappings/" + "makeIntrons/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.introns.gff.gz"
+	input: "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
+	output: "mappings/" + "makeIntrons/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz"
 	shell:
 		'''
-cat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk | sortgff |gzip> {output}
+zcat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk | sortgff |gzip> {output}
 		'''
 
 rule getIntronMotif:
 	input:
-		introns = "mappings/" + "makeIntrons/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.introns.gff.gz",
+		introns = "mappings/" + "makeIntrons/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	output:
-		gff = temp("mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.introns.gff"),
-		tsv = temp("mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.transcripts.tsv")
+		gff = temp("mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff"),
+		tsv = temp("mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv")
 	shell:
 		'''
 zcat {input.introns} | grep -vP "^ERCC"| extract_intron_strand_motif.pl - {input.genome} $(dirname {output.gff})/$(basename {output.gff} .introns.gff)
@@ -28,8 +28,9 @@ cat {input} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |
 		'''
 
 rule getReadsSpliceSites:
-	input: lambda wildcards: expand("mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname,  corrLevel=wildcards.corrLevel,capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: "mappings/" + "makeIntrons/readSpliceSites/{techname}Corr{corrLevel}_{capDesign}.introns.{spliceType}.tsv.gz"
+#	input: lambda wildcards: expand("mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname,  corrLevel=wildcards.corrLevel,capDesign=wildcards.capDesign, barcodes=BARCODES)
+	input: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff"
+	output: "mappings/" + "makeIntrons/readSpliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.introns.{spliceType}.tsv.gz"
 	shell:
 		'''
 cat {input} | awk '$3=="exon"' | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk| awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort|uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:CLS_reads"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:CLS_reads";' | fgrep -w {wildcards.spliceType} |sort|uniq| sort -k1,1 |gzip > {output}

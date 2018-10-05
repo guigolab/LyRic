@@ -1,7 +1,7 @@
 
 rule getPolyAsitesTestPolyAmapping:
 	input:
-		reads="mappings/mergeCapDesignBams/{techname}Corr{corrLevel}_{capDesign}.merged2.bam",
+		reads="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	params:
 		minAcontent=0.8
@@ -104,27 +104,27 @@ cat {output}.r| R --slave
 
 rule polyAmapping:
 	input:
-		reads = "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam",
+		reads = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	params:
 		minAcontent=0.8
-	output: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsites.bed.gz"
+	output: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
 	shell:
 		'''
 samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sortbed |gzip > {output}
 		'''
 
 rule removePolyAERCCs:
-	input: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsites.bed.gz"
-	output: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed"
+	input: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
+	output: temp("mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed")
 	shell:
 		'''
 zcat {input} | fgrep -v ERCC > {output}
 		'''
 
 rule getPolyAreadsList:
-	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.list"
+	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
 	shell:
 		'''
 cat {input} | cut -f4 | sort|uniq > {output}
@@ -132,26 +132,26 @@ cat {input} | cut -f4 | sort|uniq > {output}
 
 rule getPolyAreadsStats:
 	input:
-		mappedReads= "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam",
-		polyAreads = "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.list"
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.stats.tsv"
+		mappedReads= "mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		polyAreads = "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
+	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv"
 	shell:
 		'''
 mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort|uniq|wc -l)
 polyA=$(cat {input.polyAreads} | wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$5/$4}}' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {output}
 
 		'''
 
-rule aggPolyAreadsCapDesignStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.polyAreads.stats.tsv"
-	shell:
-		'''
-totalMapped=$(cat {input} | cut -f4 | sum.sh)
-totalPolyA=$(cat {input} | cut -f5 | sum.sh)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$4/$3}}' > {output}
-		'''
+# rule aggPolyAreadsCapDesignStats:
+# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
+# 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.polyAreads.stats.tsv"
+# 	shell:
+# 		'''
+# totalMapped=$(cat {input} | cut -f4 | sum.sh)
+# totalPolyA=$(cat {input} | cut -f5 | sum.sh)
+# echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$4/$3}}' > {output}
+# 		'''
 
 rule aggPolyAreadsStats:
 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.polyAreads.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
@@ -188,17 +188,17 @@ cat {output}.r | R --slave
 
 
 rule clusterPolyAsites:
-	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/" + "clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsites.clusters.bed"
+	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "mappings/" + "clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed"
 	shell:
 		'''
 cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sortbed > {output}
 		'''
 rule makePolyABigWigs:
 	input:
-		sites = "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed",
+		sites = "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: "mappings/" + "makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
+	output: "mappings/" + "makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	shell:
 		'''
 bedtools genomecov -strand {wildcards.strand} -split -bg -i {input.sites} -g {input.genome} > {output}.bedgraph

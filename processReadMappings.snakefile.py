@@ -1,10 +1,10 @@
 rule integratePolyaAndSjInfo:
 	input:
-		polyA = "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		SJs = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.transcripts.tsv"
+		polyA = "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		SJs = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv"
 	output:
-		strandInfo="mappings/integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv",
-		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.wrongPolyAs.list"
+		strandInfo="mappings/integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv",
+		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
 	shell:
 		'''
 cat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort> $TMPDIR/reads.SJ.strandInfo.tsv
@@ -19,9 +19,9 @@ cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print
 
 rule removeWrongPolyAs:
 	input:
-		polyA="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.wrongPolyAs.list"
-	output: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAsitesNoErcc.bed"
+		polyA="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
+	output: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
 	shell:
 		'''
 cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
@@ -29,9 +29,9 @@ cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
 
 rule strandGffs:
 	input:
-		gff = "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.gff",
-		strandInfo = "mappings/" + "integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyA+SJ.strandInfo.tsv"
-	output: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff"
+		gff = "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff",
+		strandInfo = "mappings/" + "integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv"
+	output: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff"
 	shell:
 		'''
 get_right_transcript_strand.pl {input.gff} {input.strandInfo} | fgrep -v ERCC- | sortgff> {output}
@@ -40,10 +40,10 @@ get_right_transcript_strand.pl {input.gff} {input.strandInfo} | fgrep -v ERCC- |
 
 rule highConfidenceReads:
 	input:
-		transcriptStrandInfo = "mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.transcripts.tsv",
-		strandedReads = "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff"
+		transcriptStrandInfo = "mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv",
+		strandedReads = "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff"
 	output:
-		"mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
+		"mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
 	shell:
 		'''
 #select read IDs with canonical GT|GC/AG and high-confidence SJs
@@ -65,8 +65,8 @@ cat $TMPDIR/gtag.gff $TMPDIR/monoPolyA.gff | sortgff |gzip> {output}
 
 
 rule getHCGMintrons:
-	input: "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
-	output: "mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv"
+	input: "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+	output: "mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv"
 	shell:
 		'''
 zcat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk | perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $end=$F[4]+1; print $F[11]."\t".$F[0]."_".$start."_".$end."_".$F[6]' | sort -k2,2 > {output}
@@ -76,15 +76,15 @@ zcat {input} | sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/jul
 rule getHiSeqSupportedHCGMs:
 	input:
 		hiSeqIntrons="mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] else config["SUPPORT_INTRONS_DB"],
-		lrIntrons="mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.introns.tsv",
+		lrIntrons="mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv",
 		#mergedGTF="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}.tmerge.gff"
-		hcgmGTF= "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.strandedHCGMs.gff.gz"
-	output:"mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.gff.gz"
+		hcgmGTF= "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+	output:"mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	shell:
 		'''
-join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.introns.noHiSeq.tsv
+join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv
 zcat {input.hcgmGTF} > $TMPDIR/$(basename {input.hcgmGTF} .gz)
-cut -f1 $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.introns.noHiSeq.tsv | sort|uniq | fgrep -wv -f - $TMPDIR/$(basename {input.hcgmGTF} .gz) |sortgff |gzip > {output}
+cut -f1 $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv | sort|uniq | fgrep -wv -f - $TMPDIR/$(basename {input.hcgmGTF} .gz) |sortgff |gzip > {output}
 
 		'''
 
