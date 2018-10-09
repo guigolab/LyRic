@@ -16,7 +16,9 @@ rule readMapping:
 		"mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
 		sizeFrac='[^(allFracs)][\S]+', #to avoid ambiguity with downstream merging rules
-		barcodes='[^(allTissues)][\S]+'
+		barcodes='[^(allTissues)][\S]+',
+#		capDesign='[^(allCapDesigns)][\S]+',
+#		corrLevel='[^(allCors)][\S]+'
 	shell:
 		'''
 echoerr "Mapping"

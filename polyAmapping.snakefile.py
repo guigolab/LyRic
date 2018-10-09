@@ -134,37 +134,89 @@ rule getPolyAreadsStats:
 	input:
 		mappedReads= "mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		polyAreads = "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv")
+	# wildcard_constraints:
+	# 	sizeFrac='[^(allFracs)][\S]+', #to avoid ambiguity with downstream merging rules
+	# 	barcodes='[^(allTissues)][\S]+',
+
+	# wildcard_constraints:
+	# 	techname='[^(allTechs)][\S]+', #to avoid ambiguity with downstream merging rules
+	# 	corrLevel='[^(allCors)][\S]+',
+	# 	capDesign='[^(allCapDesigns)][\S]+',
 	shell:
 		'''
 mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort|uniq|wc -l)
 polyA=$(cat {input.polyAreads} | wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}'|sed 's/{wildcards.capDesign}_//' > {output}
 
 		'''
 
-# rule aggPolyAreadsCapDesignStats:
-# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES)
-# 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.polyAreads.stats.tsv"
-# 	shell:
-# 		'''
-# totalMapped=$(cat {input} | cut -f4 | sum.sh)
-# totalPolyA=$(cat {input} | cut -f5 | sum.sh)
-# echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$4/$3}}' > {output}
-# 		'''
+
+
+rule aggPolyAreadsAllFracsAllTissuesStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.polyAreads.agg.stats.tsv")
+	shell:
+		'''
+totalMapped=$(cat {input} | cut -f5 | sum.sh)
+totalPolyA=$(cat {input} | cut -f6 | sum.sh)
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tallFracs\tallTissues\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$6/$5}}' > {output}
+		'''
+
+rule aggPolyAreadsAllTissuesStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.polyAreads.agg.stats.tsv")
+	wildcard_constraints:
+		sizeFrac='[^(allFracs)][^_][\S]+', #to avoid ambiguity with downstream merging rules
+	shell:
+		'''
+totalMapped=$(cat {input} | cut -f5 | sum.sh)
+totalPolyA=$(cat {input} | cut -f6 | sum.sh)
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\tallTissues\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$6/$5}}' > {output}
+		'''
+
+
+rule aggPolyAreadsAllFracsStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.polyAreads.agg.stats.tsv")
+	wildcard_constraints:
+		barcodes='[^(allTissues)][\S]+'
+	shell:
+		'''
+totalMapped=$(cat {input} | cut -f5 | sum.sh)
+totalPolyA=$(cat {input} | cut -f6 | sum.sh)
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tallFracs\t{wildcards.barcodes}\t$totalMapped\t$totalPolyA" | awk '{{print $0"\t"$6/$5}}' |sed 's/{wildcards.capDesign}_//' > {output}
+		'''
 
 rule aggPolyAreadsStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.polyAreads.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
+	#input: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv"
+#	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.agg.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.polyAreads.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, barcodes=BARCODES),
+		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.polyAreads.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),
+		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.polyAreads.agg.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\tnonPolyA\\t"$3-$4"\\n"$1"\\t"$2"\\tpolyA\\t"$4}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -r >> {output}
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6"\\t"$6/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
 		'''
 
-rule plotPolyAreadsStats:
+
+
+# rule aggPolyAreadsStats:
+# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+# 	output: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
+# 	shell:
+# 		'''
+# echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount" > {output}
+# cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -r >> {output}
+# 		'''
+
+rule plotAllPolyAreadsStats:
 	input: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
-	output: config["PLOTSDIR"] + "all.polyAreads.stats.{ext}"
+	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.polyAreads.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -172,13 +224,18 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
-horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign))
-vertCats <- length(unique(dat\$seqTech))
-plotWidth = horizCats + 3
-plotHeight = vertCats +2
-
+{params.filterDat}
+horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign)) * length(unique(dat\$tissue))
+vertCats <- length(unique(dat\$seqTech)) * length(unique(dat\$sizeFrac))
+plotWidth = horizCats + 1
+plotHeight = vertCats + 1
+geom_textSize=0.1 * plotWidth * plotHeight
+plotWidth
+plotHeight
+geom_textSize
 ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#25804C', 'nonPolyA' = '#FB3B24')) + facet_grid( seqTech ~ capDesign)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
+geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) + facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
