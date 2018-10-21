@@ -223,18 +223,11 @@ echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 {params.filterDat}
-horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign)) * length(unique(dat\$tissue))
-vertCats <- length(unique(dat\$seqTech)) * length(unique(dat\$sizeFrac))
-plotWidth = horizCats + 1
-plotHeight = vertCats + 1
-geom_textSize=0.1 * plotWidth * plotHeight
-plotWidth
-plotHeight
-geom_textSize
-ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) + facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
+geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+ylab('# mapped reads') + xlab('Error correction') +
+guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)

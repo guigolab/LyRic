@@ -29,19 +29,20 @@ cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
 
 rule strandGffs:
 	input:
-		gff = "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff",
+		gff = "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz",
 		strandInfo = "mappings/" + "integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv"
-	output: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff"
+	output: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
 	shell:
 		'''
-get_right_transcript_strand.pl {input.gff} {input.strandInfo} | fgrep -v ERCC- | sortgff> {output}
+zcat {input.gff} > $TMPDIR/in.gff
+get_right_transcript_strand.pl $TMPDIR/in.gff {input.strandInfo} | fgrep -v ERCC- | sortgff |gzip> {output}
 
 		'''
 
 rule highConfidenceReads:
 	input:
 		transcriptStrandInfo = "mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv",
-		strandedReads = "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff"
+		strandedReads = "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
 	output:
 		"mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
 	shell:
@@ -49,13 +50,14 @@ rule highConfidenceReads:
 #select read IDs with canonical GT|GC/AG and high-confidence SJs
 cat {input.transcriptStrandInfo} | skipcomments | awk '$6==1 && $7==1' | cut -f1 | sort|uniq > $TMPDIR/reads.hcSJs.list
 wc -l $TMPDIR/reads.hcSJs.list
+zcat {input.strandedReads} > $TMPDIR/str.gff
 set +e
-fgrep -w -f $TMPDIR/reads.hcSJs.list {input.strandedReads} > $TMPDIR/gtag.gff
+fgrep -w -f $TMPDIR/reads.hcSJs.list $TMPDIR/str.gff > $TMPDIR/gtag.gff
 set -e
 wc -l $TMPDIR/gtag.gff
-cat {input.strandedReads} | extractGffAttributeValue.pl transcript_id | sort|uniq -u > $TMPDIR/tmp
+cat $TMPDIR/str.gff | extractGffAttributeValue.pl transcript_id | sort|uniq -u > $TMPDIR/tmp
 set +e
-fgrep -w -f $TMPDIR/tmp {input.strandedReads} > $TMPDIR/tmp2
+fgrep -w -f $TMPDIR/tmp $TMPDIR/str.gff > $TMPDIR/tmp2
 set -e
 cat $TMPDIR/tmp2 | fgrep -v ERCC- > $TMPDIR/monoPolyA.gff
  echo $?
@@ -168,12 +170,12 @@ cat {output}.r | R --slave
 
 
 rule nonAnchoredMergeReads:
-	input: "mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.HiSS.gff.gz"
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.tmerge.gff"
+	input: "mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
+	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
 	threads:8
 	shell:
 		'''
-zcat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+zcat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 		'''
 
 
