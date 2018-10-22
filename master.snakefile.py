@@ -73,9 +73,9 @@ CAPDESIGNSplusMERGED.add("allCapDesigns")
 TECHNAMESplusMERGED=set(TECHNAMES)
 TECHNAMESplusMERGED.add("allTechs")
 
-print ("NONMERGED: ", TECHNAMES, CAPDESIGNS, SIZEFRACS,BARCODES)
+#print ("NONMERGED: ", TECHNAMES, CAPDESIGNS, SIZEFRACS,BARCODES)
 
-print ("MERGED: ", TECHNAMES, CAPDESIGNS, SIZEFRACSpluSMERGED,BARCODESpluSMERGED)
+#print ("MERGED: ", TECHNAMES, CAPDESIGNS, SIZEFRACSpluSMERGED,BARCODESpluSMERGED)
 
 
 SPLICE_SITE_TYPES=["Donor", "Acceptor"]
@@ -181,7 +181,7 @@ for comb in itertools.product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 AUTHORIZEDCOMBINATIONS=set(AUTHORIZEDCOMBINATIONS)
 AUTHORIZEDCOMBINATIONSMERGE=set(AUTHORIZEDCOMBINATIONSMERGE)
 
-print (AUTHORIZEDCOMBINATIONS)
+#print (AUTHORIZEDCOMBINATIONS)
 # for auth in (AUTHORIZEDCOMBINATIONSMERGE):
 # 	print (auth)
 #print ("AUTHORIZEDCOMBINATIONSMERGE:", AUTHORIZEDCOMBINATIONSMERGE)
@@ -212,8 +212,8 @@ def filtered_product_merge(*args):
 
 def filtered_merge_figures(*args):
 	for wc_comb in itertools.product(*args):
-		print ("MERGEFIG")
-		print (wc_comb[0])
+		#print ("MERGEFIG")
+		#print (wc_comb[0])
 		if wc_comb[0] in (('capDesign', 'allCapDesigns'),):
 			if wc_comb[1] in (('byFrac', 'allFracs'),) and wc_comb[2] in (('byTissue', 'allTissues'),):
 				yield(wc_comb)
@@ -242,14 +242,9 @@ dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 	returnFilterString+="""
 horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign)) * length(unique(dat\$tissue))
 vertCats <- length(unique(dat\$seqTech)) * length(unique(dat\$sizeFrac))
-plotWidth = horizCats + 2.5
+plotWidth = horizCats + 3.5
 plotHeight = vertCats + 1
-geom_textSize=0.8 * (vertCats * horizCats)
 geom_textSize=2.4
-plotWidth
-plotHeight
-geom_textSize
-ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
 """
 
 	return(returnFilterString)
@@ -299,13 +294,13 @@ rule all:
 
 
  		expand ("mappings/" + "clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
-# 		expand(config["PLOTSDIR"] + "all.pooled.merged.HiSS.stats.{ext}", ext=config["PLOTFORMATS"]),
-# 		expand("mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.gff", filtered_product_merge techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS),
- 		expand("mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
-# 		expand("mappings/" + "nonAnchoredMergeReads/qc/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.tmerge.qc.txt",filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, barcodes=BARCODES),
-# 		expand( "mappings/" + "nonAnchoredMergeReads/pooled/qc/{techname}Corr{corrLevel}_{capDesign}.tmerge.qc.txt", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS),
-# 		expand(config["PLOTSDIR"] + "all.pooled.merged.stats.{ext}", ext=config["PLOTFORMATS"]),
-# 		expand(config["PLOTSDIR"] + "all.polyAreads.stats.{ext}", ext=config["PLOTFORMATS"]),
+
+		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.HiSS.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
+
+ 		expand("mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
+ 		expand("mappings/" + "nonAnchoredMergeReads/qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.qc.txt",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
+		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.merged.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
+
  		expand("mappings/" + "makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, strand=config["STRANDS"]),
 
   		expand("mappings/readMapping/" + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
@@ -321,10 +316,9 @@ rule all:
 #  		expand(config["PLOTSDIR"] + "all_pooled.targetCoverage.stats.{ext}", ext=config["PLOTFORMATS"]),
 #  		expand(config["PLOTSDIR"] + "all.splice.sites.stats.{ext}", ext=config["PLOTFORMATS"]),
 #  		expand(config["PLOTSDIR"] + "all.pooled.tmerge.vs.gencode.stats.{ext}",  ext=config["PLOTFORMATS"]),
-#  		expand("mappings/nonAnchoredMergeReads/pooled/cageSupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.cageSupported.bed", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS),
-#  		expand("mappings/nonAnchoredMergeReads/pooled/polyASupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.polyASupported.bed", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS),
-#  		expand("mappings/nonAnchoredMergeReads/pooled/cage+polyASupported/{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.cage+polyASupported.bed", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS),
-#   		expand(config["PLOTSDIR"] + "all.tmerge.cagePolyASupport.stats.{ext}", ext=config["PLOTFORMATS"]),
+  		expand("mappings/nonAnchoredMergeReads/cage+polyASupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.cage+polyASupported.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
+		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.cagePolyASupport.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
+
 #  		expand(config["PLOTSDIR"] + "all.polyA.vs.PAS.precisionRecall.stats.{ext}", ext=config["PLOTFORMATS"]),
 
 
