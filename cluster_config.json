@@ -75,5 +75,10 @@
         "queue" : "rg-el7,long-sl7",
         "h_rt" : "20:00:00",
         "disk": "20G"
+    },
+    "aggGeneidScores":
+    {
+        "h_rt" : "10:00:00",
+        "queue" : "rg-el7,long-sl7"
     }
 }

@@ -65,60 +65,12 @@ fgrep -w -f $TMPDIR/cage+PolyA.list {input.tms} > {output.FLbed}
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA" |sed 's/{wildcards.capDesign}_//' > {output.stats}
 		'''
 
-rule aggCagePolyAAllFracsAllTissuesStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.cagePolyASupport.agg.stats.tsv")
-	shell:
-		'''
-total=$(cat {input} | cut -f5 | sum.sh)
-cageOnly=$(cat {input} | cut -f6 | sum.sh)
-cageAndPolyA=$(cat {input} | cut -f7 | sum.sh)
-polyAOnly=$(cat {input} | cut -f8 | sum.sh)
-noCageNoPolyA=$(cat {input} | cut -f9 | sum.sh)
-
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tallFracs\tallTissues\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA" |sed 's/{wildcards.capDesign}_//' > {output}
-
-		'''
-
-
-rule aggCagePolyAAllTissuesStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.cagePolyASupport.agg.stats.tsv")
-	wildcard_constraints:
-		sizeFrac='[^(allFracs)][\S]+', #to avoid ambiguity with downstream merging rules
-#		sizeFrac='[^(allFracs)][^_][\S]+', #to avoid ambiguity with downstream merging rules
-	shell:
-		'''
-total=$(cat {input} | cut -f5 | sum.sh)
-cageOnly=$(cat {input} | cut -f6 | sum.sh)
-cageAndPolyA=$(cat {input} | cut -f7 | sum.sh)
-polyAOnly=$(cat {input} | cut -f8 | sum.sh)
-noCageNoPolyA=$(cat {input} | cut -f9 | sum.sh)
-
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\tallTissues\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA" |sed 's/{wildcards.capDesign}_//' > {output}
-		'''
-
-rule aggCagePolyAAllFracsStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.cagePolyASupport.agg.stats.tsv")
-	wildcard_constraints:
-		barcodes='[^(allTissues)][\S]+'
-	shell:
-		'''
-total=$(cat {input} | cut -f5 | sum.sh)
-cageOnly=$(cat {input} | cut -f6 | sum.sh)
-cageAndPolyA=$(cat {input} | cut -f7 | sum.sh)
-polyAOnly=$(cat {input} | cut -f8 | sum.sh)
-noCageNoPolyA=$(cat {input} | cut -f9 | sum.sh)
-
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\tallFracs\t{wildcards.barcodes}\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA" |sed 's/{wildcards.capDesign}_//' > {output}
-		'''
-
 
 rule aggCagePolyAStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.cagePolyASupport.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, barcodes=BARCODES),
-		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.cagePolyASupport.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),
-		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.cagePolyASupport.agg.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
+	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	# input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.cagePolyASupport.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, barcodes=BARCODES),
+	# 	lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.cagePolyASupport.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),
+	# 	lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.cagePolyASupport.agg.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.cagePolyASupport.stats.tsv"
 	shell:
 		'''
