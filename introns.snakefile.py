@@ -73,13 +73,14 @@ rule aggGeneidScores:
 	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES)
 	#input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.{spliceType}.splice.sites.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, spliceType=SPLICE_SITE_TYPES)
 	output: config["STATSDATADIR"] + "all.spliceSites.stats.tsv"
+	threads: 8
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssCategory\tssScore" > {output}
 uuid=$(uuidgen)
 #keep non-redundant SSs
-cat {input} | cut -f1-5,8,9 > $TMPDIR/$uuid
-sort -S 27G $TMPDIR/$uuid | uniq >> {output}
+cat {input} | cut -f1-6,8,9 > $TMPDIR/$uuid
+sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq >> {output}
 		'''
 
 rule plotGeneidScores:
