@@ -11,8 +11,8 @@
            "HpreCap": "hg38",
             "MpreCap": "mm10"},
        "capDesignToAnnotGtf" : {
-           "HpreCap": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
-            "MpreCap": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/versionM7/gencode.vM7.annotation.gtf"},
+           "HpreCap": "annotations/hs.gencode24+SIRVS.gff",
+            "MpreCap": "annotations/hs.gencode24+SIRVS.gff"},
         "PLOTFORMATS" : ["png", "pdf"],
         "STRANDS" : ["+", "-"],
     "DEMULTIPLEX": false,

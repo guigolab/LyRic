@@ -76,11 +76,11 @@ rule aggGeneidScores:
 	threads: 8
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssId\tssCategory\tssScore" > {output}
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssCategory\tssScore" > {output}
 uuid=$(uuidgen)
 #keep non-redundant SSs
 cat {input} | cut -f1-6,8,9 > $TMPDIR/$uuid
-sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq >> {output}
+sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output}
 		'''
 
 rule plotGeneidScores:

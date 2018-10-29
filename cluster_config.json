@@ -78,9 +78,11 @@
     },
     "aggGeneidScores":
     {
-        "h_rt" : "10:00:00",
-        "queue" : "rg-el7,long-sl7",
         "virtual_free" : "30G",
         "threads" : "-pe smp 8"
+    },
+    "plotGeneidScores":
+    {
+        "virtual_free" : "30G"
     }
 }
