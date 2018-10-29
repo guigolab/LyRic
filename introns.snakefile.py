@@ -76,7 +76,7 @@ rule aggGeneidScores:
 	threads: 8
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssCategory\tssScore" > {output}
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssId\tssCategory\tssScore" > {output}
 uuid=$(uuidgen)
 #keep non-redundant SSs
 cat {input} | cut -f1-6,8,9 > $TMPDIR/$uuid
