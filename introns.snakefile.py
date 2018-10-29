@@ -78,8 +78,8 @@ rule aggGeneidScores:
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssCategory\tssScore" > {output}
 uuid=$(uuidgen)
 #keep non-redundant SSs
-cat {input} | awk '$2=="Yes" || $2=="No"' | cut -f1-5,8,9 > $TMPDIR/$uuid
-sort -S 10G -u $TMPDIR/$uuid >> {output}
+cat {input} | cut -f1-5,8,9 > $TMPDIR/$uuid
+sort -S 27G $TMPDIR/$uuid | uniq >> {output}
 		'''
 
 rule plotGeneidScores:

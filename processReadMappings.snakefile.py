@@ -287,6 +287,48 @@ rule aggTmLengthStats:
 	output: config["STATSDATADIR"] + "all.splicedLength.stats.tsv"
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\ttranscript_id\tsplicedLength" > {output}
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tsplicedLength" > {output}
 cat {input} |sort >> {output}
+		'''
+
+
+rule plotTmLengthStats:
+	input: config["STATSDATADIR"] + "all.splicedLength.stats.tsv"
+	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.splicedLength.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+	shell:
+		'''
+echo "
+library(data.table)
+library(ggplot2)
+library(scales)
+library(plyr)
+palette <- c('GENCODE_protein_coding' = '#009900', 'CLS_TMs' = '#cc9966', 'CLS_FL_TMs' = '#cc00cc')
+dat<-fread('{input}', header=T, sep='\\t')
+{params.filterDat}
+
+fun_length <- function(x){{
+return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
+}}
+fun_median <- function(x){{
+return(data.frame(y=-8.5,label= paste0('Median=', comma(median(x)))))
+}}
+ggplot(dat, aes(x=factor(correctionLevel), y=splicedLength, color=category)) +
+geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
+coord_cartesian(ylim=c(100, 3500)) +
+scale_y_continuous(labels=comma)+
+scale_color_manual(values=palette, name='Category', labels = c(GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_FL_TMs='CLS FL TMs')) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize) +
+#stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, color='black', size=geom_textSize) +
+stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize) +
+#geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
+ylab('Spliced length') + xlab('Error correction') + coord_flip(ylim=c(100, 3500)) +
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=plotWidth, height=plotHeight)
+
+" > {output}.r
+cat {output}.r | R --slave
+
 		'''

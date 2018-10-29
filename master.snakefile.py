@@ -326,11 +326,11 @@ rule all:
 		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.tmerge.vs.gencode.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.targetCoverage.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.spliceSites.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.splicedLength.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 
 #  		expand(config["PLOTSDIR"] + "all.polyA.vs.PAS.precisionRecall.stats.{ext}", ext=config["PLOTFORMATS"]),
 
 		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.polyAreads.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
-		config["STATSDATADIR"] + "all.splicedLength.stats.tsv"
 
 
 

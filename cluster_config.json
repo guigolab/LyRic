@@ -79,6 +79,7 @@
     "aggGeneidScores":
     {
         "h_rt" : "10:00:00",
-        "queue" : "rg-el7,long-sl7"
+        "queue" : "rg-el7,long-sl7",
+        "virtual_free" : "30G"
     }
 }
