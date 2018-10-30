@@ -37,7 +37,7 @@ cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f $TMPDI
 rule compareToPASTestPolyAmapping:
 	input:
 		tpend="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
-		PAS=lambda wildcards: CAPDESIGNTOPAS[wildcards.capDesign]
+		PAS=lambda wildcards: CAPDESIGNTOPAS[wildcards.capDesign],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output: temp("mappings/polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv")
 

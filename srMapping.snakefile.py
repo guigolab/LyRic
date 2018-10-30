@@ -2,7 +2,7 @@ rule hiSeqReadMapping:
 	input:
 		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz",
 		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz",
-		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/"
+		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/",
 		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
 	output:
@@ -42,7 +42,7 @@ echoerr "Mapping done"
 
 rule getHiSeqCanonicalIntronsList:
 	input:
-		bam="mappings/" + "hiSeq_{capDesign}.bam"
+		bam="mappings/" + "hiSeq_{capDesign}.bam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	threads: 6
 	output:"mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list"
