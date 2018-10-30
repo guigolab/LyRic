@@ -83,6 +83,6 @@
     },
     "plotGeneidScores":
     {
-        "virtual_free" : "30G"
+        "virtual_free" : "80G"
     }
 }
