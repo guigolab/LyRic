@@ -1,12 +1,14 @@
 rule hiSeqReadMapping:
 	input:
-		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz",
-		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz",
+		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz" if config["DEMULTIPLEX"] else lambda wildcards: expand(config["MATCHED_HISEQ_PATH"] + "{techname}_{capDesign}.{barcodes}_1.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes),
+		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz" if config["DEMULTIPLEX"] else lambda wildcards: expand(config["MATCHED_HISEQ_PATH"] + "{techname}_{capDesign}.{barcodes}_2.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/",
 		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
 	output:
-		"mappings/" + "hiSeq_{capDesign}.bam"
+		"mappings/" + "hiSeq_{capDesign}.bam" if config["DEMULTIPLEX"] else "mappings/" + "hiSeq_{techname}_{capDesign}.{barcodes}.bam"
+	wildcard_constraints:
+		barcodes='[^(allTissues)][\S]+',
 	shell:
 		'''
 echoerr "Mapping"
@@ -39,13 +41,24 @@ echoerr "Mapping done"
 
 		'''
 
+if not config["DEMULTIPLEX"]:
+	rule mergeHiSeqBarcodeBams:
+		input: lambda wildcards: expand("mappings/" + "hiSeq_{techname}_{capDesign}.{barcodes}.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
+		output: "mappings/" + "hiSeq_{techname}_{capDesign}.allTissues.bam"
+		shell:
+			'''
+samtools merge {output} {input}
+sleep 120s
+samtools index {output}
+			'''
+
 
 rule getHiSeqCanonicalIntronsList:
 	input:
-		bam="mappings/" + "hiSeq_{capDesign}.bam",
+		bam="mappings/" + "hiSeq_{capDesign}.bam" if config["DEMULTIPLEX"] else "mappings/" + "hiSeq_{techname}_{capDesign}.{barcodes}.bam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	threads: 6
-	output:"mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list"
+	output:"mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list" if config["DEMULTIPLEX"] else "mappings/hiSeqIntrons/hiSeq_{techname}_{capDesign}.{barcodes}.canonicalIntrons.list"
 	shell:
 		'''
 echoerr "making bed"

@@ -19,7 +19,9 @@ DUMMY_DIR="dummy/"
 FQPATH=config["FQPATH"]
 FQ_CORR_PATH=FQPATH + "corr/"
 
-print ("FASTQs are in: " + FQPATH)
+print ("Input LR FASTQs are in: " + FQPATH)
+
+
 
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 wildcard_constraints:
@@ -31,6 +33,7 @@ wildcard_constraints:
 # 	barcodesU ="^(merged)"
 
 if config["DEMULTIPLEX"]:
+	print ("Demultiplexing is ON")
 	# get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries so "set" them afterwards):
 	DEMULTIPLEX_DIR=config["DEMULTIPLEX_DIR"]
 	DEMULTIPLEXED_FASTQS= DEMULTIPLEX_DIR + "demultiplexFastqs/"
@@ -52,6 +55,7 @@ if config["DEMULTIPLEX"]:
 	BARCODESUNDETER=set(BARCODESUNDETER)
 
 else:
+	print ("Demultiplexing is OFF")
 #	DEMULTIPLEX_DIR=FQPATH
 	DEMULTIPLEXED_FASTQS=FQ_CORR_PATH
 	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(FQPATH + "{techname, [^_/]+}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz")
@@ -91,6 +95,9 @@ if config["LORDEC_CORRECT"]:
 	graph_kmers=["17", "18", "19", "20", "21", "30", "40", "50", "60", "70", "80", "90"]
 	lastK=graph_kmers[-1]
 	FINALCORRECTIONLEVELS=["0", lastK]
+	print ("LR error correction is ON. Correction levels: ")
+	print (FINALCORRECTIONLEVELS)
+
 	#make string to interpolate into bash script in "lordecCorrectLr" rule
 	graph_kmers_string= "(" + " ".join(graph_kmers) + ")"
 	solid_kmer_abundance_threshold="3"
@@ -99,8 +106,11 @@ if config["LORDEC_CORRECT"]:
 	for x in range(0, splitFastqsInto, 1):
 		splitFasta.append(str(x).zfill(4))
 else:
+	print ("LR error correction is OFF")
 	FINALCORRECTIONLEVELS=["0"]
 	lastK='NULL'
+
+
 
 FINALCORRECTIONLEVELSplusMERGED=set(FINALCORRECTIONLEVELS)
 FINALCORRECTIONLEVELSplusMERGED.add("allCors")
@@ -152,6 +162,8 @@ for comb in itertools.product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 		if (comb[3]).find(comb[1]) == 0 or config["DEMULTIPLEX"] is False: # check that barcode ID's prefix matches capDesign (i.e. ignore demultiplexed FASTQs with unmatched barcode/capDesign)
 #			print ("MATCH")
 			AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("barcodes", comb[3])))
+			for split in splitFasta:
+				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]), ("split", split)))
 			for corrLevel in FINALCORRECTIONLEVELS:
 				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3])))
 				for mergedComb in itertools.product([("techname", comb[0]), ("techname", "allTechs")], [("corrLevel", corrLevel), ("corrLevel", "allCors")] , [("capDesign", comb[1]), ("capDesign", "allCapDesigns")], [("sizeFrac", comb[2]), ("sizeFrac", "allFracs")], [("barcodes",comb[3]), ("barcodes", "allTissues")]):
@@ -200,9 +212,7 @@ PLOTSbySIZEFRAC=['allFracs','byFrac']
 def filtered_product(*args):
 	for wc_comb in itertools.product(*args):
 		found=False
-		#print (wc_comb)
 		if wc_comb in AUTHORIZEDCOMBINATIONS:
-			#print ("AUTH")
 			found=True
 			yield(wc_comb)
 		#if not found:
@@ -232,7 +242,7 @@ def filtered_merge_figures(*args):
 				yield(wc_comb)
 
 def merge_figures_params(c,bf,bt):
-	print(c,bf,bt)
+	#print(c,bf,bt)
 	returnFilterString="""
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 """
@@ -256,21 +266,6 @@ geom_textSize=2.4
 """
 
 	return(returnFilterString)
-
-# def filtered_product_aggMerge(*args): #filter "all\S+" wildcard combinations
-# 	for wc_comb in itertools.product(*args):
-# 		#print (wc_comb)
-# 		for wc in wc_comb:
-# 			if wc in ((("techname", 'allTechs'), ("corrLevel", 'allCors'), ('capDesign', 'allCapDesigns'), ('sizeFrac', 'allFracs'), ('barcode', 'allTissues'))):
-# 				#print ("MATCH")
-# 				if wc_comb in AUTHORIZEDCOMBINATIONS or wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
-# 					#print ("AUTH")
-# 					found=True
-# 					print (wc_comb)
-# 					yield(wc_comb)
-
-#def unfold_aggMerge(*args):
-
 
 
 include: "lrCorrection.snakefile.py"
@@ -297,10 +292,14 @@ rule all:
   		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.fastq.UP.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"] else expand( DUMMY_DIR + "dummy{number}.txt", number='1'), # UP reads plots
   		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.fastq.BC.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='2') , # barcode reads plots
   		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='3') , #foreign barcode reads plots
-  		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS) if config["USE_MATCHED_ILLUMINA"] else expand( DUMMY_DIR + "dummy{number}.txt", number='5') ,  # mapped short reads
+
+
+
+  		expand ("mappings/" + "hiSeq_{capDesign}.bam", capDesign=CAPDESIGNS) if config["USE_MATCHED_ILLUMINA"] and config["DEMULTIPLEX"] else expand("mappings/" + "hiSeq_{techname}_{capDesign}.{barcodes}.bam", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, barcodes=BARCODES) if config["USE_MATCHED_ILLUMINA"] and not config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='5') ,  # mapped short reads
+
+
+
   		expand(DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='4'),
-
-
  		expand ("mappings/" + "clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
 
 		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.HiSS.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
