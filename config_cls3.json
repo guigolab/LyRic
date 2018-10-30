@@ -16,8 +16,9 @@
         "PLOTFORMATS" : ["png", "pdf"],
         "STRANDS" : ["+", "-"],
     "DEMULTIPLEX": false,
-    "USE_MATCHED_ILLUMINA": false,
-    "LORDEC_CORRECT": false,
+    "USE_MATCHED_ILLUMINA": true,
+    "LORDEC_CORRECT": true,
+    "MATCHED_HISEQ_PATH": "fastqs/hiSeq/",
     "SUPPORT_INTRONS_DB":"/users/rg/jlagarde/projects/splice_sites/intropolis/intropolis.intron.coord.hg38.tsv",
     "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))",
     "capDesignToCAGEpeaks": {

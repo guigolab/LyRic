@@ -38,12 +38,12 @@ rule compareToPASTestPolyAmapping:
 	input:
 		tpend="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
 		PAS=lambda wildcards: CAPDESIGNTOPAS[wildcards.capDesign]
-	params: genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output: temp("mappings/polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv")
 
 	shell:
 		'''
-cat {input.tpend} | sortbed | bedtools slop -s -l 50 -r -10 -i stdin -g {params.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} > {output}
+cat {input.tpend} | sortbed | bedtools slop -s -l 50 -r -10 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} > {output}
 
 		'''
 

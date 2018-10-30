@@ -1,9 +1,8 @@
 rule hiSeqReadMapping:
 	input:
-		reads1 = "fastqs/" + "hiSeq_{capDesign}_1.fastq.gz",
-		reads2 = "fastqs/" + "hiSeq_{capDesign}_2.fastq.gz",
+		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz",
+		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/"
-	params:
 		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
 	output:
@@ -18,7 +17,7 @@ STAR \
 --genomeDir {input.genome} \
 --readFilesCommand zcat \
 --sjdbOverhang 124 \
---sjdbGTFfile {params.referenceAnnot} \
+--sjdbGTFfile {input.referenceAnnot} \
 --outFileNamePrefix "mappings/STAR/`basename {output}`/" \
 --outStd SAM \
 --genomeLoad NoSharedMemory \
@@ -42,19 +41,20 @@ echoerr "Mapping done"
 
 
 rule getHiSeqCanonicalIntronsList:
-	input: "mappings/" + "hiSeq_{capDesign}.bam"
-	params:	genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+	input:
+		bam="mappings/" + "hiSeq_{capDesign}.bam"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	threads: 6
 	output:"mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list"
 	shell:
 		'''
 echoerr "making bed"
-samtools view -b -F 256 -F4 -F 2048 {input}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > $TMPDIR/hiSeq_{wildcards.capDesign}.bed
+samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > $TMPDIR/hiSeq_{wildcards.capDesign}.bed
 echoerr "splitting"
 split -a 3 -d -e -n l/24 $TMPDIR/hiSeq_{wildcards.capDesign}.bed $TMPDIR/hiSeq_{wildcards.capDesign}.bed.split
 rm $TMPDIR/hiSeq_{wildcards.capDesign}.bed
 for file in `ls $TMPDIR/hiSeq_{wildcards.capDesign}.bed.split*`; do
-echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T $TMPDIR -k12,12 -k4,4n -k5,5n $file.gff | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk | extract_intron_strand_motif.pl - {params.genome} $TMPDIR/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
+echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T $TMPDIR -k12,12 -k4,4n -k5,5n $file.gff | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk | extract_intron_strand_motif.pl - {input.genome} $TMPDIR/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
 done > $TMPDIR/parallelIntrons.sh
 echoerr "extracting introns on split files"
 
