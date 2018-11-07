@@ -125,7 +125,7 @@ rule checkOnlyOneHit:
 		'''
 samtools view {input} | cut -f1 | sort| uniq -dc > {output}
 count=$(cat {output} | wc -l)
-if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
+if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {input} {input}.dup.bkp; exit 1; fi
 		'''
 
 
