@@ -54,7 +54,7 @@ done
 
 if config["LORDEC_CORRECT"]:
 	rule mergeCorrLrFastas:
-		input: lambda wildcards: expand(FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}_{split}.Corr" + lastK + ".fasta", techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, split=splitFasta) if config["DEMULTIPLEX"] else expand(FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.Corr" + lastK + ".fasta", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES, split=splitFasta)
+		input: lambda wildcards: expand(FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}_{split}.Corr" + lastK + ".fasta", techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, split=splitFasta) if config["DEMULTIPLEX"] else expand(FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.Corr" + lastK + ".fasta", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, split=splitFasta)
 		output: FQ_CORR_PATH + "{techname}Corr" + lastK + "_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr" + lastK + "_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 		shell:
 			'''
