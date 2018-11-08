@@ -135,14 +135,6 @@ rule getPolyAreadsStats:
 		mappedReads= "mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		polyAreads = "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv")
-	# wildcard_constraints:
-	# 	sizeFrac='[^(allFracs)][\S]+', #to avoid ambiguity with downstream merging rules
-	# 	barcodes='[^(allTissues)][\S]+',
-
-	# wildcard_constraints:
-	# 	techname='[^(allTechs)][\S]+', #to avoid ambiguity with downstream merging rules
-	# 	corrLevel='[^(allCors)][\S]+',
-	# 	capDesign='[^(allCapDesigns)][\S]+',
 	shell:
 		'''
 mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort|uniq|wc -l)
@@ -153,9 +145,6 @@ echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{
 
 rule aggPolyAreadsStats:
 	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
-# input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.polyAreads.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, barcodes=BARCODES),
-# 	lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.polyAreads.agg.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS),
-# 	lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.polyAreads.agg.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
 	shell:
 		'''

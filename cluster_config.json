@@ -73,7 +73,7 @@
     {
         "threads" : "-pe smp 6",
         "queue" : "rg-el7,long-sl7",
-        "h_rt" : "20:00:00",
+        "h_rt" : "24:00:00",
         "disk": "20G"
     },
     "aggGeneidScores":

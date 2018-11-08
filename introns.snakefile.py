@@ -28,7 +28,6 @@ cat {input} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |
 		'''
 
 rule getReadsSpliceSites:
-#	input: lambda wildcards: expand("mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname,  corrLevel=wildcards.corrLevel,capDesign=wildcards.capDesign, barcodes=BARCODES)
 	input: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
 	output: "mappings/" + "makeIntrons/readSpliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz"
 	shell:
@@ -70,7 +69,6 @@ cat {input.random} | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c
 
 rule aggGeneidScores:
 	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES)
-	#input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.{spliceType}.splice.sites.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, spliceType=SPLICE_SITE_TYPES)
 	output: config["STATSDATADIR"] + "all.spliceSites.stats.tsv"
 	threads: 8
 	shell:

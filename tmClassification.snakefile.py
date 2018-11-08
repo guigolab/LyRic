@@ -92,7 +92,6 @@ cat {input} |cut -f4 | sort|uniq -c | awk -v s={wildcards.techname}Corr{wildcard
 
 rule aggGffCompareStats:
 	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
-#	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_pooled.tmerge.vs.gencode.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.tmerge.vs.gencode.stats.tsv"
 	shell:
 		'''

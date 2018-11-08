@@ -75,7 +75,7 @@ echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$total\t$withUP\t$withBarc
 
 
 rule aggBasicDemultiplexingStats:
-	input: #expand(config["STATSDATADIR"] + "{{techname}Corr{corrLevel}}_{capDesign}_{sizeFrac}.fastq.basicDemultiplexing.stats.tsv", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
+	input:
 		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.basicDemultiplexing.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
 	output:config["STATSDATADIR"] + "{techname}Corr{corrLevel}.fastq.basicDemultiplexing.stats.tsv"
 	shell:
@@ -211,8 +211,6 @@ cat {output}.r | R --slave
 		'''
 
 rule getAdaptersLocationOverReads:
-#	params:
-#		sizeFrac=expand(SIZEFRACS)
 	input: DEMULTIPLEX_DIR + "processBlastDemultiplex/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.demultiplex.tsv"
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.adapters.location.stats.tsv"
 	shell:
@@ -222,7 +220,7 @@ cat {input} | perl -slane '@line=split "\t"; if($line[4] ne "UP"){{$line[4]="BC"
 		'''
 
 rule aggAdaptersLocationOverReads:
-	input: #expand(config["STATSDATADIR"] + "{{techname}Corr{corrLevel}}_{{capDesign}}_{sizeFrac}.adapters.location.stats.tsv", sizeFrac=SIZEFRACS)
+	input:
 		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.adapters.location.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS)
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.all.adapters.location.stats.tsv"
 	shell:
@@ -276,7 +274,7 @@ echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$total\t$chimeric" | awk '
 		'''
 
 rule aggRateOfReadChimeras:
-	input: #expand(config["STATSDATADIR"] + "{{techname}Corr{corrLevel}}_{capDesign}_{sizeFrac}.chimeric.reads.stats.tsv", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
+	input:
 		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.chimeric.reads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.chimeric.reads.stats.tsv"
 	shell:
@@ -335,7 +333,7 @@ echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$total\t$finalDemul" | awk
 		'''
 
 rule aggNonAmbiguousNonChimericReadsStats:
-	input: #expand(config["STATSDATADIR"] + "{{techname}Corr{corrLevel}}_{capDesign}_{sizeFrac}.finalDemul.reads.stats.tsv", capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
+	input:
 		lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.finalDemul.reads.stats.tsv", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS)
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.finalDemul.reads.stats.tsv"
 	shell:
@@ -404,7 +402,6 @@ cat $TMPDIR/tmp.fastq | tsv2fastq.pl | gzip> {output}
 rule checkTotalsDemultiplexed:
 	input:
 		demul= lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES),
-			#expand(DEMULTIPLEX_DIR + "{{techname}Corr{corrLevel}}_{{capDesign}}_{{sizeFrac}}.{barcodesU}.fastq", barcodesU=BARCODESUNDETER),
 		totals=config["STATSDATADIR"] + "{techname}Corr{corrLevel}.fastq.readCounts.tsv"
 	output: DEMULTIPLEX_DIR + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demul.QC2.txt"
 	shell:

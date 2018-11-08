@@ -2,23 +2,15 @@
 
 # mapping of long reads:
 rule readMapping:
-#	wildcard_constraints:
-#		 barcodesU = lambda wildcards: {wildcards.capDesign} + "_.+"
 	input:
-#		reads = returnCapDesignBarcodesFastqs,
-#		reads = DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
 		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
-#	params:
-#		reference=  lambda wildcards: CAPDESIGNTOGENOME[wildcards.capDesign]
 	threads: 12
 	output:
 		"mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
-		sizeFrac='[^(allFracs)][\S]+', #to avoid ambiguity with downstream merging rules
-		barcodes='[^(allTissues)][\S]+',
-#		capDesign='[^(allCapDesigns)][\S]+',
-#		corrLevel='[^(allCors)][\S]+'
+		barcodes='(?!allTissues).+',
+		sizeFrac='[0-9-+\.]+'
 	shell:
 		'''
 echoerr "Mapping"
@@ -78,11 +70,9 @@ cat {output}.r | R --slave
 
 rule mergeSizeFracBams:
 	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-#	input: lambda wildcards: expand("mappings/" + "readMapping/{{techname}}Corr{{corrLevel}}_{{capDesign}}_{sizeFrac}_{{barcodes}}.bam", filtered_product, sizeFrac=SIZEFRACS)
-	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
 	wildcard_constraints:
-		barcodes='[^(allTissues)][\S]+' #to avoid ambiguity with downstream merging rules
+		barcodes='(?!allTissues).+',
 	shell:
 		'''
 
@@ -93,10 +83,9 @@ samtools index {output}
 
 rule mergeBarcodeBams:
 	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
-	#output: "mappings/" + "mergeSizeFracBams/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.merged.bam"
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam"
 	wildcard_constraints:
-		sizeFrac='[^(allFracs)][\S]+' #to avoid ambiguity with downstream merging rules
+		sizeFrac='[0-9-+\.]+', #to avoid ambiguity with downstream merging rules
 	shell:
 		'''
 
@@ -141,7 +130,6 @@ bedtools bamtobed -i {input} -bed12 | sortbed | gzip > {output}
 		'''
 
 rule readBedToGff:
-#	input: lambda wildcards: expand("mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
 	input: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
 	output: "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
 	shell:
