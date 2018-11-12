@@ -5,7 +5,7 @@ import itertools
 import sys
 #import pprint #pretty printing
 
-print ("TODO:\n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)\n\ninclude basic HiSeq mapping stats\n\nWhat is the intersection between PacBio TMs and ONT TMs???")
+print ("TODO:\n ## include contents of README_correction_error_rate.sh into the snakemake workflow (see plotPolyAreadsStats for inspiration)\n\ninclude basic HiSeq mapping stats\n\nCalculate amount of novel captured nts\n\nWhat is the intersection between PacBio TMs and ONT TMs???")
 
 
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
@@ -282,8 +282,7 @@ rule all:
 
 		expand(config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.polyAreads.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, byFrac=PLOTSbySIZEFRAC, byTissue=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 
-
-
+		expand("mappings/" + "nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.gff.gz", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
 
 
 

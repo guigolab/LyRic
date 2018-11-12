@@ -48,14 +48,7 @@
     {
         "virtual_free" : "20G",
         "queue" : "rg-el7,long-sl7",
-        "h_rt" : "400:00:00",
-        "threads" : "-pe smp 8"
-    },
-    "poolNonAnchoredMergeReads":
-    {
-        "virtual_free" : "20G",
-        "queue" : "rg-el7,long-sl7",
-        "h_rt" : "46:00:00",
+        "h_rt" : "200:00:00",
         "threads" : "-pe smp 8"
     },
     "getHiSeqCanonicalIntronsList":
@@ -84,5 +77,13 @@
     "plotGeneidScores":
     {
         "virtual_free" : "80G"
+    },
+    "mergeTmsWithGencode":
+    {
+         "virtual_free" : "20G",
+       "threads" : "-pe smp 8",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "10:00:00"
     }
+
 }

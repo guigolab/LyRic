@@ -126,4 +126,63 @@ cat {output}.r | R --slave
 
 		'''
 
-#calculate amount of novel nucleotides
+rule simplifyGencode:
+	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	output: "annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf"
+	shell:
+		'''
+cat {input}  | simplifyGencodeGeneTypes.pl - | sortgff > {output}
+		'''
+
+rule mergeTmsWithGencode:
+	input:
+		annot="annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		tm="mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	output: temp("mappings/" + "nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.gff.gz")
+	threads:8
+	shell:
+		'''
+cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --cpu {threads} - |sortgff |gzip > {output}
+		'''
+
+rule makeClsGencodeLoci:
+	input: "mappings/" + "nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.gff.gz"
+	params: locusPrefix=config["PROJECT_NAME"]
+	output: temp("mappings/" + "nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.gff.gz")
+	shell:
+		'''
+uuid=$(uuidgen)
+zcat {input} > $TMPDIR/$uuid
+bedtools intersect -s -wao -a $TMPDIR/$uuid -b $TMPDIR/$uuid |fgrep -v ERCC| buildLoci.pl --locPrefix {params.locusPrefix}: - |sortgff | gzip> {output}
+
+		'''
+
+
+rule mergeWithRef:
+	input:
+		clsGencode="mappings/" + "nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.gff.gz",
+		gencode="annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf"
+	output: "mappings/" + "nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz"
+	shell:
+		'''
+uuid=$(uuidgen)
+zcat  {input.clsGencode} > $TMPDIR/$uuid
+mergeToRef.pl {input.gencode} $TMPDIR/$uuid | sortgff |gzip > {output}
+		'''
+
+rule getNovelIntergenicLoci:
+	input:
+		gencode="annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		tmergeGencode="mappings/" + "nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz"
+	output:"mappings/" + "nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.gff.gz"
+	shell:
+		'''
+uuid1=$(uuidgen)
+uuid2=$(uuidgen)
+uuid3=$(uuidgen)
+cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sortbed > $TMPDIR/$uuid1
+zcat {input.tmergeGencode} | fgrep 'gene_ref_status "novel";' | extract_locus_coords.pl - | sortbed > $TMPDIR/$uuid2
+bedtools intersect -v -a $TMPDIR/$uuid2 -b $TMPDIR/$uuid1 |fgrep -v ERCC |cut -f4 | sort|uniq > $TMPDIR/$uuid3
+zcat {input.tmergeGencode}| fgrep -w -f $TMPDIR/$uuid3 - |gzip > {output}
+		'''
+

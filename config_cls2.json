@@ -15,6 +15,12 @@
            "Hv1": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
             "Hv2": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
             "Mv1": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/versionM7/gencode.vM7.annotation.gtf"},
+        "capDesignToPreviousPhaseMergedAnnotation":{
+          "Hv1": "/users/project/gencode_006070/jlagarde/lncRnaCapture/pacbio_mappings/gff/hiSeq-supported_reads/merged/gencodePlus/all_biotypes/hs.gencode+cls.tmerge.loci.refmerged.gtf",
+          "Hv2": "/users/project/gencode_006070/jlagarde/lncRnaCapture/pacbio_mappings/gff/hiSeq-supported_reads/merged/gencodePlus/all_biotypes/hs.gencode+cls.tmerge.loci.refmerged.gtf",
+          "Mv1": "/users/project/gencode_006070/jlagarde/lncRnaCapture/pacbio_mappings/gff/hiSeq-supported_reads/merged/gencodePlus/all_biotypes/mm.gencode+cls.tmerge.loci.refmerged.gtf"
+        },
+        "PROJECT_NAME": "cls2",
         "PLOTFORMATS" : ["png", "pdf"],
         "STRANDS" : ["+", "-"],
     "DEMULTIPLEX": true,
