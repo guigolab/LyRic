@@ -51,6 +51,18 @@
         "h_rt" : "200:00:00",
         "threads" : "-pe smp 8"
     },
+    "mergeTissuesNonAnchoredMergeReads":
+    {
+        "threads" : "-pe smp 8"
+    },
+    "mergeFracsNonAnchoredMergeReads":
+    {
+        "threads" : "-pe smp 8"
+    },
+    "mergeFracsAndTissuesNonAnchoredMergeReads":
+    {
+        "threads" : "-pe smp 8"
+    },
     "getHiSeqCanonicalIntronsList":
     {
         "virtual_free" : "120G",
