@@ -153,14 +153,18 @@ cat {output}.r | R --slave
 
 rule nonAnchoredMergeReads:
 	input: "mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff",
 	threads:8
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+'
 	shell:
 		'''
-zcat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+zcat {input} | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+cp {output} {output}.bkp
+checkTmergeOutput.sh {input} {output} &> {output}.qc.txt
+rm {output}.bkp
+
 		'''
 
 rule mergeTissuesNonAnchoredMergeReads:
@@ -172,7 +176,13 @@ rule mergeTissuesNonAnchoredMergeReads:
 		sizeFrac='[0-9-+\.]+'
 	shell:
 		'''
-cat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+uuid=$(uuidgen)
+cat {input} |sortgff > $TMPDIR/$uuid
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+cp {output} {output}.bkp
+checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+rm {output}.bkp
+
 		'''
 
 rule mergeFracsNonAnchoredMergeReads:
@@ -184,7 +194,12 @@ rule mergeFracsNonAnchoredMergeReads:
 		barcodes='(?!allTissues).+'
 	shell:
 		'''
-cat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+uuid=$(uuidgen)
+cat {input} |sortgff > $TMPDIR/$uuid
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+cp {output} {output}.bkp
+checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+rm {output}.bkp
 		'''
 
 
@@ -197,48 +212,16 @@ rule mergeFracsAndTissuesNonAnchoredMergeReads:
 
 	shell:
 		'''
-cat {input} |sortgff | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
-		'''
-
-
-
-rule checkNonAnchoredMerging:
-	input:
-		before="mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz",
-		after="mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.qc.txt"
-	shell:
-		'''
-#nt coverage should be equal before/after
-zcat {input.before} |awk '$3=="exon"' |sortgff| bedtools merge >$TMPDIR/before.merged.bed
-cat {input.after} |awk '$3=="exon"' |sortgff| bedtools merge > $TMPDIR/after.merged.bed
-beforeNts=$(cat $TMPDIR/before.merged.bed| awk '{{print $3-$2}}' |sum.sh)
-afterNts=$(cat $TMPDIR/after.merged.bed| awk '{{print $3-$2}}' |sum.sh)
-let diff=$beforeNts-$afterNts || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
-echo "nts before: $beforeNts" > {output}
-echo "nts after: $afterNts" >> {output}
-echo "diff nts: $diff" >> {output}
-if [ ! $diff -eq 0 ]; then echo "ERROR: Nucleotide coverage differ before/after merging" >> {output}; \mv {input.after} {input.after}.bkp; exit 1; fi
-
-#all transcript_ids should be present before/after
-zcat {input.before} | extractGffAttributeValue.pl transcript_id | sort|uniq > $TMPDIR/before.list
-cat {input.after} |extractGffAttributeValue.pl contains |sed 's/,/\\n/g' | sort|uniq > $TMPDIR/after.list
-diffLines=$(diff -q $TMPDIR/before.list $TMPDIR/after.list |wc -l)
-
-echo "difflines: $diffLines"  >> {output}
-if [ ! $diffLines -eq 0 ]; then echo "ERROR: List of transcripts differ before/after" >> {output}; \mv {input.after} {input.after}.bkp; exit 1; fi
-
-#intron list should be the same before/after:
-zcat {input.before} |sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk |awk '{{print $1"_"$4"_"$5"_"$7}}' |sort|uniq > $TMPDIR/before.introns.list
-cat {input.after} |sort -k12,12 -k4,4n -k5,5n | awk -v fldgn=10 -v fldtr=12 -f ~/julien_utils/make_introns.awk |awk '{{print $1"_"$4"_"$5"_"$7}}' |sort|uniq > $TMPDIR/after.introns.list
-diffIntronLines=$(diff -q $TMPDIR/before.introns.list $TMPDIR/after.introns.list |wc -l)
-
-echo "diffintronlines: $diffIntronLines" >> {output}
-if [ ! $diffIntronLines -eq 0 ]; then echo "ERROR: List of introns differ before/after" >> {output}; \mv {input.after} {input.after}.bkp; exit 1; fi
-
-echo XXdoneXX  >> {output}
+uuid=$(uuidgen)
+cat {input} |sortgff > $TMPDIR/$uuid
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
+cp {output} {output}.bkp
+checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+rm {output}.bkp
 
 		'''
+
+
 
 
 rule nonAnchoredMergeReadsToBed:
