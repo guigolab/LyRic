@@ -53,15 +53,18 @@
     },
     "mergeTissuesNonAnchoredMergeReads":
     {
-        "threads" : "-pe smp 8"
+        "threads" : "-pe smp 8",
+        "h_rt" : "6:00:00"
     },
     "mergeFracsNonAnchoredMergeReads":
     {
-        "threads" : "-pe smp 8"
+        "threads" : "-pe smp 8",
+        "h_rt" : "6:00:00"
     },
     "mergeFracsAndTissuesNonAnchoredMergeReads":
     {
-        "threads" : "-pe smp 8"
+        "threads" : "-pe smp 8",
+        "h_rt" : "6:00:00"
     },
     "getHiSeqCanonicalIntronsList":
     {
@@ -95,7 +98,7 @@
          "virtual_free" : "20G",
        "threads" : "-pe smp 8",
         "queue" : "rg-el7,long-sl7",
-        "h_rt" : "10:00:00"
+        "h_rt" : "20:00:00"
     }
 
 }
