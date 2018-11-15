@@ -7,7 +7,7 @@ rule readMapping:
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	threads: 12
 	output:
-		"mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+		"mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+'
@@ -24,7 +24,7 @@ rm {output}.tmp
 
 rule getMappingStats:
 	input:
-		bams = "mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		bams = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		fastqs = DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv"
 	shell:
@@ -69,7 +69,7 @@ cat {output}.r | R --slave
 
 
 rule mergeSizeFracBams:
-	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
@@ -82,7 +82,7 @@ samtools index {output}
 		'''
 
 rule mergeBarcodeBams:
-	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
+	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam"
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+', #to avoid ambiguity with downstream merging rules
@@ -96,7 +96,7 @@ samtools index {output}
 
 
 rule mergeSizeFracAndBarcodeBams:
-	input: lambda wildcards: expand("mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
 	shell:
 		'''
@@ -109,7 +109,7 @@ samtools index {output}
 
 rule checkOnlyOneHit:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/" + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
+	output: "mappings/readMapping/qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
 	shell:
 		'''
 samtools view {input} | cut -f1 | sort| uniq -dc > {output}
@@ -120,9 +120,9 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {input} {in
 
 rule readBamToBed:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	output: "mappings/readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
 	#input: "mappings/readMapping/{basename}.bam"
-	#output: "mappings/" + "readBamToBed/{basename}.bed"
+	#output: "mappings/readBamToBed/{basename}.bed"
 	shell:
 		'''
 bedtools bamtobed -i {input} -bed12 | sortbed | gzip > {output}
@@ -130,8 +130,8 @@ bedtools bamtobed -i {input} -bed12 | sortbed | gzip > {output}
 		'''
 
 rule readBedToGff:
-	input: "mappings/" + "readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
-	output: "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
+	input: "mappings/readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	output: "mappings/readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
 	shell:
 		'''
 zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff | gzip > {output}
@@ -140,7 +140,7 @@ zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff | gzi
 
 # rule qualimap:
 # 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-# 	output: "mappings/qualimap_reports/" + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
+# 	output: "mappings/qualimap_reports/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
 # 	shell:
 # 		'''
 # unset DISPLAY

@@ -1,8 +1,8 @@
 rule compareTargetsToTms:
 	input:
-		tms= "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff",
+		tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff",
 		targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
-	output: "mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gfftsv.gz"
+	output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gfftsv.gz"
 	shell:
 		'''
 bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {output}
@@ -10,7 +10,7 @@ bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {outp
 		'''
 
 rule getTargetCoverageStats:
-	input: "mappings/" + "nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gfftsv.gz"
+	input: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gfftsv.gz"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.targetCoverage.stats.tsv")
 	shell:
 		'''
@@ -66,8 +66,8 @@ cat {output}.r | R --slave
 rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
-		tm="mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.simple.tsv"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	output: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.simple.tsv"
 	shell:
 		'''
 pref=$(basename {output} .simple.tsv)
@@ -80,7 +80,7 @@ cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
 		'''
 
 rule getGffCompareStats:
-	input: "mappings/" + "nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.simple.tsv"
+	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.simple.tsv"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.tsv")
 	shell:
 		'''
@@ -128,7 +128,7 @@ cat {output}.r | R --slave
 
 rule simplifyGencode:
 	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
-	output: "annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf"
+	output: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
 	shell:
 		'''
 cat {input}  | simplifyGencodeGeneTypes.pl - | sortgff > {output}
@@ -136,9 +136,9 @@ cat {input}  | simplifyGencodeGeneTypes.pl - | sortgff > {output}
 
 rule mergeTmsWithGencode:
 	input:
-		annot="annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-		tm="mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
-	output: temp("mappings/" + "nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.gff.gz")
+		annot="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	output: temp("mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.gff.gz")
 	threads:8
 	shell:
 		'''
@@ -146,9 +146,9 @@ cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --cpu {threads} 
 		'''
 
 rule makeClsGencodeLoci:
-	input: "mappings/" + "nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.gff.gz"
+	input: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.gff.gz"
 	params: locusPrefix=config["PROJECT_NAME"]
-	output: temp("mappings/" + "nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.gff.gz")
+	output: temp("mappings/nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.gff.gz")
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -160,9 +160,9 @@ bedtools intersect -s -wao -a $TMPDIR/$uuid -b $TMPDIR/$uuid |fgrep -v ERCC| bui
 
 rule mergeWithRef:
 	input:
-		clsGencode="mappings/" + "nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.gff.gz",
-		gencode="annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf"
-	output: "mappings/" + "nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz"
+		clsGencode="mappings/nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.gff.gz",
+		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
+	output: "mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -172,9 +172,9 @@ mergeToRef.pl {input.gencode} $TMPDIR/$uuid | sortgff |gzip > {output}
 
 rule getNovelIntergenicLoci:
 	input:
-		gencode="annotations/" + "simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-		tmergeGencode="mappings/" + "nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz"
-	output:"mappings/" + "nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.gff.gz"
+		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz"
+	output:"mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.gff.gz"
 	shell:
 		'''
 uuid1=$(uuidgen)
@@ -188,8 +188,8 @@ zcat {input.tmergeGencode}| fgrep -w -f $TMPDIR/$uuid3 - |gzip > {output}
 
 rule getNovelIntergenicLociStats:
 	input:
-		tmergeGencode="mappings/" + "nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz",
-		intergenic="mappings/" + "nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.gff.gz"
+		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz",
+		intergenic="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.gff.gz"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.tsv")
 	shell:
 		'''

@@ -2,7 +2,7 @@
 if config["LORDEC_CORRECT"]:
 	rule splitLrFastqs:
 		input: FQPATH + "{techname}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQPATH + "{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-		output: temp(FQPATH + "splitFasta/" + "{techname}_{capDesign}_{sizeFrac}_{split}.fasta" if config["DEMULTIPLEX"] else temp(FQPATH + "splitFasta/" + "{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.fasta"))
+		output: temp(FQPATH + "splitFasta/{techname}_{capDesign}_{sizeFrac}_{split}.fasta" if config["DEMULTIPLEX"] else temp(FQPATH + "splitFasta/{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.fasta"))
 		shell:
 			'''
 let splitInto={splitFastqsInto}+1
@@ -15,10 +15,10 @@ cat $TMPDIR/${{uuid}}_{wildcards.split}.tbl | TblToFasta > {output}
 if config["LORDEC_CORRECT"]:
 	rule lordecCorrectLr:
 		input:
-			lr=FQPATH + "splitFasta/" + "{techname}_{capDesign}_{sizeFrac}_{split}.fasta"  if config["DEMULTIPLEX"] else FQPATH + "splitFasta/" + "{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.fasta",
+			lr=FQPATH + "splitFasta/{techname}_{capDesign}_{sizeFrac}_{split}.fasta"  if config["DEMULTIPLEX"] else FQPATH + "splitFasta/{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.fasta",
 			sr1=config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz" if config["DEMULTIPLEX"] else lambda wildcards: expand(config["MATCHED_HISEQ_PATH"] + "{techname}_{capDesign}.{barcodes}_1.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes),
 			sr2=config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz" if config["DEMULTIPLEX"] else lambda wildcards: expand(config["MATCHED_HISEQ_PATH"] + "{techname}_{capDesign}.{barcodes}_2.fastq.gz", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=wildcards.barcodes)
-		output: temp(FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}_{split}.Corr" +  lastK + ".fasta" if config["DEMULTIPLEX"] else FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.Corr" +  lastK + ".fasta")
+		output: temp(FQPATH + "splitFasta/corr/{techname}_{capDesign}_{sizeFrac}_{split}.Corr" +  lastK + ".fasta" if config["DEMULTIPLEX"] else FQPATH + "splitFasta/corr/{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.Corr" +  lastK + ".fasta")
 		threads: 6
 		shell:
 			'''
@@ -54,7 +54,7 @@ done
 
 if config["LORDEC_CORRECT"]:
 	rule mergeCorrLrFastas:
-		input: lambda wildcards: expand(FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}_{split}.Corr" + lastK + ".fasta", techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, split=splitFasta) if config["DEMULTIPLEX"] else expand(FQPATH + "splitFasta/corr/" + "{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.Corr" + lastK + ".fasta", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, split=splitFasta)
+		input: lambda wildcards: expand(FQPATH + "splitFasta/corr/{techname}_{capDesign}_{sizeFrac}_{split}.Corr" + lastK + ".fasta", techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, split=splitFasta) if config["DEMULTIPLEX"] else expand(FQPATH + "splitFasta/corr/{techname}_{capDesign}_{sizeFrac}.{barcodes}_{split}.Corr" + lastK + ".fasta", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, split=splitFasta)
 		output: FQ_CORR_PATH + "{techname}Corr" + lastK + "_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr" + lastK + "_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 		shell:
 			'''

@@ -4,7 +4,7 @@ rule integratePolyaAndSjInfo:
 		SJs = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv"
 	output:
 		strandInfo="mappings/integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv",
-		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
+		wrongPolyAs="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
 	shell:
 		'''
 cat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort> $TMPDIR/reads.SJ.strandInfo.tsv
@@ -20,8 +20,8 @@ cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print
 rule removeWrongPolyAs:
 	input:
 		polyA="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		wrongPolyAs="mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
-	output: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+		wrongPolyAs="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
+	output: "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
 	shell:
 		'''
 cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
@@ -29,9 +29,9 @@ cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {output}
 
 rule strandGffs:
 	input:
-		gff = "mappings/" + "readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz",
-		strandInfo = "mappings/" + "integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv"
-	output: "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
+		gff = "mappings/readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz",
+		strandInfo = "mappings/integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv"
+	output: "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
 	shell:
 		'''
 zcat {input.gff} > $TMPDIR/in.gff
@@ -41,10 +41,10 @@ get_right_transcript_strand.pl $TMPDIR/in.gff {input.strandInfo} | fgrep -v ERCC
 
 rule highConfidenceReads:
 	input:
-		transcriptStrandInfo = "mappings/" + "getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv",
-		strandedReads = "mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
+		transcriptStrandInfo = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv",
+		strandedReads = "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
 	output:
-		"mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+		"mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
 	shell:
 		'''
 #select read IDs with canonical GT|GC/AG and high-confidence SJs
@@ -67,8 +67,8 @@ cat $TMPDIR/gtag.gff $TMPDIR/monoPolyA.gff | sortgff |gzip> {output}
 
 
 rule getHCGMintrons:
-	input: "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
-	output: temp("mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv")
+	input: "mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+	output: temp("mappings/highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv")
 	shell:
 		'''
 zcat {input} | makeIntrons.pl -| perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $end=$F[4]+1; print $F[11]."\t".$F[0]."_".$start."_".$end."_".$F[6]' | sort -k2,2 > {output}
@@ -77,11 +77,11 @@ zcat {input} | makeIntrons.pl -| perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $
 
 rule getHiSeqSupportedHCGMs:
 	input:
-		hiSeqIntrons="mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] and config["DEMULTIPLEX"] else "mappings/hiSeqIntrons/hiSeq_{techname}_{capDesign}.{barcodes}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] and not config["DEMULTIPLEX"] else config["SUPPORT_INTRONS_DB"],
-		lrIntrons="mappings/" + "highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv",
-		#mergedGTF="mappings/" + "nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}.tmerge.gff"
-		hcgmGTF= "mappings/" + "highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
-	output:"mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
+		hiSeqIntrons="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] and config["DEMULTIPLEX"] else "mappings/hiSeqIntrons/hiSeq_{techname}_{capDesign}.{barcodes}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] and not config["DEMULTIPLEX"] else config["SUPPORT_INTRONS_DB"],
+		lrIntrons="mappings/highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv",
+		#mergedGTF="mappings/nonAnchoredMergeReads/pooled/{techname}Corr{corrLevel}_{capDesign}.tmerge.gff"
+		hcgmGTF= "mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+	output:"mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	shell:
 		'''
 join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv
@@ -92,8 +92,8 @@ cut -f1 $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesi
 
 rule getHiSSStats:
 	input:
-		reads = "mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		HiSSGTF="mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
+		reads = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		HiSSGTF="mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.tsv")
 	shell:
 		'''
@@ -152,8 +152,8 @@ cat {output}.r | R --slave
 
 
 rule nonAnchoredMergeReads:
-	input: "mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff",
+	input: "mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff",
 	threads:8
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
@@ -168,8 +168,8 @@ rm {output}.bkp
 		'''
 
 rule mergeTissuesNonAnchoredMergeReads:
-	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	input: lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
 	threads:8
 	wildcard_constraints:
 		barcodes='allTissues',
@@ -186,8 +186,8 @@ rm {output}.bkp
 		'''
 
 rule mergeFracsNonAnchoredMergeReads:
-	input: lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	input: lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
 	threads:8
 	wildcard_constraints:
 		sizeFrac='allFracs',
@@ -205,9 +205,9 @@ rm {output}.bkp
 
 rule mergeFracsAndTissuesNonAnchoredMergeReads:
 	input:
-		lambda wildcards: expand("mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES),
+		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES),
 
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.tmerge.gff"
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.tmerge.gff"
 	threads:8
 
 	shell:
@@ -225,8 +225,8 @@ rm {output}.bkp
 
 
 rule nonAnchoredMergeReadsToBed:
-	input: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
-	output: "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.bed"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.bed"
 	shell:
 		'''
 cat {input} | gff2bed_full.pl - > {output}
@@ -235,8 +235,8 @@ cat {input} | gff2bed_full.pl - > {output}
 
 rule getMergingStats:
 	input:
-		hcgms = "mappings/" + "highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz",
-		pooledMerged = "mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+		hcgms = "mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz",
+		pooledMerged = "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.merged.stats.tsv")
 	shell:
 		'''
@@ -281,7 +281,7 @@ cat {output}.r | R --slave
 rule getTmLengthStats:
 	input:
 		gencode=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
-		tms="mappings/" + "nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.bed",
+		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.bed",
 		flTms="mappings/nonAnchoredMergeReads/cage+polyASupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.cage+polyASupported.bed"
 	output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.splicedLength.stats.tsv")
 	shell:

@@ -6,7 +6,7 @@ rule hiSeqReadMapping:
 		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
 	output:
-		"mappings/" + "hiSeq_{capDesign}.bam" if config["DEMULTIPLEX"] else "mappings/" + "hiSeq_{techname}_{capDesign}.{barcodes}.bam"
+		"mappings/hiSeq_{capDesign}.bam" if config["DEMULTIPLEX"] else "mappings/hiSeq_{techname}_{capDesign}.{barcodes}.bam"
 	wildcard_constraints:
 		barcodes='[^(allTissues)][\S]+',
 	shell:
@@ -43,8 +43,8 @@ echoerr "Mapping done"
 
 if not config["DEMULTIPLEX"]:
 	rule mergeHiSeqBarcodeBams:
-		input: lambda wildcards: expand("mappings/" + "hiSeq_{techname}_{capDesign}.{barcodes}.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
-		output: "mappings/" + "hiSeq_{techname}_{capDesign}.allTissues.bam"
+		input: lambda wildcards: expand("mappings/hiSeq_{techname}_{capDesign}.{barcodes}.bam", filtered_product, techname=wildcards.techname, capDesign=wildcards.capDesign, barcodes=BARCODES)
+		output: "mappings/hiSeq_{techname}_{capDesign}.allTissues.bam"
 		shell:
 			'''
 samtools merge {output} {input}
@@ -55,10 +55,10 @@ samtools index {output}
 
 rule getHiSeqCanonicalIntronsList:
 	input:
-		bam="mappings/" + "hiSeq_{capDesign}.bam" if config["DEMULTIPLEX"] else "mappings/" + "hiSeq_{techname}_{capDesign}.{barcodes}.bam",
+		bam="mappings/hiSeq_{capDesign}.bam" if config["DEMULTIPLEX"] else "mappings/hiSeq_{techname}_{capDesign}.{barcodes}.bam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	threads: 6
-	output:"mappings/hiSeqIntrons/" + "hiSeq_{capDesign}.canonicalIntrons.list" if config["DEMULTIPLEX"] else "mappings/hiSeqIntrons/hiSeq_{techname}_{capDesign}.{barcodes}.canonicalIntrons.list"
+	output:"mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if config["DEMULTIPLEX"] else "mappings/hiSeqIntrons/hiSeq_{techname}_{capDesign}.{barcodes}.canonicalIntrons.list"
 	shell:
 		'''
 echoerr "making bed"

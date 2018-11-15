@@ -2,8 +2,8 @@
 rule makeReadsBlastDB:
 	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz"
 	params:
-		dbprefix=DEMULTIPLEX_DIR + "blastdb/" + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq"
-	output: DEMULTIPLEX_DIR + "blastdb/" + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.nal"
+		dbprefix=DEMULTIPLEX_DIR + "blastdb/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq"
+	output: DEMULTIPLEX_DIR + "blastdb/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.nal"
 	shell:
 		'''
 
@@ -20,10 +20,10 @@ fi
 
 rule blastDemultiplex:
 	input:
-		reads =DEMULTIPLEX_DIR + "blastdb/" + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.nal" ,
+		reads =DEMULTIPLEX_DIR + "blastdb/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.nal" ,
 		adapters =DEMULTIPLEX_DIR + "all_adapters.seq_ids.fa"
 	params:
-		dbprefix=DEMULTIPLEX_DIR + "blastdb/" + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq"
+		dbprefix=DEMULTIPLEX_DIR + "blastdb/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq"
 	threads: 12
 	output:
 		DEMULTIPLEX_DIR + "blastDemultiplex/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.all_adapters.blast.tsv.gz"

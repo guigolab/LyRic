@@ -5,7 +5,7 @@ rule getPolyAsitesTestPolyAmapping:
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	params:
 		minAcontent=0.8
-	output: temp("mappings/polyAmapping/calibration/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed")
+	output: temp("mappings/polyAmapping/calibration/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed")
 	shell:
 		'''
 samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sortbed | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sortbed > {output}
@@ -14,13 +14,13 @@ samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPo
 
 rule getPolyANonPolyAsitesTestPolyAmapping:
 	input:
-		reads=lambda wildcards: expand("mappings/" + "strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES),
-		inPolyA="mappings/polyAmapping/calibration/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed"
+		reads=lambda wildcards: expand("mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{barcodes}.stranded.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, barcodes=BARCODES),
+		inPolyA="mappings/polyAmapping/calibration/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed"
 	params:
 		minAcontent=0.8
 	output:
-		outPolyA=temp("mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed"),
-		outNonPolyA=temp("mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed")
+		outPolyA=temp("mappings/polyAmapping/calibration/3pends/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed"),
+		outNonPolyA=temp("mappings/polyAmapping/calibration/3pends/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed")
 	shell:
 		'''
 cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort | uniq > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list
@@ -36,10 +36,10 @@ cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f $TMPDI
 
 rule compareToPASTestPolyAmapping:
 	input:
-		tpend="mappings/polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
+		tpend="mappings/polyAmapping/calibration/3pends/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
 		PAS=lambda wildcards: CAPDESIGNTOPAS[wildcards.capDesign],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: temp("mappings/polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv")
+	output: temp("mappings/polyAmapping/calibration/3pends/vsPAS/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv")
 
 	shell:
 		'''
@@ -49,10 +49,10 @@ cat {input.tpend} | sortbed | bedtools slop -s -l 50 -r -10 -i stdin -g {input.g
 
 rule getPrecisionRecallTestPolyAmapping:
 	input:
-		pAvsPAS="mappings/" + "polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bedtsv",
-		nonpAvsPAS="mappings/" + "polyAmapping/calibration/3pends/vsPAS/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bedtsv",
-		pA="mappings/" + "polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed",
-		nonpA="mappings/" + "polyAmapping/calibration/3pends/" + "{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed"
+		pAvsPAS="mappings/polyAmapping/calibration/3pends/vsPAS/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bedtsv",
+		nonpAvsPAS="mappings/polyAmapping/calibration/3pends/vsPAS/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bedtsv",
+		pA="mappings/polyAmapping/calibration/3pends/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.polyA.3pEnds.bed",
+		nonpA="mappings/polyAmapping/calibration/3pends/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed"
 
 	output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{minA}.polyA.vs.PAS.precisionRecall.stats.tsv")
 	shell:
@@ -108,23 +108,23 @@ rule polyAmapping:
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	params:
 		minAcontent=0.8
-	output: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
+	output: "mappings/polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
 	shell:
 		'''
 samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sortbed |gzip > {output}
 		'''
 
 rule removePolyAERCCs:
-	input: "mappings/" + "polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
-	output: temp("mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed")
+	input: "mappings/polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
+	output: temp("mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed")
 	shell:
 		'''
 zcat {input} | fgrep -v ERCC > {output}
 		'''
 
 rule getPolyAreadsList:
-	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
+	input: "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "mappings/getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
 	shell:
 		'''
 cat {input} | cut -f4 | sort|uniq > {output}
@@ -132,8 +132,8 @@ cat {input} | cut -f4 | sort|uniq > {output}
 
 rule getPolyAreadsStats:
 	input:
-		mappedReads= "mappings/" + "readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		polyAreads = "mappings/" + "getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
+		mappedReads= "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		polyAreads = "mappings/getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv")
 	shell:
 		'''
@@ -180,17 +180,17 @@ cat {output}.r | R --slave
 
 
 rule clusterPolyAsites:
-	input: "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/" + "clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed"
+	input: "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "mappings/clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed"
 	shell:
 		'''
 cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sortbed > {output}
 		'''
 rule makePolyABigWigs:
 	input:
-		sites = "mappings/" + "removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
+		sites = "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output: "mappings/" + "makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
+	output: "mappings/makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	shell:
 		'''
 bedtools genomecov -strand {wildcards.strand} -split -bg -i {input.sites} -g {input.genome} > {output}.bedgraph
