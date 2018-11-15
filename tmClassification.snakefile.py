@@ -186,3 +186,50 @@ bedtools intersect -v -a $TMPDIR/$uuid2 -b $TMPDIR/$uuid1 |fgrep -v ERCC |cut -f
 zcat {input.tmergeGencode}| fgrep -w -f $TMPDIR/$uuid3 - |gzip > {output}
 		'''
 
+rule getNovelIntergenicLociStats:
+	input:
+		tmergeGencode="mappings/" + "nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge+gencode.loci.refmerged.gff.gz",
+		intergenic="mappings/" + "nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.gff.gz"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.tsv")
+	shell:
+		'''
+totalNovel=$(zcat {input.tmergeGencode} | fgrep 'gene_ref_status "novel";' |extractGffAttributeValue.pl gene_id | sort| uniq | wc -l)
+interg=$(zcat {input.intergenic} | extractGffAttributeValue.pl gene_id | sort| uniq | wc -l)
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalNovel\t$interg"  > {output}
+
+		'''
+
+rule aggNovelIntergenicLociStats:
+	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	output: config["STATSDATADIR"] + "all.tmerge.novelLoci.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t"($5-$6)/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+		'''
+
+
+rule plotNovelIntergenicLociStats:
+	input: config["STATSDATADIR"] + "all.tmerge.novelLoci.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.novelLoci.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat}
+dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('intronic', 'intergenic')))
+ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+geom_bar(stat='identity') + ylab('# Novel CLS loci') +
+scale_y_continuous(labels=comma)+ scale_fill_manual (values=c(intronic='#d98c8c', intergenic='#33ccff'))+ facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') + guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=plotWidth, height=plotHeight)
+" > {output}.r
+cat {output}.r | R --slave
+
+		'''
+
