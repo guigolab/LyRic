@@ -92,7 +92,7 @@ library(data.table)
 library(ggplot2)
 library(scales)
 library(plyr)
-palette <- c('random' = '#666666', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
+palette <- c('random' = '#999999', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
 dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat}
 
@@ -106,7 +106,7 @@ coord_cartesian(ylim=c(-9, 4.5)) +
 scale_color_manual(values=palette, name='Category', labels = c(random = 'Random', GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_reads='CLS raw reads')) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
 
-stat_summary(aes(x=factor(correctionLevel), group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='#666666') +
+stat_summary(aes(x=factor(correctionLevel), group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black') +
 geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
 ylab('Splice site score') + xlab('Error correction') +
 {GGPLOT_PUB_QUALITY}
