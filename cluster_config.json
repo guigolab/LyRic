@@ -48,23 +48,26 @@
     {
         "virtual_free" : "20G",
         "queue" : "rg-el7,long-sl7",
-        "h_rt" : "200:00:00",
+        "h_rt" : "150:00:00",
         "threads" : "-pe smp 8"
     },
     "mergeTissuesNonAnchoredMergeReads":
     {
+        "queue" : "rg-el7,long-sl7",
         "threads" : "-pe smp 8",
-        "h_rt" : "6:00:00"
+        "h_rt" : "20:00:00"
     },
     "mergeFracsNonAnchoredMergeReads":
     {
+        "queue" : "rg-el7,long-sl7",
         "threads" : "-pe smp 8",
-        "h_rt" : "6:00:00"
+        "h_rt" : "20:00:00"
     },
     "mergeFracsAndTissuesNonAnchoredMergeReads":
     {
+        "queue" : "rg-el7,long-sl7",
         "threads" : "-pe smp 8",
-        "h_rt" : "6:00:00"
+        "h_rt" : "20:00:00"
     },
     "getHiSeqCanonicalIntronsList":
     {
