@@ -54,7 +54,7 @@ rule getGeneidScores:
 	shell:
 		'''
 zcat {input.gencode} {input.rawReads} {input.tmReads} | sort  -k1,1 > $TMPDIR/cls.SSs.tsv
-join -a1 -j1 $TMPDIR/cls.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$3"\t"$4"\t"$6}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |sed 's/{wildcards.capDesign}_//' > {output}
+join -a1 -j1 $TMPDIR/cls.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$3"\t"$4"\t"$6}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
 
 #verify that all SSs were found:
 cut -f1 $TMPDIR/cls.SSs.tsv | sort|uniq > $TMPDIR/cls.SSs.list
@@ -62,7 +62,7 @@ cut -f6 {output} | sort|uniq > $TMPDIR/cls.SSs.geneid.list
 diff=$(diff -q $TMPDIR/cls.SSs.list $TMPDIR/cls.SSs.geneid.list |wc -l)
 if [ ! $diff -eq 0 ]; then echoerr "ERROR: List of SSs differ before/after"; exit 1; fi
 
-cat {input.random} | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2"\trandom\t"$3}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |sed 's/{wildcards.capDesign}_//'>> {output}
+cat {input.random} | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2"\trandom\t"$3}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' >> {output}
 
 
 		'''
@@ -82,9 +82,9 @@ sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output
 
 rule plotGeneidScores:
 	input: config["STATSDATADIR"] + "all.spliceSites.stats.tsv"
-	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.spliceSites.stats.{ext}"
+	output: config["PLOTSDIR"] + "spliceSites.stats/{capDesign}_{sizeFrac}_{barcodes}.spliceSites.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "
@@ -105,7 +105,8 @@ geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(-9, 4.5)) +
 scale_color_manual(values=palette, name='Category', labels = c(random = 'Random', GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_reads='CLS raw reads')) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
-stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE) +
+
+stat_summary(aes(x=factor(correctionLevel), group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='#666666') +
 geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
 ylab('Splice site score') + xlab('Error correction') +
 {GGPLOT_PUB_QUALITY}

@@ -19,7 +19,7 @@ all=$(zcat {input} | fgrep "gene_type \\"$type\\";" | extractGffAttributeValue.p
 detected=$(zcat {input} | fgrep "gene_type \\"$type\\";" | awk '$NF>0' | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
 let undetected=$all-$detected || true
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$type\t$all\t$detected" | awk '{{print $0"\t"$7/$6}}'
-done |sed 's/{wildcards.capDesign}_//' > {output}
+done > {output}
 		'''
 
 rule aggTargetCoverageStats:
@@ -34,9 +34,9 @@ cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tY
 
 rule plotTargetCoverageStats:
 	input: config["STATSDATADIR"] + "all.targetCoverage.stats.tsv"
-	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.targetCoverage.stats.{ext}"
+	output: config["PLOTSDIR"] + "targetCoverage.stats/{capDesign}_{sizeFrac}_{barcodes}.targetCoverage.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -84,7 +84,7 @@ rule getGffCompareStats:
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.tsv")
 	shell:
 		'''
-cat {input} |cut -f4 | sort|uniq -c | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |sed 's/{wildcards.capDesign}_//'>> {output}
+cat {input} |cut -f4 | sort|uniq -c | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'>> {output}
 		'''
 
 
@@ -101,9 +101,9 @@ cat {input} >> {output}
 
 rule plotGffCompareStats:
 	input: config["STATSDATADIR"] + "all.tmerge.vs.gencode.stats.tsv"
-	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.tmerge.vs.gencode.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "library(ggplot2)

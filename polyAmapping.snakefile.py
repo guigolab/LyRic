@@ -139,7 +139,7 @@ rule getPolyAreadsStats:
 		'''
 mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort|uniq|wc -l)
 polyA=$(cat {input.polyAreads} | wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}'|sed 's/{wildcards.capDesign}_//' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {output}
 
 		'''
 
@@ -155,9 +155,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-
 
 rule plotAllPolyAreadsStats:
 	input: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
-	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.polyAreads.stats.{ext}"
+	output: config["PLOTSDIR"] + "polyAreads.stats/{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "library(ggplot2)

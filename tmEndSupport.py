@@ -62,7 +62,7 @@ cageAndPolyA=$(cat $TMPDIR/cage+PolyA.list | wc -l)
 let total=$noCageNoPolyA+$cageOnly+$polyAOnly+$cageAndPolyA
 fgrep -w -f $TMPDIR/cage+PolyA.list {input.tms} > {output.FLbed}
 
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA" |sed 's/{wildcards.capDesign}_//' > {output.stats}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA"  > {output.stats}
 		'''
 
 
@@ -78,9 +78,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tcageOnly\\t"$6"\\t"$6/$5"\
 
 rule plotCagePolyAStats:
 	input: config["STATSDATADIR"] + "all.cagePolyASupport.stats.tsv"
-	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.cagePolyASupport.stats.{ext}"
+	output: config["PLOTSDIR"] + "cagePolyASupport.stats/{capDesign}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "library(ggplot2)

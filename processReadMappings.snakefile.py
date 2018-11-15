@@ -109,7 +109,7 @@ HiSSSpliced=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcar
 #let totalMapped=$mappedReadsMono+$mappedReadsSpliced || true
 let nonHiSSMono=$mappedReadsMono-$HiSSMono || true
 let nonHiSSSPliced=$mappedReadsSpliced-$HiSSSpliced || true
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$HiSSMono\t$HiSSSpliced\t$nonHiSSMono\t$nonHiSSSPliced" |sed 's/{wildcards.capDesign}_//' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$HiSSMono\t$HiSSSpliced\t$nonHiSSMono\t$nonHiSSSPliced" > {output}
 
 		'''
 
@@ -127,9 +127,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-mono\\t"$5"\\n"$1"\\t
 
 rule plotAllHiSSStats:
 	input: config["STATSDATADIR"] + "all.HiSS.stats.tsv"
-	output:  config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.HiSS.stats.{ext}"
+	output:  config["PLOTSDIR"] + "HiSS.stats/{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -242,7 +242,7 @@ rule getMergingStats:
 		'''
 hcgms=$(zcat {input.hcgms} | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
 merged=$(cat {input.pooledMerged} | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$hcgms\t$merged" | awk '{{print $0"\t"$6/$5}}' |sed 's/{wildcards.capDesign}_//' > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$hcgms\t$merged" | awk '{{print $0"\t"$6/$5}}' > {output}
 
 		'''
 
@@ -259,9 +259,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGMreads\\t"$5"\\n"$1"\\t
 		'''
 rule plotMergingStats:
 	input:  config["STATSDATADIR"] + "all.merged.stats.tsv"
-	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.merged.stats.{ext}"
+	output: config["PLOTSDIR"] + "merged.stats/{capDesign}_{sizeFrac}_{barcodes}.merged.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -286,13 +286,13 @@ rule getTmLengthStats:
 	output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.splicedLength.stats.tsv")
 	shell:
 		'''
-cat {input.gencode} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |gff2bed_full.pl - | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tGENCODE_protein_coding\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |sed 's/{wildcards.capDesign}_//' > $TMPDIR/gencode.pcg.tsv
+cat {input.gencode} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |gff2bed_full.pl - | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tGENCODE_protein_coding\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > $TMPDIR/gencode.pcg.tsv
 
-cat {input.tms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |sed 's/{wildcards.capDesign}_//' > $TMPDIR/tms.tsv
+cat {input.tms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > $TMPDIR/tms.tsv
 
-cat {input.flTms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_FL_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |sed 's/{wildcards.capDesign}_//' > $TMPDIR/flTms.tsv
+cat {input.flTms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_FL_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > $TMPDIR/flTms.tsv
 
-cat $TMPDIR/gencode.pcg.tsv $TMPDIR/tms.tsv $TMPDIR/flTms.tsv | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |sed 's/{wildcards.capDesign}_//' > {output}
+cat $TMPDIR/gencode.pcg.tsv $TMPDIR/tms.tsv $TMPDIR/flTms.tsv | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > {output}
 		'''
 
 
@@ -309,9 +309,9 @@ cat {input} |sort >> {output}
 
 rule plotTmLengthStats:
 	input: config["STATSDATADIR"] + "all.splicedLength.stats.tsv"
-	output: config["PLOTSDIR"] + "{capDesign}_{byFrac}_{byTissue}.splicedLength.stats.{ext}"
+	output: config["PLOTSDIR"] + "splicedLength.stats/{capDesign}_{sizeFrac}_{barcodes}.splicedLength.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.byFrac, wildcards.byTissue)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
 	shell:
 		'''
 echo "
@@ -335,10 +335,9 @@ coord_cartesian(ylim=c(100, 3500)) +
 scale_y_continuous(labels=comma)+
 scale_color_manual(values=palette, name='Category', labels = c(GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_FL_TMs='CLS FL TMs')) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
-stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize) +
-#stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, color='black', size=geom_textSize) +
-stat_summary(aes(x=factor(correctionLevel)), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize) +
-#geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
+
+stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize, color='#666666') +
+stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, color='#666666') +
 ylab('Spliced length') + xlab('Error correction') + coord_flip(ylim=c(100, 3500)) +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
