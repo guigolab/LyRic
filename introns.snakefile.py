@@ -116,3 +116,75 @@ ggsave('{output}', width=plotWidth, height=plotHeight)
 cat {output}.r | R --slave
 
 		'''
+
+
+rule getGencodeSpliceJunctions:
+	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	output: "annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list"
+	shell:
+		'''
+cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort|uniq > {output}
+		'''
+
+rule getClsSpliceJunctions:
+	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.spliceJunctions.list"
+	shell:
+		'''
+cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort|uniq > {output}
+
+		'''
+
+rule getCompareClsGencodeSJsStats:
+	input:
+		gencodeSJs="annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list",
+		clsSJs="mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.spliceJunctions.list"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.tsv")
+	shell:
+		'''
+#annSJs=$(cat {input.gencodeSJs} | wc -l)
+#clsSJs=$(cat {input.clsSJs} | wc -l)
+commonSJs=$(comm -1 -2 {input.gencodeSJs} {input.clsSJs} | wc -l)
+annOnlySJs=$(comm -2 -3 {input.gencodeSJs} {input.clsSJs} | wc -l)
+novelSJs=$(comm -1 -3 {input.gencodeSJs} {input.clsSJs} | wc -l)
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$annOnlySJs\t$commonSJs\t$novelSJs"  > {output}
+
+		'''
+
+rule aggCompareClsGencodeSJsStats:
+	input: expand(config["STATSDATADIR"] +"{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	output: config["STATSDATADIR"] + "all.tmerge.vs.Gencode.SJs.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount" > {output}
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tannOnly\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+
+
+		'''
+
+rule plotCompareClsGencodeSJsStats:
+	input: config["STATSDATADIR"] + "all.tmerge.vs.Gencode.SJs.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat}
+dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('annOnly', 'common', 'novel')))
+ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+geom_bar(stat='identity') +
+scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='Common', novel='Only in CLS')) +
+ylab('# Splice Junctions')+
+geom_text(position = 'stack',size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1)) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') +
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=plotWidth, height=plotHeight)
+" > {output}.r
+cat {output}.r | R --slave
+
+
+		'''
