@@ -175,9 +175,11 @@ library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat}
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('annOnly', 'common', 'novel')))
+dat <- subset(dat, category!='annOnly')
+
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
-scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='Common', novel='Only in CLS')) +
+scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='In CLS+GENCODE', novel='Only in CLS')) +
 ylab('# Splice Junctions')+
 geom_text(position = 'stack',size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1)) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') +
