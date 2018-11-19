@@ -143,11 +143,10 @@ rule getCompareClsGencodeSJsStats:
 	shell:
 		'''
 #annSJs=$(cat {input.gencodeSJs} | wc -l)
-#clsSJs=$(cat {input.clsSJs} | wc -l)
+clsSJs=$(cat {input.clsSJs} | wc -l)
 commonSJs=$(comm -1 -2 {input.gencodeSJs} {input.clsSJs} | wc -l)
-annOnlySJs=$(comm -2 -3 {input.gencodeSJs} {input.clsSJs} | wc -l)
 novelSJs=$(comm -1 -3 {input.gencodeSJs} {input.clsSJs} | wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$annOnlySJs\t$commonSJs\t$novelSJs"  > {output}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$clsSJs\t$commonSJs\t$novelSJs"  > {output}
 
 		'''
 
@@ -156,8 +155,8 @@ rule aggCompareClsGencodeSJsStats:
 	output: config["STATSDATADIR"] + "all.tmerge.vs.Gencode.SJs.stats.tsv"
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tannOnly\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
+cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
 
 
 		'''
@@ -174,14 +173,13 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat}
-dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('annOnly', 'common', 'novel')))
-dat <- subset(dat, category!='annOnly')
+dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('common', 'novel')))
 
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='In CLS+GENCODE', novel='Only in CLS')) +
 ylab('# Splice Junctions')+
-geom_text(position = 'stack',size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1)) +
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
