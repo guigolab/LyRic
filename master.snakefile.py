@@ -206,7 +206,8 @@ def filtered_merge_figures(*args):
 	for wc_comb in itertools.product(*args):
 		#print (wc_comb)
 		if wc_comb[0] in (('capDesign', 'allCapDesigns'),):
-			if wc_comb[1] in (('sizeFrac', 'allFracs'),) and wc_comb[2] in (('barcodes', 'allTissues'),):
+			if wc_comb[2] in (('barcodes', 'allTissues'),):
+#			if wc_comb[1] in (('sizeFrac', 'allFracs'),) and wc_comb[2] in (('barcodes', 'allTissues'),):
 				#print ("AUTH 2")
 				yield(wc_comb)
 		else:
