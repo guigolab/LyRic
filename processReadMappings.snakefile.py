@@ -14,7 +14,7 @@ join -a1 -a2 -e '.' -o '0,1.2,2.2' $TMPDIR/reads.SJ.strandInfo.tsv  $TMPDIR/read
 #make list of reads with wrongly called polyA sites (i.e. their strand is different from the one inferred using SJs):
 cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[2] ne "." && $F[1] ne "." && $F[1] ne $F[2]){{print join ("\\t", $F[0])}}' |sort|uniq > {output.wrongPolyAs}
 #get strand info, prioritizing SJ inference
-cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print "$F[0]\\t$F[1]"}} else{{print "$F[0]\t$F[2]"}}' |sort|uniq > {output.strandInfo}
+cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print "$F[0]\\t$F[1]"}} else{{print "$F[0]\\t$F[2]"}}' |sort|uniq > {output.strandInfo}
 		'''
 
 rule removeWrongPolyAs:
@@ -226,7 +226,7 @@ rm {output}.bkp
 
 rule nonAnchoredMergeReadsToBed:
 	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
-	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.bed"
+	output: temp("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.bed")
 	shell:
 		'''
 cat {input} | gff2bed_full.pl - > {output}
