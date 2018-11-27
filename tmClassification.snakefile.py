@@ -154,7 +154,7 @@ rule mergeTmsWithGencode:
 	threads:8
 	shell:
 		'''
-cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --cpu {threads} - |sortgff |gzip > {output}
+cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --cpu {threads} --exonOverhangTolerance 25 - |sortgff |gzip > {output}
 		'''
 
 rule makeClsGencodeLoci:
