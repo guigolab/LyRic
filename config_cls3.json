@@ -19,6 +19,7 @@
     "USE_MATCHED_ILLUMINA": true,
     "LORDEC_CORRECT": true,
      "PROJECT_NAME": "cls3",
+     "PROJECT_LONG_NAME": "GENCODE CLS Phase 3",
     "MATCHED_HISEQ_PATH": "fastqs/hiSeq/",
     "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))",
     "capDesignToCAGEpeaks": {

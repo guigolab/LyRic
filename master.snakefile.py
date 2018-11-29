@@ -5,7 +5,7 @@ import itertools
 import sys
 #import pprint #pretty printing
 
-print ("TODO:\n ## include basic HiSeq mapping stats\n\n## Calculate amount of novel captured nts\n\n ## What is the intersection between PacBio TMs and ONT TMs???\n\n ## percentage of novel SJs as opposed to novel transcripts (are novel transcripts just novel combinations of known SJs???)")
+print ("TODO:\n ## include basic HiSeq mapping stats\n\n## Calculate amount of novel captured nts\n\n ## What is the intersection between PacBio TMs and ONT TMs???\n\n")
 
 
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
@@ -18,9 +18,16 @@ CAPDESIGNTOPAS=config["capDesignToGenomePAS"]
 DUMMY_DIR="dummy/"
 FQPATH=config["FQPATH"]
 FQ_CORR_PATH=FQPATH + "corr/"
-
+TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
 print ("Input LR FASTQs are in: " + FQPATH)
 
+GENOMES=[]
+GENOMETOCAPDESIGNS=defaultdict(list)
+for capD in CAPDESIGNTOGENOME:
+	genome=CAPDESIGNTOGENOME[capD]
+	GENOMES.append(genome)
+	GENOMETOCAPDESIGNS[genome].append(capD)
+GENOMES=set(GENOMES)
 
 
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
@@ -183,8 +190,7 @@ PLOTSbySIZEFRAC.add("byFrac")
 #PLOTSbyTISSUE=['allTissues', 'byTissue']
 #PLOTSbySIZEFRAC=['allFracs','byFrac']
 
-print (PLOTSbyTISSUE)
-print(PLOTSbySIZEFRAC)
+
 
 def filtered_product(*args):
 	for wc_comb in itertools.product(*args):
@@ -268,6 +274,7 @@ include: "introns.snakefile.py"
 include: "processReadMappings.snakefile.py"
 include: "tmClassification.snakefile.py"
 include: "tmEndSupport.py"
+include: "trackHub.py"
 
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
@@ -319,7 +326,9 @@ rule all:
 
 		expand(config["PLOTSDIR"] + "tmerge.novelLoci.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
-
+		config["TRACK_HUB_DIR"] + "hub.txt",
+		config["TRACK_HUB_DIR"] + "genomes.txt",
+		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES)
 
 
 # "Dummy" rule to skip undesired targets depending on config

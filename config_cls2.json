@@ -21,6 +21,11 @@
           "Mv1": "/users/project/gencode_006070/jlagarde/lncRnaCapture/pacbio_mappings/gff/hiSeq-supported_reads/merged/gencodePlus/all_biotypes/mm.gencode+cls.tmerge.loci.refmerged.gtf"
         },
         "PROJECT_NAME": "cls2",
+        "PROJECT_LONG_NAME": "GENCODE CLS Phase 2",
+        "PROJECT_CONTACT_EMAIL": "julien.lagarde@crg.eu",
+        "TRACK_HUB_DIR":"trackHub/",
+        "TRACK_HUB_BASE_URL":"http://genome.crg.es/~jlagarde/gencode/trackHubs/CLS2/",
+        "BED12_AUTOSQL":"/users/rg/jlagarde/bed12.as",
         "PLOTFORMATS" : ["png", "pdf"],
         "STRANDS" : ["+", "-"],
     "DEMULTIPLEX": true,
