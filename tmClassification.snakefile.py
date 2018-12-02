@@ -90,6 +90,18 @@ colorNovelTxBed.pl {input.classes} {input.tm} > {output}
 
 			'''
 
+rule colorFLBedAccordingToGffCompare:
+	input:
+		classes="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.simple.tsv",
+		tm="mappings/nonAnchoredMergeReads/cage+polyASupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.cage+polyASupported.bed"
+	output: "mappings/nonAnchoredMergeReads/cage+polyASupported/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FL.tmerge.bed"
+	shell:
+			'''
+colorNovelTxBed.pl {input.classes} {input.tm} > {output}
+
+			'''
+
+
 
 rule getGffCompareStats:
 	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.simple.tsv"

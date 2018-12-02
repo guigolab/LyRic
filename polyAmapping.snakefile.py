@@ -193,7 +193,10 @@ rule makePolyABigWigs:
 	output: "mappings/makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	shell:
 		'''
-bedtools genomecov -strand {wildcards.strand} -split -bg -i {input.sites} -g {input.genome} > {output}.bedgraph
+tmpIn=$(uuidgen)
+cat {input.sites} | grep -P "^chr" > $TMPDIR/$tmpIn
+
+bedtools genomecov -strand {wildcards.strand} -split -bg -i $TMPDIR/$tmpIn -g {input.genome} > {output}.bedgraph
 bedGraphToBigWig {output}.bedgraph {input.genome} {output}
 rm -f {output}.bedgraph
 		'''

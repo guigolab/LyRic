@@ -8,8 +8,8 @@
        "LONG_RPALETTE":"c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')",
        "STATSDATADIR" : "Rinput/",
        "capDesignToGenome" : {
-           "HpreCap": "hg38",
-            "MpreCap": "mm10"},
+           "HpreCap": "hg38"
+         },
        "capDesignToAnnotGtf" : {
            "HpreCap": "annotations/hs.gencode24+SIRVS.gff",
             "MpreCap": "annotations/hs.gencode24+SIRVS.gff"},
@@ -20,6 +20,10 @@
     "LORDEC_CORRECT": true,
      "PROJECT_NAME": "cls3",
      "PROJECT_LONG_NAME": "GENCODE CLS Phase 3",
+     "PROJECT_CONTACT_EMAIL": "julien.lagarde@crg.eu",
+        "TRACK_HUB_DIR":"trackHub/",
+        "TRACK_HUB_BASE_URL":"http://genome.crg.es/~jlagarde/gencode/trackHubs/CLS3/",
+        "BED12_AUTOSQL":"/users/rg/jlagarde/bed12.as",
     "MATCHED_HISEQ_PATH": "fastqs/hiSeq/",
     "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))",
     "capDesignToCAGEpeaks": {

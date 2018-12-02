@@ -159,7 +159,10 @@ for comb in itertools.product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 			for strand in config["STRANDS"]:
 				for corrLevel in FINALCORRECTIONLEVELS:
 					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes",comb[3]),("strand", strand)))
+					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]),("strand", strand)))
 					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "allTechs")], [("corrLevel", corrLevel), ("corrLevel", "allCors")] , [("capDesign", comb[1]), ("capDesign", "allCapDesigns")], [("barcodes",comb[3]), ("barcodes", "allTissues")], [("strand", strand)]):
+						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
+					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "allTechs")], [("corrLevel", corrLevel), ("corrLevel", "allCors")] , [("capDesign", comb[1]), ("capDesign", "allCapDesigns")], [("sizeFrac", comb[2]), ("sizeFrac", "allFracs")], [("barcodes",comb[3]), ("barcodes", "allTissues")], [("strand", strand)]):
 						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
 			for ext in config["PLOTFORMATS"]:
 				for corrLevel in FINALCORRECTIONLEVELS:
@@ -202,8 +205,10 @@ def filtered_product(*args):
 def filtered_product_merge(*args):
 	for wc_comb in itertools.product(*args):
 		found=False
-		#print(wc_comb)
-		if wc_comb in AUTHORIZEDCOMBINATIONS or wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
+
+		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
+			#print("FPM ")
+			#print (wc_comb)
 		#	print ("AUTH")
 			found=True
 			yield(wc_comb)
@@ -217,7 +222,7 @@ def filtered_merge_figures(*args):
 				#print ("AUTH 2")
 				yield(wc_comb)
 		else:
-			if wc_comb in AUTHORIZEDCOMBINATIONS or wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
+			if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
 				#print ("AUTH 1")
 				yield(wc_comb)
 			else:
@@ -261,6 +266,54 @@ geom_textSize=2.4
 
 	return(returnFilterString)
 
+def trackHubSubGroupString(tn, cd, sf, bc, cl):
+	techname=(("techname", tn),)
+	capDesign=(("capDesign", cd),)
+	sizeFracs=[]
+	for sizeF in sf:
+		sizeFracs.append(("sizeFrac", sizeF))
+	barCodes=[]
+	for barC in bc:
+		barCodes.append(("barcodes", barC))
+	corrLevels=[]
+	for corrL in cl:
+		corrLevels.append(("corrLevel", corrL))
+
+	returnSubGroup1String="subGroup1 sample Sample"
+	returnSubGroup2String="subGroup2 sizeFraction Size_fraction"
+	returnSubGroup3String="subGroup3 corrLevel LoRDEC_sequence_correction"
+	returnSubGroup1StringData=[]
+	returnSubGroup2StringData=[]
+	returnSubGroup3StringData=[]
+	for wc_comb in itertools.product(techname, corrLevels, capDesign, sizeFracs, barCodes):
+		#print("THSS ")
+		#print(wc_comb)
+		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
+		#	print ("AUTH")
+			returnSubGroup1StringData.append(wc_comb[4][1] + "=" + wc_comb[4][1])
+			returnSubGroup2StringData.append(wc_comb[3][1] + "=" + wc_comb[3][1])
+			returnSubGroup3StringData.append(wc_comb[1][1] + "=" + wc_comb[1][1])
+	#print ("returnSubGroup2StringData list")
+	#print (returnSubGroup2StringData)
+	returnSubGroup1StringData=set(returnSubGroup1StringData)
+	returnSubGroup2StringData=set(returnSubGroup2StringData)
+	returnSubGroup3StringData=set(returnSubGroup3StringData)
+	#print ("returnSubGroup2StringData set")
+	#print (returnSubGroup2StringData)
+	return(returnSubGroup1String + " " + " ".join(returnSubGroup1StringData) + "\n" + returnSubGroup2String + " " + " ".join(returnSubGroup2StringData) + "\n" + returnSubGroup3String + " " + " ".join(returnSubGroup3StringData))
+
+def trackChecked(t,c,cd,s,b):
+	checked=''
+	if t.find('pacBio') == 0 and c == FINALCORRECTIONLEVELS[1]:
+		checked='off'
+	elif t.find('ont') == 0 and c == FINALCORRECTIONLEVELS[0]:
+		checked='off'
+	else:
+		if s == 'allFracs' and b == 'allTissues':
+			checked='on'
+		else:
+			checked='off'
+	return(checked)
 
 include: "lrCorrection.snakefile.py"
 if config["DEMULTIPLEX"]:
@@ -328,7 +381,7 @@ rule all:
 		expand(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 		config["TRACK_HUB_DIR"] + "hub.txt",
 		config["TRACK_HUB_DIR"] + "genomes.txt",
-		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES)
+		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES),
 
 
 # "Dummy" rule to skip undesired targets depending on config
