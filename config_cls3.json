@@ -18,7 +18,7 @@
     "DEMULTIPLEX": false,
     "USE_MATCHED_ILLUMINA": true,
     "LORDEC_CORRECT": true,
-     "PROJECT_NAME": "cls3",
+     "PROJECT_NAME": "CLS3",
      "PROJECT_LONG_NAME": "GENCODE CLS Phase 3",
      "PROJECT_CONTACT_EMAIL": "julien.lagarde@crg.eu",
         "TRACK_HUB_DIR":"trackHub/",

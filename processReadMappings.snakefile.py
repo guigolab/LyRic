@@ -160,7 +160,7 @@ rule nonAnchoredMergeReads:
 		sizeFrac='[0-9-+\.]+'
 	shell:
 		'''
-zcat {input} | tmerge --cpu {threads} --exonOverhangTolerance 25 --minReadSupport 3 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+zcat {input} | tmerge --cpu {threads} --exonOverhangTolerance 25 --minReadSupport 2 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 		'''
 
 rule mergeTissuesNonAnchoredMergeReads:

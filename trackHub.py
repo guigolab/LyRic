@@ -35,9 +35,8 @@ rule makeCapDesignSupertrackHeader:
 		'''
 echo "track {wildcards.capDesign}
 superTrack on show
-shortLabel {wildcards.capDesign} design
-longLabel {wildcards.capDesign} capture design
-priority 10
+shortLabel {config[PROJECT_NAME]} {wildcards.capDesign} design
+longLabel {config[PROJECT_NAME]} {wildcards.capDesign} capture design
 visibility full
 " > {output}
 
@@ -50,11 +49,12 @@ rule makeTrackDbInputHeader:
 echo "track {wildcards.capDesign}_input
 compositeTrack on
 type bigBed 12
-shortLabel {wildcards.capDesign} Targets
-longLabel Targets (Captured regions in {wildcards.capDesign} design)
-priority 10
+shortLabel {config[PROJECT_NAME]} {wildcards.capDesign} Targets
+longLabel {config[PROJECT_NAME]} Targets (Captured regions in {wildcards.capDesign} design)
+priority 9
 parent {wildcards.capDesign}
 visibility dense
+color 110,30,0
 " > {output}
 		'''
 
@@ -84,8 +84,8 @@ bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name $TMPDIR/$uu
 echo -e "
 \ttrack {wildcards.capDesign}_targets
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {output.bigBed})
-\tshortLabel {wildcards.capDesign} targets
-\tlongLabel Targeted regions in {wildcards.capDesign} capture design
+\tshortLabel {config[PROJECT_NAME]} {wildcards.capDesign} targets
+\tlongLabel {config[PROJECT_NAME]} Targeted regions in {wildcards.capDesign} capture design
 \ttype bigBed 12
 \titemRgb on
 \tsearchIndex name
@@ -106,10 +106,10 @@ rule makeTrackDbTechnameHeader:
 echo "track {wildcards.techname}_{wildcards.capDesign}_output
 compositeTrack on
 type bigBed 12
-shortLabel {wildcards.capDesign} {wildcards.techname} sequencing output
-longLabel {wildcards.techname} sequencing output in {wildcards.capDesign} design
-priority 10
+shortLabel {config[PROJECT_NAME]} {wildcards.capDesign} {wildcards.techname} sequencing output
+longLabel {config[PROJECT_NAME]} {wildcards.techname} sequencing output in {wildcards.capDesign} design
 itemRgb on
+priority 10
 parent {wildcards.capDesign}
 {params.subGroupString}
 subGroup4 filter Filter {params.viewsString}
@@ -147,8 +147,8 @@ rule makeBamOutputTrackDb:
 echo -e "
 \ttrack {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_BAM
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {input})
-\tshortLabel {wildcards.techname} Corr{wildcards.corrLevel} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} BAMs
-\tlongLabel BAM (read alignments) (Protocol: {wildcards.techname}, Correction: {wildcards.corrLevel}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes})
+\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} Corr{wildcards.corrLevel} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} BAMs
+\tlongLabel {config[PROJECT_NAME]} BAM (read alignments) (Protocol: {wildcards.techname}, Correction: {wildcards.corrLevel}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes})
 \ttype bam
 \tbamColorMode gray
 \tbamGrayMode aliQual
@@ -186,8 +186,8 @@ bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name $TMPDIR/$uu
 echo -e "
 \ttrack {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_TMs
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {output.bigBed})
-\tshortLabel {wildcards.techname} Corr{wildcards.corrLevel} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} TMs
-\tlongLabel Transcript models (Protocol: {wildcards.techname}, Correction: {wildcards.corrLevel}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes})
+\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} Corr{wildcards.corrLevel} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} TMs
+\tlongLabel {config[PROJECT_NAME]} Transcript models (Protocol: {wildcards.techname}, Correction: {wildcards.corrLevel}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes})
 \ttype bigBed 12
 \titemRgb on
 \tsearchIndex name
@@ -217,8 +217,8 @@ bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name $TMPDIR/$uu
 echo -e "
 \ttrack {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_FL_TMs
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {output.bigBed})
-\tshortLabel {wildcards.techname} Corr{wildcards.corrLevel} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} FL TMs
-\tlongLabel Full-length transcript models (Protocol: {wildcards.techname}, Correction: {wildcards.corrLevel}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes})
+\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} Corr{wildcards.corrLevel} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} FL TMs
+\tlongLabel {config[PROJECT_NAME]} Full-length transcript models (Protocol: {wildcards.techname}, Correction: {wildcards.corrLevel}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes})
 \ttype bigBed 12
 \titemRgb on
 \tsearchIndex name
