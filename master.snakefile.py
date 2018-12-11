@@ -37,6 +37,16 @@ wildcard_constraints:
  	techname = "[^_/]+",
  	corrLevel = "[^_/]+",
 
+SIRVpresent=None
+try:
+	config["SIRVgff"] and config["SIRVinfo"]
+except KeyError:
+	SIRVpresent=False
+	print ("Will NOT compare TMs to SIRVs because config['SIRVgff'] and/or config['SIRVinfo'] not found.")
+else:
+	SIRVpresent=True
+	print ("Will compare TMs to SIRVs")
+
 
 if config["DEMULTIPLEX"]:
 	print ("Demultiplexing is ON")
@@ -306,7 +316,7 @@ def trackChecked(t,c,cd,s,b):
 	checked=''
 	if t.find('pacBio') == 0 and c == FINALCORRECTIONLEVELS[1]:
 		checked='off'
-	elif t.find('ont') == 0 and c == FINALCORRECTIONLEVELS[0]:
+	elif t.find('ont') == 0 and c == FINALCORRECTIONLEVELS[1]:
 		checked='off'
 	else:
 		if s == 'allFracs' and b == 'allTissues':
@@ -379,6 +389,9 @@ rule all:
 
 		expand(config["PLOTSDIR"] + "tmerge.novelLoci.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='13'),
+		expand(config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.{ext}", filtered_merge_figures, capDesign=CAPDESIGNSplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='14'),
+
 		config["TRACK_HUB_DIR"] + "hub.txt",
 		config["TRACK_HUB_DIR"] + "genomes.txt",
 		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES),
