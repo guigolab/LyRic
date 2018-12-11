@@ -174,10 +174,10 @@ rule mergeTissuesNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
-cp {output} {output}.bkp
-checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
-rm {output}.bkp
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+#cp {output} {output}.bkp
+#checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+#rm {output}.bkp
 
 		'''
 
@@ -192,10 +192,10 @@ rule mergeFracsNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
-cp {output} {output}.bkp
-checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
-rm {output}.bkp
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+#cp {output} {output}.bkp
+#checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+#rm {output}.bkp
 		'''
 
 
@@ -210,10 +210,10 @@ rule mergeFracsAndTissuesNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
-cp {output} {output}.bkp
-checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
-rm {output}.bkp
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
+#cp {output} {output}.bkp
+#checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+#rm {output}.bkp
 
 		'''
 
