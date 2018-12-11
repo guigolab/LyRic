@@ -33,7 +33,7 @@
     "LORDEC_CORRECT": true,
     "MATCHED_HISEQ_PATH": "fastqs/",
     "DEMULTIPLEX_DIR" : "demultiplexing/",
-    "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))",
+    "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = '#595959'), axis.line.y = element_line(colour = '#595959'),panel.grid.major = element_line(colour='#d9d9d9'),panel.grid.minor = element_line(colour='#e6e6e6'),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'))",
     "capDesignToCAGEpeaks": {
       "Hv1": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
       "Hv2": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
