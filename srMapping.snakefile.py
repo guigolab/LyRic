@@ -37,6 +37,8 @@ STAR \
 --outSAMstrandField intronMotif \
 --outSAMattributes NH HI NM MD AS nM XS \
 | samtools view -b -u -S - | samtools sort -@ 2 -T $TMPDIR  -m 15000000000 - > {output}
+sleep 120s
+samtools index {output}
 echoerr "Mapping done"
 
 		'''
