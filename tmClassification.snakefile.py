@@ -74,10 +74,136 @@ pref=$(basename {output} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
 tmFullPath=$(fullpath {input.tm})
 cd $(dirname {output})
-gffcompare -T -o $pref -r $annotFullPath $tmFullPath
+gffcompare -o $pref -r $annotFullPath $tmFullPath
 cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
 
 		'''
+
+if SIRVpresent:
+	rule gffcompareToSirvAnnotation:
+		input:
+			annot=config["SIRVgff"],
+			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+		output: "mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.simple.tsv"
+		shell:
+			'''
+pref=$(basename {output} .simple.tsv)
+annotFullPath=$(fullpath {input.annot})
+cat {input.tm} | awk '$1=="SIRVome_isoforms" ' > $(dirname {output})/$(basename {input.tm})
+cd $(dirname {output})
+gffcompare -o $pref -r $annotFullPath $(basename {input.tm})
+cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
+
+			'''
+
+rule getGffCompareSirvStats:
+	input:"mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.simple.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.tsv")
+	shell:
+		'''
+file=$(dirname {input})/$(basename {input} .simple.tsv)
+for level in `echo Baselevel Exonlevel Intronchainlevel Intronlevel Locuslevel Transcriptlevel`; do
+Sn=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2` || Sn='NaN'
+Sp=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3` || Sp='NaN'
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$level\t$Sn\t$Sp";
+done |sed 's/level//g' > {output}
+
+		'''
+
+rule aggGffCompareSirvStats:
+	input:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	output: config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlevel\tmetric\tvalue" > {output}
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+
+		'''
+
+rule plotGffCompareSirvStats:
+	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+cbPalette <- c('Sn'='#cc6600', 'Pr'='#2d8659')
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat}
+dat\$levelCorrlevel <- paste(sep='', dat\$level, ' (Corr: ', dat\$correctionLevel, ')')
+plotHeight = plotHeight +1
+ggplot(dat, aes(x=levelCorrlevel, y=value)) +
+geom_point(aes(color=metric, shape=correctionLevel), size=4, alpha=0.8) +
+scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
+scale_shape_manual(values=c(16,21), name='Error correction') +
+ylab('Sn | Pr (%)') +
+scale_y_continuous() +
+expand_limits(y=c(0,100))+
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=plotWidth, height=plotHeight)
+" > {output}.r
+cat {output}.r | R --slave
+		'''
+
+if SIRVpresent:
+	rule getSirvDetectionStats:
+		input:
+			gffC="mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.simple.tsv",
+			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff",
+			sirvInfo=config["SIRVinfo"]
+		output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.tsv")
+		shell:
+			'''
+uuid=$(uuidgen)
+sirvDetectionStats.pl {input.sirvInfo} $(dirname {input.gffC})/$(basename {input.gffC} .simple.tsv).$(basename {input.tm}).refmap > $TMPDIR/$uuid
+cat $TMPDIR/$uuid | while read id l c ca; do echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$id\t$l\t$c\t$ca"; done > {output}
+
+			'''
+
+rule aggSirvDetectionStats:
+	input:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	output: config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.detection.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tSIRVid\tlength\tconcentration\tdetectionStatus" > {output}
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+
+		'''
+
+rule plotSirvDetectionStats:
+	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.detection.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+palette <- c('end-to-end' = '#00e600', 'absent' = '#666666', 'partial' = '#ff0066')
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat}
+
+ggplot(dat, aes(x=concentration, y=length, color=detectionStatus, shape=correctionLevel)) + geom_point(alpha=0.23) +
+coord_trans(x='log2') +
+scale_color_manual(values=palette) +
+scale_shape_manual(values=c(16,17), name='Error correction') +
+xlab('SIRV molarity (fmol/uL)') +
+ylab('SIRV length (nt)') +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=plotWidth, height=plotHeight)
+" > {output}.r
+cat {output}.r | R --slave
+
+
+		'''
+
 
 rule colorBedAccordingToGffCompare:
 	input:
