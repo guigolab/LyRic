@@ -25,7 +25,7 @@
         "TRACK_HUB_BASE_URL":"http://genome.crg.es/~jlagarde/gencode/trackHubs/CLS3/",
         "BED12_AUTOSQL":"/users/rg/jlagarde/bed12.as",
     "MATCHED_HISEQ_PATH": "fastqs/hiSeq/",
-    "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'black'),panel.grid.major = element_blank(),panel.grid.minor = element_blank(),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='black',fill='white'))",
+    "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = '#595959'), axis.line.y = element_line(colour = '#595959'),panel.grid.major = element_line(colour='#d9d9d9'),panel.grid.minor = element_line(colour='#e6e6e6'),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'))",
     "capDesignToCAGEpeaks": {
       "HpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
       "MpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
@@ -34,6 +34,8 @@
     "capDesignToGenomePAS": {
       "HpreCap": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
       "MpreCap": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed",
-    }
+    },
+    "SIRVgff": "/users/rg/jlagarde/genomes/lexogen_SIRVs/SIRV_Set1_Lot00141_Sequences_170612a/SIRVome_isoforms_Lot00141_C_170612a.gtf.unix.corrected.gtf",
+    "SIRVinfo":"annotations/SIRV_Set1_Lot00141_info-170612a.tsv"
 
 }
