@@ -140,6 +140,7 @@ geom_point(aes(color=metric, shape=correctionLevel), size=4, alpha=0.8) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 scale_shape_manual(values=c(16,21), name='Error correction') +
 ylab('Sn | Pr (%)') +
+xlab('Evaluation level / (Error correction)') +
 scale_y_continuous() +
 expand_limits(y=c(0,100))+
 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
