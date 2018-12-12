@@ -78,21 +78,34 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tcageOnly\\t"$6"\\t"$6/$5"\
 
 rule plotCagePolyAStats:
 	input: config["STATSDATADIR"] + "all.cagePolyASupport.stats.tsv"
-	output: config["PLOTSDIR"] + "cagePolyASupport.stats/{capDesign}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.{ext}"
+	output: config["PLOTSDIR"] + "cagePolyASupport.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cageAndPolyA', 'polyAOnly', 'noCageNoPolyA')))
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity') + ylab('# CLS TMs') +
-scale_y_continuous(labels=comma)+ scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+ facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
+geom_bar(stat='identity') +
+ylab('# CLS TMs') +
+scale_y_continuous(labels=comma)+
+scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+xlab('{params.filterDat[6]}') +
+guides(fill = guide_legend(title='Category'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r

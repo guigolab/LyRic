@@ -155,22 +155,31 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-
 
 rule plotAllPolyAreadsStats:
 	input: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
-	output: config["PLOTSDIR"] + "polyAreads.stats/{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.{ext}"
+	output: config["PLOTSDIR"] + "polyAreads.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.polyAreads.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
 ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
-ylab('# mapped reads') + xlab('Error correction') +
+ylab('# mapped reads') +
+xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r

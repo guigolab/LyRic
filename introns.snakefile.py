@@ -82,9 +82,9 @@ sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output
 
 rule plotGeneidScores:
 	input: config["STATSDATADIR"] + "all.spliceSites.stats.tsv"
-	output: config["PLOTSDIR"] + "spliceSites.stats/{capDesign}_{sizeFrac}_{barcodes}.spliceSites.stats.{ext}"
+	output: config["PLOTSDIR"] + "spliceSites.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.spliceSites.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "
@@ -94,7 +94,13 @@ library(scales)
 library(plyr)
 palette <- c('random' = '#999999', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
 dat<-fread('{input}', header=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
 
 fun_length <- function(x){{
 return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
@@ -108,7 +114,9 @@ facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
 
 stat_summary(aes(x=factor(correctionLevel), group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black') +
 geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
-ylab('Splice site score') + xlab('Error correction') +
+ylab('Splice site score') +
+xlab('{params.filterDat[6]}') +
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 
@@ -163,24 +171,33 @@ cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n
 
 rule plotCompareClsGencodeSJsStats:
 	input: config["STATSDATADIR"] + "all.tmerge.vs.Gencode.SJs.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('common', 'novel')))
 
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='In CLS+GENCODE', novel='Only in CLS')) +
 ylab('# Splice Junctions')+
+xlab('{params.filterDat[6]}') +
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') +
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r

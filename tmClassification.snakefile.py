@@ -34,26 +34,37 @@ cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tY
 
 rule plotTargetCoverageStats:
 	input: config["STATSDATADIR"] + "all.targetCoverage.stats.tsv"
-	output: config["PLOTSDIR"] + "targetCoverage.stats/{capDesign}_{sizeFrac}_{barcodes}.targetCoverage.stats.{ext}"
+	output: config["PLOTSDIR"] + "targetCoverage.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.targetCoverage.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+
 plotWidth = plotWidth + 1
 plotHeight = plotHeight + 1
 
 ggplot(dat, aes(x=factor(correctionLevel), y=percentDetectedTargets, fill=targetType)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={long_Rpalette}) +
- facet_grid( seqTech +sizeFrac ~ capDesign + tissue) +
- geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7) +
- geom_text(size=geom_textSize, aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=2.5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
- ylab('% targeted regions detected') + xlab('Error correction') + scale_y_continuous(limits = c(0, 1), labels = scales::percent)+
+facet_grid( seqTech +sizeFrac ~ capDesign + tissue) +
+geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7) +
+geom_text(size=geom_textSize, aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=2.5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
+ylab('% targeted regions detected') +
+xlab('{params.filterDat[6]}') +
+scale_y_continuous(limits = c(0, 1), labels = scales::percent)+
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
@@ -122,9 +133,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t
 
 rule plotGffCompareSirvStats:
 	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -132,7 +143,14 @@ library(plyr)
 library(scales)
 cbPalette <- c('Sn'='#cc6600', 'Pr'='#2d8659')
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
 dat\$levelCorrlevel <- paste(sep='', dat\$level, ' (Corr: ', dat\$correctionLevel, ')')
 plotHeight = plotHeight +1
 ggplot(dat, aes(x=levelCorrlevel, y=value)) +
@@ -178,9 +196,9 @@ cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output
 
 rule plotSirvDetectionStats:
 	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.detection.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -188,12 +206,20 @@ library(plyr)
 library(scales)
 palette <- c('end-to-end' = '#00e600', 'absent' = '#666666', 'partial' = '#ff0066')
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
 
 ggplot(dat, aes(x=concentration, y=length, color=detectionStatus, shape=correctionLevel)) + geom_point(alpha=0.23) +
 coord_trans(x='log2') +
 scale_color_manual(values=palette) +
-scale_shape_manual(values=c(16,17), name='Error correction') +
+scale_shape_manual(values=c('Yes'=16, 'No'=17), name='Error correction') +
 xlab('SIRV molarity (fmol/uL)') +
 ylab('SIRV length (nt)') +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
@@ -252,24 +278,36 @@ cat {input} >> {output}
 
 rule plotGffCompareStats:
 	input: config["STATSDATADIR"] + "all.tmerge.vs.gencode.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('Intergenic', 'Extends', 'Intronic', 'Overlaps', 'Antisense', 'Equal', 'Included')))
 palette <- c('Intergenic' = '#0099cc', 'Extends' ='#00bfff', 'Intronic' = '#4dd2ff', 'Overlaps' = '#80dfff', 'Antisense' = '#ccf2ff', 'Equal' = '#c65353', 'Included' ='#d98c8c')
 
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual(values=palette) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# TMs') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+ ylab('# TMs') +
+xlab('{params.filterDat[6]}') +
+guides(fill = guide_legend(title='Category'))+
 scale_y_continuous(labels=scientific)+
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
@@ -362,21 +400,34 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5
 
 rule plotNovelIntergenicLociStats:
 	input: config["STATSDATADIR"] + "all.tmerge.novelLoci.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.novelLoci.stats/{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.novelLoci.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('intronic', 'intergenic')))
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity') + ylab('# Novel CLS loci') +
-scale_y_continuous(labels=comma)+ scale_fill_manual (values=c(intronic='#d98c8c', intergenic='#33ccff'))+ facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') + guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
+geom_bar(stat='identity') +
+ylab('# Novel CLS loci') +
+scale_y_continuous(labels=comma)+
+scale_fill_manual (values=c(intronic='#d98c8c', intergenic='#33ccff'))+
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+xlab('{params.filterDat[6]}') +
+guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r

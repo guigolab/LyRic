@@ -127,9 +127,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-mono\\t"$5"\\n"$1"\\t
 
 rule plotAllHiSSStats:
 	input: config["STATSDATADIR"] + "all.HiSS.stats.tsv"
-	output:  config["PLOTSDIR"] + "HiSS.stats/{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.{ext}"
+	output:  config["PLOTSDIR"] + "HiSS.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.HiSS.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -137,11 +137,23 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('HCGM-mono', 'HCGM-spliced', 'nonHCGM-mono', 'nonHCGM-spliced')))
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
 
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity') + scale_fill_manual(values=c('HCGM-mono' = '#9ce2bb', 'HCGM-spliced' = '#39c678', 'nonHCGM-mono' = '#fda59b', 'nonHCGM-spliced' = '#fa341e')) + facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# mapped reads') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+
-geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = comma(count), hjust = 0.5, vjust = 1))+ scale_y_continuous(labels=scientific)+
+geom_bar(stat='identity') +
+scale_fill_manual(values=c('HCGM-mono' = '#9ce2bb', 'HCGM-spliced' = '#39c678', 'nonHCGM-mono' = '#fda59b', 'nonHCGM-spliced' = '#fa341e')) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# mapped reads') +
+xlab('{params.filterDat[6]}') +
+guides(fill = guide_legend(title='Category'))+
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = comma(count), hjust = 0.5, vjust = 1))+
+scale_y_continuous(labels=scientific)+
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
@@ -255,18 +267,33 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGMreads\\t"$5"\\n"$1"\\t
 		'''
 rule plotMergingStats:
 	input:  config["STATSDATADIR"] + "all.merged.stats.tsv"
-	output: config["PLOTSDIR"] + "merged.stats/{capDesign}_{sizeFrac}_{barcodes}.merged.stats.{ext}"
+	output: config["PLOTSDIR"] + "merged.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.merged.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+
 ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
-geom_bar(stat='identity', position=position_dodge()) + geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 1, ymax=count, label = comma(count), hjust = 0, vjust = 0.5), angle=90) + scale_fill_manual(values=c('HCGMreads' = '#d98cb3', 'mergedTMs' = '#cc9966')) + facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# objects') + xlab('Error correction') + guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=comma)+
+geom_bar(stat='identity', position=position_dodge()) +
+geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 1, ymax=count, label = comma(count), hjust = 0, vjust = 0.5), angle=90) +
+scale_fill_manual(values=c('HCGMreads' = '#d98cb3', 'mergedTMs' = '#cc9966')) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# objects') +
+xlab('{params.filterDat[6]}') +
+guides(fill = guide_legend(title='Category'))+
+scale_y_continuous(labels=comma)+
+{params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
@@ -305,9 +332,9 @@ cat {input} |sort >> {output}
 
 rule plotTmLengthStats:
 	input: config["STATSDATADIR"] + "all.splicedLength.stats.tsv"
-	output: config["PLOTSDIR"] + "splicedLength.stats/{capDesign}_{sizeFrac}_{barcodes}.splicedLength.stats.{ext}"
+	output: config["PLOTSDIR"] + "splicedLength.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.splicedLength.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
 	shell:
 		'''
 echo "
@@ -317,7 +344,14 @@ library(scales)
 library(plyr)
 palette <- c('GENCODE_protein_coding' = '#009900', 'CLS_TMs' = '#cc9966', 'CLS_FL_TMs' = '#cc00cc')
 dat<-fread('{input}', header=T, sep='\\t')
-{params.filterDat}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
 
 fun_length <- function(x){{
 return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
@@ -334,7 +368,10 @@ facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
 
 stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize, color='#666666') +
 stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, color='#666666') +
-ylab('Spliced length') + xlab('Error correction') + coord_flip(ylim=c(100, 3500)) +
+ylab('Spliced length') +
+xlab('{params.filterDat[6]}') +
+coord_flip(ylim=c(100, 3500)) +
+{params.filterDat[9]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
 
