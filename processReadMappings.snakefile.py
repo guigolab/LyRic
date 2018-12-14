@@ -127,9 +127,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-mono\\t"$5"\\n"$1"\\t
 
 rule plotAllHiSSStats:
 	input: config["STATSDATADIR"] + "all.HiSS.stats.tsv"
-	output:  config["PLOTSDIR"] + "HiSS.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.HiSS.stats.{ext}"
+	output:  config["PLOTSDIR"] + "HiSS.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -137,6 +137,7 @@ library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('HCGM-mono', 'HCGM-spliced', 'nonHCGM-mono', 'nonHCGM-spliced')))
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -267,15 +268,16 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGMreads\\t"$5"\\n"$1"\\t
 		'''
 rule plotMergingStats:
 	input:  config["STATSDATADIR"] + "all.merged.stats.tsv"
-	output: config["PLOTSDIR"] + "merged.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.merged.stats.{ext}"
+	output: config["PLOTSDIR"] + "merged.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.merged.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -332,9 +334,9 @@ cat {input} |sort >> {output}
 
 rule plotTmLengthStats:
 	input: config["STATSDATADIR"] + "all.splicedLength.stats.tsv"
-	output: config["PLOTSDIR"] + "splicedLength.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.splicedLength.stats.{ext}"
+	output: config["PLOTSDIR"] + "splicedLength.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.splicedLength.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "
@@ -344,6 +346,7 @@ library(scales)
 library(plyr)
 palette <- c('GENCODE_protein_coding' = '#009900', 'CLS_TMs' = '#cc9966', 'CLS_FL_TMs' = '#cc00cc')
 dat<-fread('{input}', header=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}

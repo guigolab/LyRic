@@ -78,15 +78,16 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tcageOnly\\t"$6"\\t"$6/$5"\
 
 rule plotCagePolyAStats:
 	input: config["STATSDATADIR"] + "all.cagePolyASupport.stats.tsv"
-	output: config["PLOTSDIR"] + "cagePolyASupport.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.{ext}"
+	output: config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.cagePolyASupport.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -100,7 +101,9 @@ ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill
 geom_bar(stat='identity') +
 ylab('# CLS TMs') +
 scale_y_continuous(labels=comma)+
-scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+
+#scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+
+scale_fill_manual (values=c(cageOnly='#98cd98', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'))+
+
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+

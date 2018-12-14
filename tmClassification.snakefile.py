@@ -34,15 +34,16 @@ cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tY
 
 rule plotTargetCoverageStats:
 	input: config["STATSDATADIR"] + "all.targetCoverage.stats.tsv"
-	output: config["PLOTSDIR"] + "targetCoverage.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.targetCoverage.stats.{ext}"
+	output: config["PLOTSDIR"] + "targetCoverage.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.targetCoverage.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -133,9 +134,9 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t
 
 rule plotGffCompareSirvStats:
 	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -143,6 +144,7 @@ library(plyr)
 library(scales)
 cbPalette <- c('Sn'='#cc6600', 'Pr'='#2d8659')
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -196,9 +198,9 @@ cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output
 
 rule plotSirvDetectionStats:
 	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.detection.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
@@ -207,6 +209,7 @@ library(scales)
 palette <- c('end-to-end' = '#00e600', 'absent' = '#666666', 'partial' = '#ff0066')
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -278,15 +281,16 @@ cat {input} >> {output}
 
 rule plotGffCompareStats:
 	input: config["STATSDATADIR"] + "all.tmerge.vs.gencode.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.gencode.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -400,15 +404,16 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5
 
 rule plotNovelIntergenicLociStats:
 	input: config["STATSDATADIR"] + "all.tmerge.novelLoci.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.novelLoci.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.novelLoci.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.novelLoci.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}

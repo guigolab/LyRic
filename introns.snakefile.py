@@ -82,9 +82,9 @@ sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output
 
 rule plotGeneidScores:
 	input: config["STATSDATADIR"] + "all.spliceSites.stats.tsv"
-	output: config["PLOTSDIR"] + "spliceSites.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.spliceSites.stats.{ext}"
+	output: config["PLOTSDIR"] + "spliceSites.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.spliceSites.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "
@@ -94,6 +94,7 @@ library(scales)
 library(plyr)
 palette <- c('random' = '#999999', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
 dat<-fread('{input}', header=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
@@ -171,15 +172,16 @@ cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n
 
 rule plotCompareClsGencodeSJsStats:
 	input: config["STATSDATADIR"] + "all.tmerge.vs.Gencode.SJs.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{capDesign}_Corr{corrLevel}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}"
+	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
 library(plyr)
 library(scales)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
 {params.filterDat[2]}
