@@ -34,6 +34,10 @@
         "threads" : "-pe smp 12"
 
     },
+    "getIntronMotif":
+    {
+        "virtual_free" : "30G",
+    },
     "processBlastDemultiplex":
     {
         "virtual_free" : "15G",
@@ -64,6 +68,12 @@
         "h_rt" : "20:00:00"
     },
     "mergeFracsAndTissuesNonAnchoredMergeReads":
+    {
+        "queue" : "rg-el7,long-sl7",
+        "threads" : "-pe smp 8",
+        "h_rt" : "20:00:00"
+    },
+    "mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads":
     {
         "queue" : "rg-el7,long-sl7",
         "threads" : "-pe smp 8",
