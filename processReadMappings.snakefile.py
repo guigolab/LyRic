@@ -170,7 +170,8 @@ rule nonAnchoredMergeReads:
 	threads:8
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
-		sizeFrac='[0-9-+\.]+'
+		sizeFrac='[0-9-+\.]+',
+		techname='(?!allSeqTechs).+'
 	shell:
 		'''
 zcat {input} | tmerge --cpu {threads} --exonOverhangTolerance 25 --minReadSupport 2 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
@@ -182,7 +183,8 @@ rule mergeTissuesNonAnchoredMergeReads:
 	threads:8
 	wildcard_constraints:
 		barcodes='allTissues',
-		sizeFrac='[0-9-+\.]+'
+		sizeFrac='[0-9-+\.]+',
+		techname='(?!allSeqTechs).+'
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -200,7 +202,8 @@ rule mergeFracsNonAnchoredMergeReads:
 	threads:8
 	wildcard_constraints:
 		sizeFrac='allFracs',
-		barcodes='(?!allTissues).+'
+		barcodes='(?!allTissues).+',
+		techname='(?!allSeqTechs).+'
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -218,6 +221,8 @@ rule mergeFracsAndTissuesNonAnchoredMergeReads:
 
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.tmerge.gff"
 	threads:8
+	wildcard_constraints:
+		techname='(?!allSeqTechs).+'
 
 	shell:
 		'''
@@ -230,6 +235,26 @@ cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix
 
 		'''
 
+rule mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads:
+	input:
+		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+
+	output: "mappings/nonAnchoredMergeReads/allSeqTechsCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	threads:8
+	wildcard_constraints:
+#		techname='allSeqTechs',
+		sizeFrac='allFracs',
+		barcodes='allTissues'
+	shell:
+		'''
+uuid=$(uuidgen)
+cat {input} |sortgff > $TMPDIR/$uuid
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
+#cp {output} {output}.bkp
+#checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+#rm {output}.bkp
+
+		'''
 
 
 
