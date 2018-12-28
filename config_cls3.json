@@ -35,7 +35,7 @@
       "HpreCap": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
       "MpreCap": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed",
     },
-    "SIRVgff": "/users/rg/jlagarde/genomes/lexogen_SIRVs/SIRV_Set1_Lot00141_Sequences_170612a/SIRVome_isoforms_Lot00141_C_170612a.gtf.unix.corrected.gtf",
+    "SIRVgff": "/users/rg/jlagarde/genomes/lexogen_SIRVs/SIRV_Set1_Lot00141_Sequences_181206a/SIRVome_isoforms_Lot00141_C_181206a.gtf.unix.corrected.gene_types.gtf",
     "SIRVinfo":"annotations/SIRV_Set1_Lot00141_info-170612a.tsv"
 
 }
