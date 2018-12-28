@@ -36,7 +36,7 @@ zcat {input} | awk '$3=="exon"' | makeIntrons.pl -| awk '{{print $1"\t"$4-1"\t"$
 		'''
 
 rule getTmSpliceSites:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff"
 	output: "mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz"
 	shell:
 		'''
@@ -136,7 +136,7 @@ cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4
 		'''
 
 rule getClsSpliceJunctions:
-	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gff"
+	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff"
 	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.spliceJunctions.list"
 	shell:
 		'''
@@ -197,7 +197,7 @@ geom_bar(stat='identity') +
 scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='In CLS+GENCODE', novel='Only in CLS')) +
 ylab('# Splice Junctions')+
 xlab('{params.filterDat[6]}') +
-geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') +
 {params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}

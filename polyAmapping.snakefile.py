@@ -179,7 +179,7 @@ facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
 ylab('# mapped reads') +
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
-geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, ymax=count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
