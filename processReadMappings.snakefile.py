@@ -222,8 +222,8 @@ rule mergeFracsAndTissuesNonAnchoredMergeReads:
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.tmerge.all.gff"
 	threads:8
 	wildcard_constraints:
-		techname='(?!allSeqTechs).+'
-
+		techname='(?!allSeqTechs).+',
+		capDesign='|'.join(CAPDESIGNS)
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -244,7 +244,8 @@ rule mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 	wildcard_constraints:
 #		techname='allSeqTechs',
 		sizeFrac='allFracs',
-		barcodes='allTissues'
+		barcodes='allTissues',
+		capDesign='|'.join(CAPDESIGNS)
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -255,6 +256,29 @@ cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix
 #rm {output}.bkp
 
 		'''
+
+
+rule mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads:
+	input:
+		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff", filtered_capDesign_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff"
+	threads:8
+	wildcard_constraints:
+		sizeFrac='allFracs',
+		barcodes='allTissues',
+		capDesign='|'.join(MERGEDCAPDESIGNS)
+	shell:
+		'''
+uuid=$(uuidgen)
+cat {input} |sortgff > $TMPDIR/$uuid
+cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
+#cp {output} {output}.bkp
+#checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
+#rm {output}.bkp
+
+		'''
+
 
 
 
