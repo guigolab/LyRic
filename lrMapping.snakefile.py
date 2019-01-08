@@ -104,7 +104,8 @@ rule mergeSizeFracAndBarcodeBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
 	wildcard_constraints:
-		techname='(?!allSeqTechs).+'
+		techname='(?!allSeqTechs).+',
+		capDesign='|'.join(CAPDESIGNS)
 	shell:
 		'''
 samtools merge {output} {input}
@@ -119,7 +120,8 @@ rule mergeAllSeqTechsFracsAndTissuesBams:
 	wildcard_constraints:
 #		techname='allSeqTechs',
 		sizeFrac='allFracs',
-		barcodes='allTissues'
+		barcodes='allTissues',
+		capDesign='|'.join(CAPDESIGNS)
 	shell:
 		'''
 samtools merge {output} {input}
@@ -129,6 +131,21 @@ samtools index {output}
 		'''
 
 
+rule mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams:
+	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_capDesign_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes)
+	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	wildcard_constraints:
+#		techname='allSeqTechs',
+		sizeFrac='allFracs',
+		barcodes='allTissues',
+		capDesign='|'.join(MERGEDCAPDESIGNS)
+	shell:
+		'''
+samtools merge {output} {input}
+sleep 120s
+samtools index {output}
+
+		'''
 
 
 rule checkOnlyOneHit:
