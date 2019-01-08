@@ -1,6 +1,5 @@
 import glob
 from collections import defaultdict
-#from copy import deepcopy
 import os
 import itertools
 import sys
