@@ -79,6 +79,18 @@
         "threads" : "-pe smp 8",
         "h_rt" : "20:00:00"
     },
+    "mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads":
+    {
+        "queue" : "rg-el7,short-sl7",
+        "threads" : "-pe smp 8",
+        "h_rt" : "6:00:00"
+    },
+    "collapseGencode":
+    {
+        "queue" : "rg-el7,short-sl7",
+        "threads" : "-pe smp 8",
+        "h_rt" : "6:00:00"
+    },
     "getHiSeqCanonicalIntronsList":
     {
         "virtual_free" : "120G",
@@ -112,6 +124,21 @@
        "threads" : "-pe smp 8",
         "queue" : "rg-el7,long-sl7",
         "h_rt" : "20:00:00"
+    },
+    "mergeCurrentPreviousPhaseTmsWithGencode":
+    {
+        "virtual_free" : "20G",
+       "threads" : "-pe smp 8",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "20:00:00"
+    },
+    "getGencodeSupportedEnds":
+    {
+        "virtual_free" : "30G"
+    },
+    "getCurrentPreviousPhaseTmsWithGencodeSupportedEnds":
+    {
+        "virtual_free" : "30G"
     }
 
 }
