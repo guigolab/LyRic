@@ -144,9 +144,11 @@ if config["LORDEC_CORRECT"]:
 	for x in range(0, splitFastqsInto, 1):
 		splitFasta.append(str(x).zfill(4))
 else:
-	print ("LR error correction is OFF")
-	FINALCORRECTIONLEVELS=["0"]
+	print ("LR error correction is OFF. Correction levels: ")
+	FINALCORRECTIONLEVELS=["0",]
 	lastK='NULL'
+	print (FINALCORRECTIONLEVELS)
+
 
 
 
@@ -364,7 +366,7 @@ def filtered_merge_figures(*args):
 
 def merge_figures_params(c,bf,bt,cl, tn):
 	clBool=None
-	if cl == FINALCORRECTIONLEVELS[1]:
+	if len(FINALCORRECTIONLEVELS)>1 and cl == FINALCORRECTIONLEVELS[1]:
 		clBool="Yes"
 	elif cl == FINALCORRECTIONLEVELS[0]:
 		clBool="No"
@@ -455,9 +457,9 @@ def trackHubSubGroupString(tn, cd, sf, bc, cl):
 
 def trackChecked(t,c,cd,s,b):
 	checked=''
-	if t.find('pacBio') == 0 and c == FINALCORRECTIONLEVELS[1]:
+	if t.find('pacBio') == 0 and len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]:
 		checked='off'
-	elif t.find('ont') == 0 and c == FINALCORRECTIONLEVELS[1]:
+	elif t.find('ont') == 0 and len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]:
 		checked='off'
 	else:
 		if s == 'allFracs' and b == 'allTissues':
