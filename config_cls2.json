@@ -29,7 +29,7 @@
         "STRANDS" : ["+", "-"],
     "DEMULTIPLEX": true,
     "USE_MATCHED_ILLUMINA": true,
-    "LORDEC_CORRECT": true,
+    "LORDEC_CORRECT": false,
     "MATCHED_HISEQ_PATH": "fastqs/",
     "DEMULTIPLEX_DIR" : "demultiplexing/",
     "GGPLOT_PUB_QUALITY" :"theme(axis.line.x = element_line(colour = '#595959'), axis.line.y = element_line(colour = '#595959'),panel.grid.major = element_line(colour='#d9d9d9'),panel.grid.minor = element_line(colour='#e6e6e6'),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'))",
