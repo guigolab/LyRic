@@ -1,8 +1,8 @@
 rule compareTargetsToTms:
 	input:
-		tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff",
+		tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff",
 		targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
-	output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gfftsv.gz"
+	output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.gfftsv.gz"
 	shell:
 		'''
 bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {output}
@@ -10,8 +10,8 @@ bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {outp
 		'''
 
 rule getTargetCoverageStats:
-	input: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.gfftsv.gz"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.targetCoverage.stats.tsv")
+	input: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.gfftsv.gz"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats.tsv")
 	shell:
 		'''
 for type in `zcat {input} | extractGffAttributeValue.pl gene_type | sort|uniq`; do
@@ -23,9 +23,9 @@ done > {output}
 		'''
 
 rule aggTargetCoverageStats:
-	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.targetCoverage.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
 #lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_pooled.targetCoverage.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
-	output: config["STATSDATADIR"] + "all.targetCoverage.stats.tsv"
+	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.targetCoverage.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {output}
@@ -33,8 +33,8 @@ cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tY
 		'''
 
 rule plotTargetCoverageStats:
-	input: config["STATSDATADIR"] + "all.targetCoverage.stats.tsv"
-	output: config["PLOTSDIR"] + "targetCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.targetCoverage.stats.{ext}"
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.targetCoverage.stats.tsv"
+	output: config["PLOTSDIR"] + "targetCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -78,8 +78,8 @@ cat {output}.r | R --slave
 rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.gff"
-	output: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.vs.gencode.simple.tsv"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.gff"
+	output: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.simple.tsv"
 	shell:
 		'''
 pref=$(basename {output} .simple.tsv)
@@ -95,8 +95,8 @@ if SIRVpresent:
 	rule gffcompareToSirvAnnotation:
 		input:
 			annot=config["SIRVgff"],
-			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff"
-		output: "mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.simple.tsv"
+			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
+		output: "mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
 		shell:
 			'''
 pref=$(basename {output} .simple.tsv)
@@ -109,8 +109,8 @@ cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
 			'''
 
 rule getGffCompareSirvStats:
-	input:"mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.simple.tsv"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.tsv")
+	input:"mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv")
 	shell:
 		'''
 file=$(dirname {input})/$(basename {input} .simple.tsv)
@@ -123,8 +123,8 @@ done |sed 's/level//g' > {output}
 		'''
 
 rule aggGffCompareSirvStats:
-	input:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.tsv", filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
-	output: config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.stats.tsv"
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv", filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlevel\tmetric\tvalue" > {output}
@@ -133,8 +133,8 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t
 		'''
 
 rule plotGffCompareSirvStats:
-	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.stats.{ext}"
+	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -174,10 +174,10 @@ cat {output}.r | R --slave
 if SIRVpresent:
 	rule getSirvDetectionStats:
 		input:
-			gffC="mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.simple.tsv",
-			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff",
+			gffC="mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv",
+			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff",
 			sirvInfo=config["SIRVinfo"]
-		output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.tsv")
+		output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv")
 		shell:
 			'''
 uuid=$(uuidgen)
@@ -187,8 +187,8 @@ cat $TMPDIR/$uuid | while read id l c ca; do echo -e "{wildcards.techname}Corr{w
 			'''
 
 rule aggSirvDetectionStats:
-	input:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.tsv", filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
-	output: config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.detection.stats.tsv"
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv", filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tSIRVid\tlength\tconcentration\tdetectionStatus" > {output}
@@ -197,8 +197,8 @@ cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output
 		'''
 
 rule plotSirvDetectionStats:
-	input:config["STATSDATADIR"] + "all.tmerge.vs.SIRVs.detection.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.SIRVs.detection.stats.{ext}"
+	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -237,9 +237,9 @@ cat {output}.r | R --slave
 
 rule colorBedAccordingToGffCompare:
 	input:
-		classes="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.vs.gencode.simple.tsv",
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.bed"
-	output: "mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.bed"
+		classes="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.simple.tsv",
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.bed"
+	output: "mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.bed"
 	shell:
 			'''
 colorNovelTxBed.pl {input.classes} {input.tm} > {output}
@@ -248,8 +248,8 @@ colorNovelTxBed.pl {input.classes} {input.tm} > {output}
 
 
 rule getGffCompareStats:
-	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.vs.gencode.simple.tsv"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.vs.gencode.stats.tsv")
+	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.simple.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.stats.tsv")
 	shell:
 		'''
 cat {input} |cut -f2 | sort|uniq -c | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'>> {output}
@@ -259,8 +259,8 @@ cat {input} |cut -f2 | sort|uniq -c | awk -v s={wildcards.techname}Corr{wildcard
 #echo -e "seqTech\tcorrectionLevel\tcapDesign\tcategory\tcount" > {output}
 
 rule aggGffCompareStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.vs.gencode.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport)
-	output: config["STATSDATADIR"] + "all.tmerge.{endSupport}.vs.gencode.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount" > {output}
@@ -268,8 +268,8 @@ cat {input} >> {output}
 		'''
 
 rule plotGffCompareStats:
-	input: config["STATSDATADIR"] + "all.tmerge.{endSupport}.vs.gencode.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.vs.gencode.stats.{ext}"
+	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -318,8 +318,8 @@ cat {input}  | simplifyGencodeGeneTypes.pl - | sortgff > {output}
 rule mergeTmsWithGencode:
 	input:
 		annot="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.gff"
-	output: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.+gencode.gff.gz"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.gff"
+	output: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.gff.gz"
 	threads:8
 	shell:
 		'''
@@ -327,9 +327,9 @@ cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --cpu {threads} 
 		'''
 
 rule makeClsGencodeLoci:
-	input: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.+gencode.gff.gz"
+	input: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.gff.gz"
 	params: locusPrefix=config["PROJECT_NAME"]
-	output: temp("mappings/nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.+gencode.loci.gff.gz")
+	output: temp("mappings/nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.loci.gff.gz")
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -341,9 +341,9 @@ bedtools intersect -s -wao -a $TMPDIR/$uuid -b $TMPDIR/$uuid |fgrep -v ERCC| bui
 
 rule mergeWithRef:
 	input:
-		clsGencode="mappings/nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.+gencode.loci.gff.gz",
+		clsGencode="mappings/nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.loci.gff.gz",
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
-	output: "mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.+gencode.loci.refmerged.gff.gz"
+	output: "mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.loci.refmerged.gff.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -354,8 +354,8 @@ mergeToRef.pl {input.gencode} $TMPDIR/$uuid | sortgff |gzip > {output}
 rule getNovelIntergenicLoci:
 	input:
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.+gencode.loci.refmerged.gff.gz"
-	output:"mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.novelLoci.gff.gz"
+		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.loci.refmerged.gff.gz"
+	output:"mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.gff.gz"
 	shell:
 		'''
 uuid1=$(uuidgen)
@@ -377,9 +377,9 @@ set -e
 
 rule getNovelIntergenicLociStats:
 	input:
-		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.+gencode.loci.refmerged.gff.gz",
-		intergenic="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.novelLoci.gff.gz"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.novelLoci.stats.tsv")
+		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.loci.refmerged.gff.gz",
+		intergenic="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.gff.gz"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.stats.tsv")
 	shell:
 		'''
 set +e
@@ -391,8 +391,8 @@ echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{
 		'''
 
 rule aggNovelIntergenicLociStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.novelLoci.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport)
-	output: config["STATSDATADIR"] + "all.tmerge.{endSupport}.novelLoci.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
@@ -401,8 +401,8 @@ cat {input} | awk '{{if ($5!=0) print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$
 
 
 rule plotNovelIntergenicLociStats:
-	input: config["STATSDATADIR"] + "all.tmerge.{endSupport}.novelLoci.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.novelLoci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.{endSupport}.novelLoci.stats.{ext}"
+	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.novelLoci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:

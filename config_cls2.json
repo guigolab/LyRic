@@ -27,6 +27,7 @@
         "BED12_AUTOSQL":"/users/rg/jlagarde/bed12.as",
         "PLOTFORMATS" : ["png", "pdf"],
         "STRANDS" : ["+", "-"],
+        "MINIMUM_TMERGE_READ_SUPPORT": ["1", "2"],
     "DEMULTIPLEX": true,
     "USE_MATCHED_ILLUMINA": true,
     "LORDEC_CORRECT": false,

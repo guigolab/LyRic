@@ -13,11 +13,16 @@
        "capDesignToAnnotGtf" : {
            "HpreCap": "annotations/hs.gencode24+SIRVS.gff",
             "MpreCap": "annotations/hs.gencode24+SIRVS.gff"},
+       "genomeToPreviousPhaseTMs":{
+          "hg38": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Hv1Hv2_allFracs_allTissues.tmerge.min2reads.all.gff",
+          "mm10": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Mv1_allFracs_allTissues.tmerge.min2reads.all.gff"
+        },
         "PLOTFORMATS" : ["png", "pdf"],
         "STRANDS" : ["+", "-"],
+        "MINIMUM_TMERGE_READ_SUPPORT": ["1", "2"],
     "DEMULTIPLEX": false,
     "USE_MATCHED_ILLUMINA": true,
-    "LORDEC_CORRECT": true,
+    "LORDEC_CORRECT": false,
      "PROJECT_NAME": "CLS3",
      "PROJECT_LONG_NAME": "GENCODE CLS Phase 3",
      "PROJECT_CONTACT_EMAIL": "julien.lagarde@crg.eu",
@@ -31,9 +36,9 @@
       "MpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
 
     },
-    "capDesignToGenomePAS": {
-      "HpreCap": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
-      "MpreCap": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed",
+    "genomeToPAS": {
+      "hg38": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
+      "mm10": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed",
     },
     "SIRVgff": "/users/rg/jlagarde/genomes/lexogen_SIRVs/SIRV_Set1_Lot00141_Sequences_181206a/SIRVome_isoforms_Lot00141_C_181206a.gtf.unix.corrected.gene_types.gtf",
     "SIRVinfo":"annotations/SIRV_Set1_Lot00141_info-170612a.tsv"

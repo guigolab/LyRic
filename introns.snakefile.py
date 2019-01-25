@@ -36,8 +36,8 @@ zcat {input} | awk '$3=="exon"' | makeIntrons.pl -| awk '{{print $1"\t"$4-1"\t"$
 		'''
 
 rule getTmSpliceSites:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff"
-	output: "mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
+	output: "mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.introns.{spliceType}.tsv.gz"
 	shell:
 		'''
 cat {input} | awk '$3=="exon"' | makeIntrons.pl - | awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort|uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:CLS_TMs"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:CLS_TMs";' | fgrep -w {wildcards.spliceType} | sort |uniq| sort -k1,1 | gzip> {output}
@@ -47,10 +47,10 @@ rule getGeneidScores:
 	input:
 		gencode="annotations/spliceSites/{capDesign}.gencode.PCG.spliceSites.{spliceType}.tsv.gz",
 		rawReads="mappings/makeIntrons/readSpliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz",
-		tmReads="mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz",
+		tmReads="mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.introns.{spliceType}.tsv.gz",
 		geneidScores= lambda wildcards: expand(config["SPLICE_SITE_SCORES_DIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".{spliceType}.geneid.loose.spliceSites.sorted.tsv", spliceType=wildcards.spliceType),
 		random=lambda wildcards: "annotations/spliceSites/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".geneid.loose.spliceSites.OnDetectedRegions.NotDetected.random100K.{spliceType}.tsv"
-	output:  temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{spliceType}.spliceSites.stats.tsv")
+	output:  temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv")
 	shell:
 		'''
 zcat {input.gencode} {input.rawReads} {input.tmReads} | sort  -k1,1 > $TMPDIR/cls.SSs.tsv
@@ -68,8 +68,8 @@ cat {input.random} | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c
 		'''
 
 rule aggGeneidScores:
-	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES)
-	output: config["STATSDATADIR"] + "all.spliceSites.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv"
 	threads: 8
 	shell:
 		'''
@@ -81,8 +81,8 @@ sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output
 		'''
 
 rule plotGeneidScores:
-	input: config["STATSDATADIR"] + "all.spliceSites.stats.tsv"
-	output: config["PLOTSDIR"] + "spliceSites.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.spliceSites.stats.{ext}"
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv"
+	output: config["PLOTSDIR"] + "spliceSites.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.spliceSites.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -136,8 +136,8 @@ cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4
 		'''
 
 rule getClsSpliceJunctions:
-	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff"
-	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.spliceJunctions.list"
+	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
+	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
 	shell:
 		'''
 cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort|uniq > {output}
@@ -147,8 +147,8 @@ cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4
 rule getCompareClsGencodeSJsStats:
 	input:
 		gencodeSJs="annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list",
-		clsSJs="mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.spliceJunctions.list"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.tsv")
+		clsSJs="mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv")
 	shell:
 		'''
 #annSJs=$(cat {input.gencodeSJs} | wc -l)
@@ -160,8 +160,8 @@ echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{
 		'''
 
 rule aggCompareClsGencodeSJsStats:
-	input: expand(config["STATSDATADIR"] +"{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
-	output: config["STATSDATADIR"] + "all.tmerge.vs.Gencode.SJs.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] +"{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv",filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
@@ -171,8 +171,8 @@ cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n
 		'''
 
 rule plotCompareClsGencodeSJsStats:
-	input: config["STATSDATADIR"] + "all.tmerge.vs.Gencode.SJs.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.vs.Gencode.SJs.stats.{ext}"
+	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:

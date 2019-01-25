@@ -15,11 +15,11 @@ mergeToRef.pl {input} $TMPDIR/$uuidL | sortgff > {output}
 
 rule mergeCurrentPreviousPhaseTmsWithGencode:
 	input:
-		current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 		previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 	threads:8
-	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff.gz"
+	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz"
 	# wildcard_constraints:
 	# 	barcodes='allTissues',
 	# 	sizeFrac='allFracs',
@@ -37,9 +37,9 @@ bedtools intersect -s -wao -a $TMPDIR/$uuidM -b $TMPDIR/$uuidM |fgrep -v ERCC| b
 
 rule mergeCurrentPreviousPhaseTmsWithGencodeBiotypes:
 	input:
-		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff.gz",
+		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz",
 		gencode="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff.gz"
+	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -81,12 +81,12 @@ fgrep -w -f $TMPDIR/$uuidcagePASsupported {input.tm} |sortgff | gzip> {output}
 
 rule getCurrentPreviousPhaseTmsWithGencodeSupportedEnds:
 	input:
-		tm="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff.gz",
+		tm="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz",
 		cagePeaks=lambda wildcards: CAPDESIGNTOCAGEPEAKS[wildcards.capDesign],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome",
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 
-	output:"mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.cage+PASsupported.gff.gz"
+	output:"mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cage+PASsupported.gff.gz"
 	shell:
 		'''
 uuid5pEnds=$(uuidgen)
@@ -111,10 +111,10 @@ zcat {input.tm} | fgrep -w -f $TMPDIR/$uuidcagePASsupported - |sortgff | gzip> {
 rule getFlLocusStats:
 	input:
 		gencode="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf",
-		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.all.gff.gz",
+		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz",
 		gencodeFL="mappings/nonAnchoredMergeReads/mergeWithPrevious/gencode/{capDesign}.gencode.cage+PASsupported.gff.gz",
-		clsGencodeFL="mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.cage+PASsupported.gff.gz"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.FLloci.stats.tsv")
+		clsGencodeFL="mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cage+PASsupported.gff.gz"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv")
 	shell:
 		'''
 #PCG stats
@@ -150,8 +150,8 @@ echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{
 
 
 rule aggFlLocusStats:
-	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.FLloci.stats.tsv", techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac='allFracs', barcodes='allTissues')
-	output: config["STATSDATADIR"] + "all.FLloci.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv", techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac='allFracs', barcodes='allTissues', minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.FLloci.stats.tsv"
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tannotation_set\tbiotype\tcategory\tcount\tpercent" > {output}
@@ -160,8 +160,8 @@ cat {input} | awk -v p='{config[PROJECT_NAME]}' '{{print $1"\\t"$2"\\t"$3"\\t"$4
 		'''
 
 rule plotFlLocusGencodeOnlyStats:
-	input: config["STATSDATADIR"] + "all.FLloci.stats.tsv"
-	output: config["PLOTSDIR"] + "FLloci.gencodeOnly.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.FLloci.gencodeOnly.stats.{ext}"
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.FLloci.stats.tsv"
+	output: config["PLOTSDIR"] + "FLloci.gencodeOnly.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.gencodeOnly.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -207,8 +207,8 @@ cat {output}.r | R --slave
 
 
 rule plotFlLocusStats:
-	input: config["STATSDATADIR"] + "all.FLloci.stats.tsv"
-	output: config["PLOTSDIR"] + "FLloci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.FLloci.stats.{ext}"
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.FLloci.stats.tsv"
+	output: config["PLOTSDIR"] + "FLloci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
