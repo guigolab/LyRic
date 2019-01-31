@@ -446,7 +446,7 @@ geom_textSize=2.4
 	return(capDesignFilterString, corrLevelFilterString, sizeFracFilterString, tissueFilterString, substSeqTechString, substTissueString,  xlabString, hideXaxisLabels , graphDimensions, hideYaxisLabels, seqTechFilterString)
 
 
-def trackHubSubGroupString(tn, cd, sf, bc, cl):
+def trackHubSubGroupString(tn, cd, sf, bc, cl, m):
 	techname=(("techname", tn),)
 	capDesign=(("capDesign", cd),)
 	sizeFracs=[]
@@ -458,14 +458,19 @@ def trackHubSubGroupString(tn, cd, sf, bc, cl):
 	corrLevels=[]
 	for corrL in cl:
 		corrLevels.append(("corrLevel", corrL))
-
+	minRS=[]
+	for minReadSupport in m:
+		minRS.append(("minReadSupport", minReadSupport))
 	returnSubGroup1String="subGroup1 sample Sample"
 	returnSubGroup2String="subGroup2 sizeFraction Size_fraction"
 	returnSubGroup3String="subGroup3 corrLevel LoRDEC_sequence_correction"
+	returnSubGroup4String="subGroup4 minReadSupport Min_read_support_per_TM"
+
 	returnSubGroup1StringData=[]
 	returnSubGroup2StringData=[]
 	returnSubGroup3StringData=[]
-	for wc_comb in itertools.product(techname, corrLevels, capDesign, sizeFracs, barCodes):
+	returnSubGroup4StringData=[]
+	for wc_comb in itertools.product(techname, corrLevels, capDesign, sizeFracs, barCodes, minRS):
 		#print("THSS ")
 		#print(wc_comb)
 		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
@@ -473,26 +478,31 @@ def trackHubSubGroupString(tn, cd, sf, bc, cl):
 			returnSubGroup1StringData.append(wc_comb[4][1] + "=" + wc_comb[4][1])
 			returnSubGroup2StringData.append(wc_comb[3][1] + "=" + wc_comb[3][1])
 			returnSubGroup3StringData.append(wc_comb[1][1] + "=" + wc_comb[1][1])
+			returnSubGroup4StringData.append(wc_comb[5][1] + "=" + wc_comb[5][1])
+
 	#print ("returnSubGroup2StringData list")
 	#print (returnSubGroup2StringData)
 	returnSubGroup1StringData=set(returnSubGroup1StringData)
 	returnSubGroup2StringData=set(returnSubGroup2StringData)
 	returnSubGroup3StringData=set(returnSubGroup3StringData)
+	returnSubGroup4StringData=set(returnSubGroup4StringData)
 	#print ("returnSubGroup2StringData set")
 	#print (returnSubGroup2StringData)
-	return(returnSubGroup1String + " " + " ".join(returnSubGroup1StringData) + "\n" + returnSubGroup2String + " " + " ".join(returnSubGroup2StringData) + "\n" + returnSubGroup3String + " " + " ".join(returnSubGroup3StringData))
+	return(returnSubGroup1String + " " + " ".join(returnSubGroup1StringData) + "\n" + returnSubGroup2String + " " + " ".join(returnSubGroup2StringData) + "\n" + returnSubGroup3String + " " + " ".join(returnSubGroup3StringData)+ "\n" + returnSubGroup4String + " " + " ".join(returnSubGroup4StringData))
 
-def trackChecked(t,c,cd,s,b):
+def trackChecked(t,c,cd,s,b,m):
 	checked=''
-	if t.find('pacBio') == 0 and len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]:
+	if t.find('pacBio') == 0 and (len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]):
 		checked='off'
-	elif t.find('ont') == 0 and len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]:
+	elif t.find('ont') == 0 and (len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]):
 		checked='off'
 	else:
 		if s == 'allFracs' and b == 'allTissues':
 			checked='on'
 		else:
 			checked='off'
+	if m == '1':
+		checked='off'
 	return(checked)
 
 include: "lrCorrection.snakefile.py"
@@ -547,11 +557,15 @@ rule all:
 		expand(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='13'),
 		expand(config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='14'),
-#		config["TRACK_HUB_DIR"] + "hub.txt",
-#		config["TRACK_HUB_DIR"] + "genomes.txt",
-#		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES),
 		expand(config["PLOTSDIR"] + "FLloci.gencodeOnly.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.gencodeOnly.stats.{ext}", filtered_merge_figures, techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac='allFracs', barcodes='allTissues', ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(config["PLOTSDIR"] + "FLloci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.{ext}", filtered_merge_figures, techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac='allFracs', barcodes='allTissues', ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		#################
+		### Track hub ###
+		#################
+		config["TRACK_HUB_DIR"] + "hub.txt",
+		config["TRACK_HUB_DIR"] + "genomes.txt",
+		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES),
+
 
 
 # "Dummy" rule to skip undesired targets depending on config

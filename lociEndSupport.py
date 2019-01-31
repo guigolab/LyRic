@@ -75,8 +75,6 @@ comm -1 -2 $TMPDIR/$uuidCageSupported $TMPDIR/$uuidPASsupported |sort|uniq > $TM
 
 fgrep -w -f $TMPDIR/$uuidcagePASsupported {input.tm} |sortgff | gzip> {output}
 
-
-
 		'''
 
 rule getCurrentPreviousPhaseTmsWithGencodeSupportedEnds:
