@@ -130,7 +130,14 @@
         "virtual_free" : "20G",
        "threads" : "-pe smp 8",
         "queue" : "rg-el7,long-sl7",
-        "h_rt" : "20:00:00"
+        "h_rt" : "30:00:00"
+    },
+    "mergePreviousPhaseTmsWithGencode":
+    {
+        "virtual_free" : "20G",
+       "threads" : "-pe smp 8",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "30:00:00"
     },
     "getGencodeSupportedEnds":
     {
@@ -140,5 +147,9 @@
     {
         "virtual_free" : "30G"
     }
-
+    ,
+    "getPreviousPhaseTmsWithGencodeSupportedEnds":
+    {
+        "virtual_free" : "30G"
+    }
 }
