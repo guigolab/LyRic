@@ -48,6 +48,10 @@
         "virtual_free" : "20G",
         "h_rt" : "1:00:00"
     },
+    "getHiSSStats":
+    {
+        "virtual_free" : "30G"
+    },
     "nonAnchoredMergeReads":
     {
         "virtual_free" : "20G",
