@@ -298,6 +298,8 @@ def filtered_product(*args):
 def filtered_product_merge(*args):
 	found=False
 	#print("NEW COMB")
+	#print(args)
+
 	for wc_comb in itertools.product(*args):
 		#print(wc_comb)
 		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
@@ -307,14 +309,17 @@ def filtered_product_merge(*args):
 			if wc_comb[0] in (('techname', 'allSeqTechs'),):
 				if wc_comb[3] in (('sizeFrac', 'allFracs'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
 					found=True
+					#print("YIELD 1")
 					yield(wc_comb)
 
 			else:
 				found=True
+				#print("YIELD 2")
 				yield(wc_comb)
 		else:
 			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[3] in (('sizeFrac', 'allFracs'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
 				found=True
+				#print("YIELD 3")
 				yield(wc_comb)
 	if not found:
 		print(" Error in function filtered_product_merge. Args were:")
@@ -548,8 +553,7 @@ rule all:
 		expand(config["PLOTSDIR"] + "HiSS.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 		expand("mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.bed", filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 
-		expand(config["PLOTSDIR"] + "merged.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-
+		expand(config["PLOTSDIR"] + "merged.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.cagePolyASupport.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(config["PLOTSDIR"] + "targetCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
