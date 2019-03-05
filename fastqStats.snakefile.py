@@ -26,40 +26,66 @@ rule aggFastqReadCounts:
 #get read lengths for all FASTQ files:
 rule getReadLength:
 	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv"
-	shell: "zcat {input} | fastq2tsv.pl | awk -v s={wildcards.sizeFrac} '{{print s\"\\t\"length($2)}}' > {output}"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv") if config["DEMULTIPLEX"] else temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv")
+	params:
+		bc=lambda wildcards: 'Multiplexed' if wildcards.barcodes is None else wildcards.barcodes
+	shell:
+		'''
+zcat {input} | fastq2tsv.pl | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
+		'''
 
 #aggregate read length data over all fractions of a given capDesign:
 rule aggReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_all.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.{barcodes}_all.readlength.tsv"
-	shell: "cat {input} > {output}"
+	output: config["STATSDATADIR"] + "all.readlength.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" > {output}
+cat {input} |sort >> {output}
+
+		'''
+#rule addAllReadLength:
+#	input: lambda wildcards:
+
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_all.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.{barcodes}_all.readlength.tsv"
-	output: config["PLOTSDIR"] + "{techname}Corr{corrLevel}_{capDesign}_all.readlength.{ext}" if config["DEMULTIPLEX"] else config["PLOTSDIR"] + "{techname}Corr{corrLevel}_{capDesign}.{barcodes}_all.readlength.{ext}"
+	input: config["STATSDATADIR"] + "all.readlength.tsv"
+	output: config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readLength.stats.{ext}"  if config["DEMULTIPLEX"] else config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "library(ggplot2)
-library(plyr)
-dat <- read.table('{input}', header=F, as.is=T, sep='\\t')
-colnames(dat)<-c('fraction','length')
-dat\$fraction_f=factor(dat\$fraction, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
-medians <- ddply(dat, 'fraction_f', summarise, grp.median=median(length))
-sizes <- ddply(dat, 'fraction_f', summarise, grp.length=length(length))
+library(dplyr)
+library(scales)
+library(data.table)
+dat<-fread('{input}', header=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+dat\$sizeFrac_f=factor(dat\$sizeFrac, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
+summaryStats = transform(summarise(group_by(dat, seqTech, sizeFrac_f, capDesign, tissue), Label = paste0('N= ', comma(length(length)), '\\n', 'Median= ', comma(median(length)))))
+
 ggplot(dat, aes(x=length)) +
-geom_histogram(binwidth=200, aes(fill=fraction_f)) +
+geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=200) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-#facet_grid( . ~ names({sizeFrac_Rpalette})) +
-facet_grid( . ~ fraction_f) +
-annotate(geom='text', label=c(paste('n= ', sizes[,'grp.length'])), hjust=0, vjust=c(3.8), x=10, y=c(Inf), color=c('black'), size=6) +
-annotate(geom='text', label=c(paste('Median (nt)= ', medians[,'grp.median'])), hjust=0, vjust=c(5.8), x=10, y=c(Inf), color=c('black'), size=6) +
-coord_cartesian(xlim=c(0, 5000)) +
-theme_bw(base_size=17) +
+facet_grid( seqTech + sizeFrac_f ~ capDesign + tissue, scales='free_y') +
+geom_text(data = summaryStats, aes(label = Label, x = 10, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
+
+coord_cartesian(xlim=c(0, 3500)) +
+scale_y_continuous(labels=scientific)+
+scale_x_continuous(labels=comma)+
+#theme_bw(base_size=17) +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave('{output}', width=10, height=3)
+ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
 cat {output}.r | R --slave
 
