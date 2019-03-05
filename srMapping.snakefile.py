@@ -63,19 +63,20 @@ rule getHiSeqCanonicalIntronsList:
 	output:"mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if config["DEMULTIPLEX"] else "mappings/hiSeqIntrons/hiSeq_{techname}_{capDesign}.{barcodes}.canonicalIntrons.list"
 	shell:
 		'''
+uuid=$(uuidgen)
 echoerr "making bed"
-samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > $TMPDIR/hiSeq_{wildcards.capDesign}.bed
+samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed
 echoerr "splitting"
-split -a 3 -d -e -n l/24 $TMPDIR/hiSeq_{wildcards.capDesign}.bed $TMPDIR/hiSeq_{wildcards.capDesign}.bed.split
-rm $TMPDIR/hiSeq_{wildcards.capDesign}.bed
-for file in `ls $TMPDIR/hiSeq_{wildcards.capDesign}.bed.split*`; do
-echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T $TMPDIR -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} $TMPDIR/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
-done > $TMPDIR/parallelIntrons.sh
+split -a 3 -d -e -n l/24 $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed.split
+rm $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed
+for file in `ls $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed.split*`; do
+echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T $TMPDIR -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} $TMPDIR/$uuid.$(basename $file); rm $file $file.gff $file.transcripts.tsv"
+done > $TMPDIR/$uuid.parallelIntrons.sh
 echoerr "extracting introns on split files"
 
-parallel -j {threads} < $TMPDIR/parallelIntrons.sh
+parallel -j {threads} < $TMPDIR/$uuid.parallelIntrons.sh
 echoerr "getting SJs and merging into output..."
-cat $TMPDIR/hiSeq_{wildcards.capDesign}.bed.split*.introns.gff | perl -lane '$start=$F[3]-1; $end=$F[4]+1; print $F[0]."_".$start."_".$end."_".$F[6]' | sort -T $TMPDIR |uniq> {output}
+cat $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed.split*.introns.gff | perl -lane '$start=$F[3]-1; $end=$F[4]+1; print $F[0]."_".$start."_".$end."_".$F[6]' | sort -T $TMPDIR |uniq> {output}
 
 		'''
 

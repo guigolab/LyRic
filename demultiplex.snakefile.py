@@ -391,11 +391,12 @@ rule demultiplexFastqs:
 	output: DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	shell:
 		'''
-cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq > $TMPDIR/tmp
+tmpUuid=$(uuidgen)
+cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq > $TMPDIR/$tmpUuid
 set +e
-fgrep -w -f $TMPDIR/tmp {input.tsvFastq} > $TMPDIR/tmp.fastq
+fgrep -w -f $TMPDIR/$tmpUuid {input.tsvFastq} > $TMPDIR/$tmpUuid.fastq
 set -e
-cat $TMPDIR/tmp.fastq | tsv2fastq.pl | gzip> {output}
+cat $TMPDIR/$tmpUuid.fastq | tsv2fastq.pl | gzip> {output}
 
 		'''
 

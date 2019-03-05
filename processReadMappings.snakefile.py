@@ -7,14 +7,15 @@ rule integratePolyaAndSjInfo:
 		wrongPolyAs="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
 	shell:
 		'''
-cat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort> $TMPDIR/reads.SJ.strandInfo.tsv
-cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort > $TMPDIR/reads.polyA.strandInfo.tsv
-join -a1 -a2 -e '.' -o '0,1.2,2.2' $TMPDIR/reads.SJ.strandInfo.tsv  $TMPDIR/reads.polyA.strandInfo.tsv > $TMPDIR/reads.SJ.polyA.strandInfo.tsv
+uuid=$(uuidgen)
+cat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort> $TMPDIR/$uuid.reads.SJ.strandInfo.tsv
+cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort > $TMPDIR/$uuid.reads.polyA.strandInfo.tsv
+join -a1 -a2 -e '.' -o '0,1.2,2.2' $TMPDIR/$uuid.reads.SJ.strandInfo.tsv  $TMPDIR/$uuid.reads.polyA.strandInfo.tsv > $TMPDIR/$uuid.reads.SJ.polyA.strandInfo.tsv
 
 #make list of reads with wrongly called polyA sites (i.e. their strand is different from the one inferred using SJs):
-cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[2] ne "." && $F[1] ne "." && $F[1] ne $F[2]){{print join ("\\t", $F[0])}}' |sort|uniq > {output.wrongPolyAs}
+cat $TMPDIR/$uuid.reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[2] ne "." && $F[1] ne "." && $F[1] ne $F[2]){{print join ("\\t", $F[0])}}' |sort|uniq > {output.wrongPolyAs}
 #get strand info, prioritizing SJ inference
-cat $TMPDIR/reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print "$F[0]\\t$F[1]"}} else{{print "$F[0]\\t$F[2]"}}' |sort|uniq > {output.strandInfo}
+cat $TMPDIR/$uuid.reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print "$F[0]\\t$F[1]"}} else{{print "$F[0]\\t$F[2]"}}' |sort|uniq > {output.strandInfo}
 		'''
 
 rule removeWrongPolyAs:
@@ -34,8 +35,9 @@ rule strandGffs:
 	output: "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
 	shell:
 		'''
-zcat {input.gff} > $TMPDIR/in.gff
-get_right_transcript_strand.pl $TMPDIR/in.gff {input.strandInfo} | fgrep -v ERCC- | sortgff |gzip> {output}
+uuid=$(uuidgen)
+zcat {input.gff} > $TMPDIR/$uuid.in.gff
+get_right_transcript_strand.pl $TMPDIR/$uuid.in.gff {input.strandInfo} | fgrep -v ERCC- | sortgff |gzip> {output}
 
 		'''
 
@@ -48,20 +50,21 @@ rule highConfidenceReads:
 	shell:
 		'''
 #select read IDs with canonical GT|GC/AG and high-confidence SJs
-cat {input.transcriptStrandInfo} | skipcomments | awk '$6==1 && $7==1' | cut -f1 | sort|uniq > $TMPDIR/reads.hcSJs.list
-wc -l $TMPDIR/reads.hcSJs.list
-zcat {input.strandedReads} > $TMPDIR/str.gff
+uuid=$(uuidgen)
+cat {input.transcriptStrandInfo} | skipcomments | awk '$6==1 && $7==1' | cut -f1 | sort|uniq > $TMPDIR/$uuid.reads.hcSJs.list
+wc -l $TMPDIR/$uuid.reads.hcSJs.list
+zcat {input.strandedReads} > $TMPDIR/$uuid.str.gff
 set +e
-fgrep -w -f $TMPDIR/reads.hcSJs.list $TMPDIR/str.gff > $TMPDIR/gtag.gff
+fgrep -w -f $TMPDIR/$uuid.reads.hcSJs.list $TMPDIR/$uuid.str.gff > $TMPDIR/$uuid.gtag.gff
 set -e
-wc -l $TMPDIR/gtag.gff
-cat $TMPDIR/str.gff | extractGffAttributeValue.pl transcript_id | sort|uniq -u > $TMPDIR/tmp
+wc -l $TMPDIR/$uuid.gtag.gff
+cat $TMPDIR/$uuid.str.gff | extractGffAttributeValue.pl transcript_id | sort|uniq -u > $TMPDIR/$uuid.tmp
 set +e
-fgrep -w -f $TMPDIR/tmp $TMPDIR/str.gff > $TMPDIR/tmp2
+fgrep -w -f $TMPDIR/$uuid.tmp $TMPDIR/$uuid.str.gff > $TMPDIR/$uuid.tmp2
 set -e
-cat $TMPDIR/tmp2 | fgrep -v ERCC- > $TMPDIR/monoPolyA.gff
+cat $TMPDIR/$uuid.tmp2 | fgrep -v ERCC- > $TMPDIR/$uuid.monoPolyA.gff
  echo $?
-cat $TMPDIR/gtag.gff $TMPDIR/monoPolyA.gff | sortgff |gzip> {output}
+cat $TMPDIR/$uuid.gtag.gff $TMPDIR/$uuid.monoPolyA.gff | sortgff |gzip> {output}
  echo $?
 		'''
 
@@ -83,9 +86,10 @@ rule getHiSeqSupportedHCGMs:
 	output:"mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	shell:
 		'''
-join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv
-zcat {input.hcgmGTF} > $TMPDIR/$(basename {input.hcgmGTF} .gz)
-cut -f1 $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv | sort|uniq | fgrep -wv -f - $TMPDIR/$(basename {input.hcgmGTF} .gz) |sortgff |gzip > {output}
+uuid=$(uuidgen)
+join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv
+zcat {input.hcgmGTF} > $TMPDIR/$uuid.$(basename {input.hcgmGTF} .gz)
+cut -f1 $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv | sort|uniq | fgrep -wv -f - $TMPDIR/$uuid.$(basename {input.hcgmGTF} .gz) |sortgff |gzip > {output}
 
 		'''
 
@@ -96,14 +100,15 @@ rule getHiSSStats:
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.tsv")
 	shell:
 		'''
-bedtools bamtobed -i {input.reads} -bed12 > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed
-zcat {input.HiSSGTF} | gff2bed_full.pl - > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.HiSS.bed
+uuid=$(uuidgen)
+bedtools bamtobed -i {input.reads} -bed12 > $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed
+zcat {input.HiSSGTF} | gff2bed_full.pl - > $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.HiSS.bed
 
-mappedReadsMono=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed | awk '$10<=1'|cut -f4 |sort|uniq|wc -l)
-mappedReadsSpliced=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed | awk '$10>1'|cut -f4 |sort|uniq|wc -l)
+mappedReadsMono=$(cat $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed | awk '$10<=1'|cut -f4 |sort|uniq|wc -l)
+mappedReadsSpliced=$(cat $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed | awk '$10>1'|cut -f4 |sort|uniq|wc -l)
 
-HiSSMono=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.HiSS.bed| awk '$10<=1'|cut -f4  | sort|uniq|wc -l)
-HiSSSpliced=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.HiSS.bed| awk '$10>1'|cut -f4  | sort|uniq|wc -l)
+HiSSMono=$(cat $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.HiSS.bed| awk '$10<=1'|cut -f4  | sort|uniq|wc -l)
+HiSSSpliced=$(cat $TMPDIR/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.HiSS.bed| awk '$10>1'|cut -f4  | sort|uniq|wc -l)
 
 #let totalMapped=$mappedReadsMono+$mappedReadsSpliced || true
 let nonHiSSMono=$mappedReadsMono-$HiSSMono || true
@@ -166,7 +171,7 @@ cat {output}.r | R --slave
 rule nonAnchoredMergeReads:
 	input: "mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff",
-	threads:8
+	threads:12
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+',
@@ -359,13 +364,14 @@ rule getTmLengthStats:
 	output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicedLength.stats.tsv")
 	shell:
 		'''
-cat {input.gencode} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |gff2bed_full.pl - | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tGENCODE_protein_coding\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > $TMPDIR/gencode.pcg.tsv
+uuid=$(uuidgen)
+cat {input.gencode} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |gff2bed_full.pl - | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tGENCODE_protein_coding\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > $TMPDIR/$uuid.gencode.pcg.tsv
 
-cat {input.tms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > $TMPDIR/tms.tsv
+cat {input.tms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > $TMPDIR/$uuid.tms.tsv
 
-cat {input.flTms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_FL_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > $TMPDIR/flTms.tsv
+cat {input.flTms} | bed12ToTranscriptLength.pl - | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\tCLS_FL_TMs\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > $TMPDIR/$uuid.flTms.tsv
 
-cat $TMPDIR/gencode.pcg.tsv $TMPDIR/tms.tsv $TMPDIR/flTms.tsv | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > {output}
+cat $TMPDIR/$uuid.gencode.pcg.tsv $TMPDIR/$uuid.tms.tsv $TMPDIR/$uuid.flTms.tsv | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'  > {output}
 		'''
 
 
