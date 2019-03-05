@@ -26,6 +26,16 @@
         "queue" : "rg-el7,long-sl7",
         "threads" : "-pe smp 12"
         },
+"readBedToGff" :
+    {
+        "h_rt" : "6:00:00",
+        "queue" : "rg-el7,short-sl7",
+        },
+"polyAmapping" :
+    {
+        "h_rt" : "6:00:00",
+        "queue" : "rg-el7,short-sl7",
+        },
 
     "blastDemultiplex" :
     {
@@ -57,7 +67,7 @@
         "virtual_free" : "20G",
         "queue" : "rg-el7,long-sl7",
         "h_rt" : "150:00:00",
-        "threads" : "-pe smp 8"
+        "threads" : "-pe smp 12"
     },
     "mergeTissuesNonAnchoredMergeReads":
     {
