@@ -164,6 +164,7 @@ AUTHORIZEDCOMBINATIONSMERGE = []
 for comb in itertools.product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 	if(os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or
 	os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2]  + "." + comb[3] + ".fastq.gz")): #allow only combinations corresponding to existing FASTQs
+		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1])))
 		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2])))
 		# for mergedTerm in (MERGEDTERMS):
 		for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ("sizeFrac", "allFracs"), ("sizeFrac", "byFrac")]):
@@ -292,9 +293,10 @@ def filtered_product(*args):
 			found=True
 			yield(wc_comb)
 		else:
-			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[3] in (('sizeFrac', 'allFracs'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
-				found=True
-				yield(wc_comb)
+			if len(wc_comb) > 4:
+				if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[3] in (('sizeFrac', 'allFracs'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
+					found=True
+					yield(wc_comb)
 	if not found:
 		print(" Error in function filtered_product. Args were:")
 		print((args))
