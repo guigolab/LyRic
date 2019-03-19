@@ -40,7 +40,7 @@
 {
      "h_rt" : "6:00:00",
         "queue" : "rg-el7,short-sl7",
-        "virtual_free" : "30G",
+        "virtual_free" : "50G",
     },
     "blastDemultiplex" :
     {
@@ -112,7 +112,7 @@
     },
     "getHiSeqCanonicalIntronsList":
     {
-        "virtual_free" : "120G",
+        "virtual_free" : "60G",
         "queue" : "rg-el7,short-sl7",
         "h_rt" : "6:00:00",
         "threads" : "-pe smp 6"
@@ -141,7 +141,7 @@
     {
          "virtual_free" : "20G",
        "threads" : "-pe smp 8",
-        "queue" : "long-sl7",
+        "queue" : "rg-el7,long-sl7",
         "h_rt" : "30:00:00"
     },
     "mergeCurrentPreviousPhaseTmsWithGencode":

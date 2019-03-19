@@ -70,7 +70,7 @@ echoerr "splitting"
 split -a 3 -d -e -n l/24 $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed.split
 rm $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed
 for file in `ls $TMPDIR/$uuid.hiSeq_{wildcards.capDesign}.bed.split*`; do
-echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T $TMPDIR -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} $TMPDIR/$uuid.$(basename $file); rm $file $file.gff $file.transcripts.tsv"
+echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T $TMPDIR -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} $TMPDIR/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
 done > $TMPDIR/$uuid.parallelIntrons.sh
 echoerr "extracting introns on split files"
 
