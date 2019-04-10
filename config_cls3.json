@@ -11,6 +11,9 @@
            "HpreCap": "hg38",
            "Hv3": "hg38"
          },
+         "minPhredQualAroundSJ": "12",
+         "exonOverhangTolerance": "22",
+
        "capDesignToAnnotGtf" : {
            "HpreCap": "annotations/hs.gencode24+SIRVS.gff",
            "Hv3": "annotations/hs.gencode24+SIRVS.gff",
