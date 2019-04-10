@@ -26,6 +26,9 @@
         "queue" : "rg-el7,long-sl7",
         "threads" : "-pe smp 12"
         },
+    "highConfidenceReads":{
+        "h_rt" : "6:00:00"
+    },
 "readBedToGff" :
     {
         "h_rt" : "6:00:00",
@@ -69,46 +72,45 @@
     },
     "nonAnchoredMergeReads":
     {
-        "virtual_free" : "20G",
-        "queue" : "rg-el7,long-sl7",
-        "h_rt" : "150:00:00",
-        "threads" : "-pe smp 12"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "mergeTissuesNonAnchoredMergeReads":
     {
-        "queue" : "rg-el7,long-sl7",
-        "threads" : "-pe smp 8",
-        "h_rt" : "20:00:00"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "mergeFracsNonAnchoredMergeReads":
     {
-        "queue" : "rg-el7,long-sl7",
-        "threads" : "-pe smp 8",
-        "h_rt" : "20:00:00"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "mergeFracsAndTissuesNonAnchoredMergeReads":
     {
-        "queue" : "rg-el7,long-sl7",
-        "threads" : "-pe smp 8",
-        "h_rt" : "20:00:00"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads":
     {
-        "queue" : "rg-el7,long-sl7",
-        "threads" : "-pe smp 8",
-        "h_rt" : "20:00:00"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads":
     {
+        "virtual_free" : "10G",
         "queue" : "rg-el7,short-sl7",
-        "threads" : "-pe smp 8",
-        "h_rt" : "6:00:00"
+        "h_rt" : "1:00:00"
     },
     "collapseGencode":
-    {
+   {
+        "virtual_free" : "10G",
         "queue" : "rg-el7,short-sl7",
-        "threads" : "-pe smp 8",
-        "h_rt" : "6:00:00"
+        "h_rt" : "1:00:00"
     },
     "getHiSeqCanonicalIntronsList":
     {
@@ -139,24 +141,21 @@
     },
     "mergeTmsWithGencode":
     {
-         "virtual_free" : "20G",
-       "threads" : "-pe smp 8",
-        "queue" : "rg-el7,long-sl7",
-        "h_rt" : "30:00:00"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "mergeCurrentPreviousPhaseTmsWithGencode":
     {
-        "virtual_free" : "20G",
-       "threads" : "-pe smp 8",
-        "queue" : "long-sl7",
-        "h_rt" : "30:00:00"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "mergePreviousPhaseTmsWithGencode":
     {
-        "virtual_free" : "20G",
-       "threads" : "-pe smp 8",
-        "queue" : "long-sl7",
-        "h_rt" : "30:00:00"
+        "virtual_free" : "10G",
+        "queue" : "rg-el7,short-sl7",
+        "h_rt" : "1:00:00"
     },
     "getGencodeSupportedEnds":
     {
