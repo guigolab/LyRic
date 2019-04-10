@@ -1,11 +1,11 @@
 rule collapseGencode:
 	input: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
 	output: "annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	threads:8
+	threads:1
 	shell:
 		'''
 uuid=$(uuidgen)
-cat {input} | skipcomments | sortgff | tmerge --cpu {threads} --exonOverhangTolerance 25 - |sortgff > $TMPDIR/$uuid
+cat {input} | skipcomments | sortgff | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sortgff > $TMPDIR/$uuid
 uuidL=$(uuidgen)
 bedtools intersect -s -wao -a $TMPDIR/$uuid -b $TMPDIR/$uuid | buildLoci.pl - |sortgff > $TMPDIR/$uuidL
 mergeToRef.pl {input} $TMPDIR/$uuidL | sortgff > {output}
@@ -16,7 +16,7 @@ rule mergePreviousPhaseTmsWithGencode:
 	input:
 		previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	threads:8
+	threads:1
 	output: "mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.all.gff.gz"
 	# wildcard_constraints:
 	# 	barcodes='allTissues',
@@ -27,7 +27,7 @@ rule mergePreviousPhaseTmsWithGencode:
 uuid=$(uuidgen)
 uuidM=$(uuidgen)
 
-cat {input.previous} {input.annot} | skipcomments | sortgff | tmerge --cpu {threads} --exonOverhangTolerance 25 - |sortgff > $TMPDIR/$uuidM
+cat {input.previous} {input.annot} | skipcomments | sortgff | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sortgff > $TMPDIR/$uuidM
 
 bedtools intersect -s -wao -a $TMPDIR/$uuidM -b $TMPDIR/$uuidM |fgrep -v ERCC| buildLoci.pl - |sortgff | gzip> {output}
 
@@ -52,7 +52,7 @@ rule mergeCurrentPreviousPhaseTmsWithGencode:
 		current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 		previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	threads:8
+	threads:1
 	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz"
 	# wildcard_constraints:
 	# 	barcodes='allTissues',
@@ -63,7 +63,7 @@ rule mergeCurrentPreviousPhaseTmsWithGencode:
 uuid=$(uuidgen)
 uuidM=$(uuidgen)
 
-cat {input.previous} {input.annot} {input.current} | skipcomments | sortgff | tmerge --cpu {threads} --exonOverhangTolerance 25 - |sortgff > $TMPDIR/$uuidM
+cat {input.previous} {input.annot} {input.current} | skipcomments | sortgff | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sortgff > $TMPDIR/$uuidM
 
 bedtools intersect -s -wao -a $TMPDIR/$uuidM -b $TMPDIR/$uuidM |fgrep -v ERCC| buildLoci.pl - |sortgff | gzip> {output}
 
