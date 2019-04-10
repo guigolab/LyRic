@@ -6,6 +6,7 @@ rule readMapping:
 		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	threads: 12
+
 	output:
 		"mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
@@ -14,14 +15,16 @@ rule readMapping:
 		techname='(?!allSeqTechs).+'
 	shell:
 		'''
+uuid=$(uuidgen)
 echoerr "Mapping"
-minimap2 -x splice --cs -t {threads} --secondary=no -L -a {input.genome} {input.reads} > {output}.tmp
+minimap2 -x splice --cs -t {threads} --secondary=no -L -a {input.genome} {input.reads} > $TMPDIR/$uuid
 echoerr "Mapping done"
 echoerr "Creating/sorting BAM"
-cat {output}.tmp | samtools view -F 256 -F4 -F 2048 -b -u -S - | samtools sort --threads {threads} -T $TMPDIR -m 5G - >{output}
+samtools view -H $TMPDIR/$uuid > $TMPDIR/$uuid.2
+samtools view -F 256 -F4 -F 2048 $TMPDIR/$uuid >> $TMPDIR/$uuid.2
+cat $TMPDIR/$uuid.2 | samtools sort --threads {threads} -T $TMPDIR -m 5G - > {output}
 echoerr "Done creating/sorting BAM"
-rm {output}.tmp
-sleep 120s
+sleep 70s
 samtools index {output}
 		'''
 
