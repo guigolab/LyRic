@@ -320,10 +320,10 @@ rule mergeTmsWithGencode:
 		annot="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.gff"
 	output: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.+gencode.gff.gz"
-	threads:8
+	threads:1
 	shell:
 		'''
-cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --cpu {threads} --exonOverhangTolerance 25 - |sortgff |gzip > {output}
+cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sortgff |gzip > {output}
 		'''
 
 rule makeClsGencodeLoci:
