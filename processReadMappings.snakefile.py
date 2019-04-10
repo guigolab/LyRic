@@ -44,16 +44,26 @@ get_right_transcript_strand.pl $TMPDIR/$uuid.in.gff {input.strandInfo} | fgrep -
 rule highConfidenceReads:
 	input:
 		transcriptStrandInfo = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv",
-		strandedReads = "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
+		strandedReads = "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
+		bam = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	output:
 		"mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
 	shell:
 		'''
 #select read IDs with canonical GT|GC/AG and high-confidence SJs
 uuid=$(uuidgen)
-cat {input.transcriptStrandInfo} | skipcomments | awk '$6==1 && $7==1' | cut -f1 | sort|uniq > $TMPDIR/$uuid.reads.hcSJs.list
-wc -l $TMPDIR/$uuid.reads.hcSJs.list
+set +e
+cat {input.transcriptStrandInfo} | skipcomments | awk '$6==1 && $7==1' | cut -f1 | sort|uniq > $TMPDIR/$uuid.reads.hcSJs.list.tmp
+set -e
+wc -l $TMPDIR/$uuid.reads.hcSJs.list.tmp
 zcat {input.strandedReads} > $TMPDIR/$uuid.str.gff
+
+##high-quality Phred SJs
+samtools view -F 256 -F4 -F 2048 {input.bam} | samHQintrons.pl --minQual {config[minPhredQualAroundSJ]} - |cut -f1|sort|uniq > $TMPDIR/$uuid.HQintrons.reads.list
+set +e
+fgrep -w -f $TMPDIR/$uuid.HQintrons.reads.list $TMPDIR/$uuid.reads.hcSJs.list.tmp > $TMPDIR/$uuid.reads.hcSJs.list
+set -e
+
 set +e
 fgrep -w -f $TMPDIR/$uuid.reads.hcSJs.list $TMPDIR/$uuid.str.gff > $TMPDIR/$uuid.gtag.gff
 set -e
@@ -62,7 +72,7 @@ cat $TMPDIR/$uuid.str.gff | extractGffAttributeValue.pl transcript_id | sort|uni
 set +e
 fgrep -w -f $TMPDIR/$uuid.tmp $TMPDIR/$uuid.str.gff > $TMPDIR/$uuid.tmp2
 set -e
-cat $TMPDIR/$uuid.tmp2 | fgrep -v ERCC- > $TMPDIR/$uuid.monoPolyA.gff
+cat $TMPDIR/$uuid.tmp2  > $TMPDIR/$uuid.monoPolyA.gff
  echo $?
 cat $TMPDIR/$uuid.gtag.gff $TMPDIR/$uuid.monoPolyA.gff | sortgff |gzip> {output}
  echo $?
@@ -153,7 +163,7 @@ dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('HCGM-mono', 'HC
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual(values=c('HCGM-mono' = '#9ce2bb', 'HCGM-spliced' = '#39c678', 'nonHCGM-mono' = '#fda59b', 'nonHCGM-spliced' = '#fa341e')) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('# mapped reads') +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales = 'free_y')+ ylab('# mapped reads') +
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = comma(count), hjust = 0.5, vjust = 1))+
@@ -171,20 +181,20 @@ cat {output}.r | R --slave
 rule nonAnchoredMergeReads:
 	input: "mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff",
-	threads:12
+	threads:1
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+',
 		techname='(?!allSeqTechs).+'
 	shell:
 		'''
-zcat {input} | tmerge --cpu {threads} --exonOverhangTolerance 25 --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+zcat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 		'''
 
 rule mergeTissuesNonAnchoredMergeReads:
 	input: lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
-	threads:8
+	threads:1
 	wildcard_constraints:
 		barcodes='allTissues',
 		sizeFrac='[0-9-+\.]+',
@@ -193,7 +203,7 @@ rule mergeTissuesNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+cat $TMPDIR/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 #cp {output} {output}.bkp
 #checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
 #rm {output}.bkp
@@ -203,7 +213,7 @@ cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix
 rule mergeFracsNonAnchoredMergeReads:
 	input: lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport)
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
-	threads:8
+	threads:1
 	wildcard_constraints:
 		sizeFrac='allFracs',
 		barcodes='(?!allTissues).+',
@@ -212,7 +222,7 @@ rule mergeFracsNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
+cat $TMPDIR/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sortgff > {output}
 #cp {output} {output}.bkp
 #checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
 #rm {output}.bkp
@@ -224,7 +234,7 @@ rule mergeFracsAndTissuesNonAnchoredMergeReads:
 		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport),
 
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.tmerge.min{minReadSupport}reads.all.gff"
-	threads:8
+	threads:1
 	wildcard_constraints:
 		techname='(?!allSeqTechs).+',
 		capDesign='|'.join(CAPDESIGNS)
@@ -232,7 +242,7 @@ rule mergeFracsAndTissuesNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
+cat $TMPDIR/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
 #cp {output} {output}.bkp
 #checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
 #rm {output}.bkp
@@ -244,7 +254,7 @@ rule mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 
 	output: "mappings/nonAnchoredMergeReads/allSeqTechsCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
-	threads:8
+	threads:1
 	wildcard_constraints:
 #		techname='allSeqTechs',
 		sizeFrac='allFracs',
@@ -254,7 +264,7 @@ rule mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
+cat $TMPDIR/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
 #cp {output} {output}.bkp
 #checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
 #rm {output}.bkp
@@ -267,7 +277,7 @@ rule mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_capDesign_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
-	threads:8
+	threads:1
 	wildcard_constraints:
 		sizeFrac='allFracs',
 		barcodes='allTissues',
@@ -276,7 +286,7 @@ rule mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 		'''
 uuid=$(uuidgen)
 cat {input} |sortgff > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | tmerge --cpu {threads} --exonOverhangTolerance 25 --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
+cat $TMPDIR/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_allFracs_allTissues.NAM_ - |sortgff > {output}
 #cp {output} {output}.bkp
 #checkTmergeOutput.sh $TMPDIR/$uuid {output} &> {output}.qc.txt
 #rm {output}.bkp
