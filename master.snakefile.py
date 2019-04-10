@@ -56,11 +56,6 @@ for capD in CAPDESIGNTOGENOME:
 print ("Genomes:")
 print (GENOMES)
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
-wildcard_constraints:
- 	capDesign = "[^_/]+",
- 	sizeFrac = "[^_/]+",
- 	techname = "[^_/]+",
- 	corrLevel = "[^_/]+",
 
 SIRVpresent=None
 try:
@@ -107,6 +102,12 @@ else:
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
+
+wildcard_constraints:
+ 	capDesign = "[^_/]+",
+ 	sizeFrac = "[^_/]+",
+ 	techname = "[^_/]+",
+ 	corrLevel = "[^_/]+",
 
 
 BARCODESpluSMERGED=set(BARCODES)
