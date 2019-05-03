@@ -11,6 +11,8 @@
            "Hv1": "hg38",
             "Hv2": "hg38",
             "Mv1": "mm10"},
+         "minPhredQualAroundSJ": "12",
+         "exonOverhangTolerance": "22",
        "capDesignToAnnotGtf" : {
            "Hv1": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
             "Hv2": "/users/rg/projects/encode/scaling_up/whole_genome/Gencode/version24/gen24.gtf",
