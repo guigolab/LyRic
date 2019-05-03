@@ -137,7 +137,7 @@
     },
     "plotGeneidScores":
     {
-        "virtual_free" : "80G"
+        "virtual_free" : "15G"
     },
     "mergeTmsWithGencode":
     {
@@ -169,5 +169,17 @@
     "getPreviousPhaseTmsWithGencodeSupportedEnds":
     {
         "virtual_free" : "30G"
-    }
+    },
+    "makeTrackDbInputTracks":
+    {
+        "queue" : "short-sl7"
+    },
+    "makeTmergeOutputTracks":
+    {
+        "queue" : "short-sl7"
+    },
+    "makeFLTmergeOutputTracks":
+    {
+        "queue" : "short-sl7"
+    },
 }
