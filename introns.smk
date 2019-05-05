@@ -45,16 +45,14 @@ cat {input} | awk '$3=="exon"' | makeIntrons.pl - | awk '{{print $1"\t"$4-1"\t"$
 
 rule getGeneidScores:
 	input:
-		gencode="annotations/spliceSites/{capDesign}.gencode.PCG.spliceSites.{spliceType}.tsv.gz",
 		rawReads="mappings/makeIntrons/readSpliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz",
 		tmReads="mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.introns.{spliceType}.tsv.gz",
 		geneidScores= lambda wildcards: expand(config["SPLICE_SITE_SCORES_DIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".{spliceType}.geneid.loose.spliceSites.sorted.tsv", spliceType=wildcards.spliceType),
-		random=lambda wildcards: "annotations/spliceSites/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".geneid.loose.spliceSites.OnDetectedRegions.NotDetected.random100K.{spliceType}.tsv"
 	output:  temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv")
 	shell:
 		'''
 cls=$(uuidgen)
-zcat {input.gencode} {input.rawReads} {input.tmReads} | sort  -k1,1 > $TMPDIR/$cls.SSs.tsv
+zcat {input.rawReads} {input.tmReads} | sort  -k1,1 > $TMPDIR/$cls.SSs.tsv
 join -a1 -j1 $TMPDIR/$cls.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$3"\t"$4"\t"$6}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
 
 #verify that all SSs were found:
@@ -63,10 +61,33 @@ cut -f6 {output} | sort|uniq > $TMPDIR/$cls.SSs.geneid.list
 diff=$(diff -q $TMPDIR/$cls.SSs.list $TMPDIR/$cls.SSs.geneid.list |wc -l)
 if [ ! $diff -eq 0 ]; then echoerr "ERROR: List of SSs differ before/after"; exit 1; fi
 
-cat {input.random} | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2"\trandom\t"$3}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' >> {output}
+		'''
 
+rule getControlGeneidScores:
+	input:
+		gencode ="annotations/spliceSites/{capDesign}.gencode.PCG.spliceSites.{spliceType}.tsv.gz",
+		random =lambda wildcards: "annotations/spliceSites/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".geneid.loose.spliceSites.OnDetectedRegions.NotDetected.random100K.{spliceType}.tsv",
+		geneidScores= lambda wildcards: expand(config["SPLICE_SITE_SCORES_DIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".{spliceType}.geneid.loose.spliceSites.sorted.tsv", spliceType=wildcards.spliceType),
+
+	output: temp(config["STATSDATADIR"] + "{capDesign}.control.spliceSites.{spliceType}.stats.tsv")
+	shell:
+		'''
+uuid=$(uuidgen)
+zcat {input.gencode} | sort  -k1,1 > $TMPDIR/$uuid.SSs.tsv
+join -a1 -j1 $TMPDIR/$uuid.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk '{{print $1"\t"$3"\t"$4"\t"$6}}' > {output}
+cat {input.random} | awk '{{print $1"\t"$2"\trandom\t"$3}}' >> {output}
 
 		'''
+
+rule aggControlGeneidScores:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{capDesign}.control.spliceSites.{spliceType}.stats.tsv", capDesign=CAPDESIGNS,  spliceType=SPLICE_SITE_TYPES)
+	output: config["STATSDATADIR"] + "all.control.spliceSites.stats.tsv"
+	shell:
+		'''
+echo -e "ssCategory\tssScore" > {output}
+cat {input} | sort|uniq| cut -f 3,4 >> {output}
+		'''
+
 
 rule aggGeneidScores:
 	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES, minReadSupport=wildcards.minReadSupport)
@@ -78,11 +99,13 @@ echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssCategory\tssSc
 uuid=$(uuidgen)
 #keep non-redundant SSs
 cat {input} | cut -f1-6,8,9 > $TMPDIR/$uuid
-sort -S 28G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output}
+sort -S 14G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output}
 		'''
 
 rule plotGeneidScores:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv"
+	input:
+		cls=config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv",
+		control=config["STATSDATADIR"] + "all.control.spliceSites.stats.tsv"
 	output: config["PLOTSDIR"] + "spliceSites.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.spliceSites.stats.{ext}"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
@@ -94,7 +117,8 @@ library(ggplot2)
 library(scales)
 library(plyr)
 palette <- c('random' = '#999999', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
-dat<-fread('{input}', header=T, sep='\\t')
+dat<-fread('{input.cls}', header=T, sep='\\t')
+dat2<-fread('{input.control}', header=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
 {params.filterDat[1]}
@@ -108,13 +132,15 @@ fun_length <- function(x){{
 return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
 }}
 
-ggplot(dat, aes(x=factor(correctionLevel), y=ssScore, color=ssCategory)) +
+ggplot(dat, aes(x=ssCategory, y=ssScore, color=ssCategory)) +
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(-9, 4.5)) +
 scale_color_manual(values=palette, name='Category', labels = c(random = 'Random', GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_reads='CLS raw reads')) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+geom_boxplot(data=dat2, position=position_dodge(0.9), outlier.shape=NA) +
 
-stat_summary(aes(x=factor(correctionLevel), group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black') +
+stat_summary(aes(x=ssCategory, group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black', size=geom_textSize) +
+stat_summary(data=dat2, aes(x=ssCategory, group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black', size=geom_textSize) +
 geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
 ylab('Splice site score') +
 xlab('{params.filterDat[6]}') +
