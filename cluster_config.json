@@ -10,6 +10,7 @@
         "out" : "{workflow.basedir}/qsub_logs/",
         "project": "prj006070",
         "threads" : "",
+        "node": "!node-hp0208.linux.crg.es",
         "disk" :""
     },
     "readMapping" :
@@ -132,12 +133,11 @@
     },
     "aggGeneidScores":
     {
-        "virtual_free" : "30G",
         "threads" : "-pe smp 8"
     },
     "plotGeneidScores":
     {
-        "virtual_free" : "15G"
+        "virtual_free" : "25G"
     },
     "mergeTmsWithGencode":
     {
