@@ -279,7 +279,8 @@ PLOTSbySEQTECHnoALLTECHS=set(TECHNAMES)
 PLOTSbySEQTECHnoALLTECHS.add("byTech")
 
 PLOTSbyCORRLEVEL=set(FINALCORRECTIONLEVELS)
-PLOTSbyCORRLEVEL.add("byCorr")
+if config["LORDEC_CORRECT"]:
+	PLOTSbyCORRLEVEL.add("byCorr")
 PLOTSbyCAPDESIGN=set(CAPDESIGNS)
 PLOTSbyCAPDESIGN.add("byCapDesign")
 PLOTSbyCAPDESIGNplusMERGED=set(PLOTSbyCAPDESIGN)
@@ -521,20 +522,20 @@ def trackChecked(t,c,cd,s,b,m):
 
 
 
-include: "lrCorrection.snakefile.py"
+include: "lrCorrection.smk"
 if config["DEMULTIPLEX"]:
-	include: "demultiplex.snakefile.py"
+	include: "demultiplex.smk"
 
-include: "fastqStats.snakefile.py"
-include: "lrMapping.snakefile.py"
-include: "srMapping.snakefile.py"
-include: "polyAmapping.snakefile.py"
-include: "introns.snakefile.py"
-include: "processReadMappings.snakefile.py"
-include: "tmClassification.snakefile.py"
-include: "tmEndSupport.py"
-include: "trackHub.py"
-include: "lociEndSupport.py"
+include: "fastqStats.smk"
+include: "lrMapping.smk"
+include: "srMapping.smk"
+include: "polyAmapping.smk"
+include: "introns.smk"
+include: "processReadMappings.smk"
+include: "tmClassification.smk"
+include: "tmEndSupport.smk"
+include: "trackHub.smk"
+include: "lociEndSupport.smk"
 
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
