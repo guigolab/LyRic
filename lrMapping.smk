@@ -6,7 +6,8 @@ rule readMapping:
 		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
 	threads: 12
-
+	params:
+		minimap_preset = lambda wildcards: "splice" if wildcards.techname.find('ont') == 0 else "splice:hq" if wildcards.techname.find('pacBio') == 0 else None
 	output:
 		"mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
@@ -17,12 +18,12 @@ rule readMapping:
 		'''
 uuid=$(uuidgen)
 echoerr "Mapping"
-minimap2 -x splice --cs -t {threads} --secondary=no -L -a {input.genome} {input.reads} > $TMPDIR/$uuid
+minimap2 -x {params.minimap_preset} -t {threads} --secondary=no -L -a {input.genome} {input.reads} > {config[TMPDIR]}/$uuid
 echoerr "Mapping done"
 echoerr "Creating/sorting BAM"
-samtools view -H $TMPDIR/$uuid > $TMPDIR/$uuid.2
-samtools view -F 256 -F4 -F 2048 $TMPDIR/$uuid >> $TMPDIR/$uuid.2
-cat $TMPDIR/$uuid.2 | samtools sort --threads {threads} -T $TMPDIR -m 5G - > {output}
+samtools view -H {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuid.2
+samtools view -F 256 -F4 -F 2048 {config[TMPDIR]}/$uuid >> {config[TMPDIR]}/$uuid.2
+cat {config[TMPDIR]}/$uuid.2 | samtools sort -T {config[TMPDIR]}  --threads {threads}  -m 5G - > {output}
 echoerr "Done creating/sorting BAM"
 sleep 70s
 samtools index {output}
@@ -36,7 +37,7 @@ rule getMappingStats:
 	shell:
 		'''
 totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
-mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort|uniq|wc -l)
+mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$5/$4}}' > {output}
 		'''
 rule aggMappingStats:
@@ -44,7 +45,7 @@ rule aggMappingStats:
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.tsv"
 	shell:
 		'''
-cat {input} | sort > {output}
+cat {input} | sort -T {config[TMPDIR]}  > {output}
 		'''
 
 rule plotMappingStats:
@@ -156,7 +157,7 @@ rule checkOnlyOneHit:
 	output: "mappings/readMapping/qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
 	shell:
 		'''
-samtools view {input} | cut -f1 | sort| uniq -dc > {output}
+samtools view {input} | cut -f1 | sort -T {config[TMPDIR]} | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {input} {input}.dup.bkp; exit 1; fi
 		'''
@@ -169,7 +170,7 @@ rule readBamToBed:
 	#output: "mappings/readBamToBed/{basename}.bed"
 	shell:
 		'''
-bedtools bamtobed -i {input} -bed12 | sortbed | gzip > {output}
+bedtools bamtobed -i {input} -bed12 | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {output}
 
 		'''
 
@@ -178,7 +179,7 @@ rule readBedToGff:
 	output: "mappings/readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
 	shell:
 		'''
-zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff | gzip > {output}
+zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip > {output}
 		'''
 
 
@@ -191,4 +192,3 @@ zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sortgff | gzi
 # ~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2
 # touch {output}
 # 		'''
-
