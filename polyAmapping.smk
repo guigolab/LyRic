@@ -8,7 +8,7 @@ rule getPolyAsitesTestPolyAmapping:
 	output: temp("mappings/polyAmapping/calibration/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed")
 	shell:
 		'''
-samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sortbed | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sortbed > {output}
+samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {output}
 
 		'''
 
@@ -23,13 +23,14 @@ rule getPolyANonPolyAsitesTestPolyAmapping:
 		outNonPolyA=temp("mappings/polyAmapping/calibration/3pends/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.nonPolyA.3pEnds.bed")
 	shell:
 		'''
-cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort | uniq > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list
+uuid=$(uuidgen)
+cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort -T {config[TMPDIR]}  | uniq > {config[TMPDIR]}/$uuid.list
 
 #non polyA:
-cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -v -w -f $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outNonPolyA}
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -v -w -f {config[TMPDIR]}/$uuid.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outNonPolyA}
 
 #polyA:
-cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.polyA.minClipped.{wildcards.minA}.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sortbed| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outPolyA}
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f {config[TMPDIR]}/$uuid.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {output.outPolyA}
 
 
 		'''
@@ -43,7 +44,7 @@ rule compareToPASTestPolyAmapping:
 
 	shell:
 		'''
-cat {input.tpend} | sortbed | bedtools slop -s -l 50 -r -10 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} > {output}
+cat {input.tpend} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r -10 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} > {output}
 
 		'''
 
@@ -57,11 +58,11 @@ rule getPrecisionRecallTestPolyAmapping:
 	output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{minA}.polyA.vs.PAS.precisionRecall.stats.tsv")
 	shell:
 		'''
-closePolyA=$(cat {input.pAvsPAS} | cut -f4 | sort|uniq | wc -l)
-totalPolyA=$(cat {input.pA} | cut -f4 | sort|uniq|wc -l)
+closePolyA=$(cat {input.pAvsPAS} | cut -f4 | sort -T {config[TMPDIR]} |uniq | wc -l)
+totalPolyA=$(cat {input.pA} | cut -f4 | sort -T {config[TMPDIR]} |uniq|wc -l)
 let farPolyA=$totalPolyA-$closePolyA || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
-closeNonPolyA=$(cat {input.nonpAvsPAS} | cut -f4 | sort|uniq | wc -l)
-totalNonPolyA=$(cat {input.nonpA} | cut -f4 | sort|uniq|wc -l)
+closeNonPolyA=$(cat {input.nonpAvsPAS} | cut -f4 | sort -T {config[TMPDIR]} |uniq | wc -l)
+totalNonPolyA=$(cat {input.nonpA} | cut -f4 | sort -T {config[TMPDIR]} |uniq|wc -l)
 let farNonPolyA=$totalNonPolyA-$closeNonPolyA || true
 let denomPr=$closePolyA+$farPolyA || true
 pr=$(echo $closePolyA $denomPr | awk '{{print $1/$2}}')
@@ -78,7 +79,7 @@ rule aggPrecisionRecallTestPolyAmapping:
 	output: config["STATSDATADIR"] + "all.polyA.vs.PAS.precisionRecall.stats.tsv"
 	shell:
 		'''
-cat {input} | sort > {output}
+cat {input} | sort -T {config[TMPDIR]}  > {output}
 		'''
 
 rule plotPrecisionRecallTestPolyAmapping:
@@ -111,7 +112,7 @@ rule polyAmapping:
 	output: "mappings/polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
 	shell:
 		'''
-samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sortbed |gzip > {output}
+samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  |gzip > {output}
 		'''
 
 rule removePolyAERCCs:
@@ -127,7 +128,7 @@ rule getPolyAreadsList:
 	output: "mappings/getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
 	shell:
 		'''
-cat {input} | cut -f4 | sort|uniq > {output}
+cat {input} | cut -f4 | sort -T {config[TMPDIR]} |uniq > {output}
 		'''
 
 rule getPolyAreadsStats:
@@ -137,7 +138,7 @@ rule getPolyAreadsStats:
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv")
 	shell:
 		'''
-mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort|uniq|wc -l)
+mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
 polyA=$(cat {input.polyAreads} | wc -l)
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {output}
 
@@ -149,7 +150,7 @@ rule aggPolyAreadsStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6"\\t"$6/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6"\\t"$6/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
 		'''
 
 
@@ -194,7 +195,7 @@ rule clusterPolyAsites:
 	output: "mappings/clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed"
 	shell:
 		'''
-cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sortbed > {output}
+cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {output}
 		'''
 rule makePolyABigWigs:
 	input:
@@ -204,9 +205,9 @@ rule makePolyABigWigs:
 	shell:
 		'''
 tmpIn=$(uuidgen)
-cat {input.sites} | grep -P "^chr" > $TMPDIR/$tmpIn
+cat {input.sites} | grep -P "^chr" > {config[TMPDIR]}/$tmpIn
 
-bedtools genomecov -strand {wildcards.strand} -split -bg -i $TMPDIR/$tmpIn -g {input.genome} > {output}.bedgraph
+bedtools genomecov -strand {wildcards.strand} -split -bg -i {config[TMPDIR]}/$tmpIn -g {input.genome} > {output}.bedgraph
 bedGraphToBigWig {output}.bedgraph {input.genome} {output}
 rm -f {output}.bedgraph
 		'''
