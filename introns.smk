@@ -3,7 +3,7 @@ rule makeIntrons:
 	output: "mappings/makeIntrons/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz"
 	shell:
 		'''
-zcat {input} | makeIntrons.pl - | sortgff |gzip> {output}
+zcat {input} | makeIntrons.pl - | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip> {output}
 		'''
 
 rule getIntronMotif:
@@ -24,7 +24,7 @@ rule getGencodePcgSpliceSites:
 	output: "annotations/spliceSites/{capDesign}.gencode.PCG.spliceSites.{spliceType}.tsv.gz"
 	shell:
 		'''
-cat {input} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |sortgff| makeIntrons.pl - | awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort|uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:GENCODE_protein_coding"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:GENCODE_protein_coding";' | fgrep -w {wildcards.spliceType}| sort |uniq| sort -k1,1 | gzip > {output}
+cat {input} | awk '$3=="exon"' | fgrep "transcript_type \\"protein_coding\\";" |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | makeIntrons.pl - | awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort -T {config[TMPDIR]} |uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:GENCODE_protein_coding"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:GENCODE_protein_coding";' | fgrep -w {wildcards.spliceType}| sort -T {config[TMPDIR]}  |uniq| sort -T {config[TMPDIR]}  -k1,1 | gzip > {output}
 		'''
 
 rule getReadsSpliceSites:
@@ -32,7 +32,7 @@ rule getReadsSpliceSites:
 	output: "mappings/makeIntrons/readSpliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz"
 	shell:
 		'''
-zcat {input} | awk '$3=="exon"' | makeIntrons.pl -| awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort|uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:CLS_reads"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:CLS_reads";' | fgrep -w {wildcards.spliceType} |sort|uniq| sort -k1,1 |gzip > {output}
+zcat {input} | awk '$3=="exon"' | makeIntrons.pl -| awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort -T {config[TMPDIR]} |uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:CLS_reads"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:CLS_reads";' | fgrep -w {wildcards.spliceType} |sort -T {config[TMPDIR]} |uniq| sort -T {config[TMPDIR]}  -k1,1 |gzip > {output}
 		'''
 
 rule getTmSpliceSites:
@@ -40,7 +40,7 @@ rule getTmSpliceSites:
 	output: "mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.introns.{spliceType}.tsv.gz"
 	shell:
 		'''
-cat {input} | awk '$3=="exon"' | makeIntrons.pl - | awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort|uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:CLS_TMs"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:CLS_TMs";' | fgrep -w {wildcards.spliceType} | sort |uniq| sort -k1,1 | gzip> {output}
+cat {input} | awk '$3=="exon"' | makeIntrons.pl - | awk '{{print $1"\t"$4-1"\t"$5+1"\t"$7}}' |sort -T {config[TMPDIR]} |uniq | perl -lane 'if($F[3] eq "+"){{$dStart=$F[1]-1; $aStart=$F[2]-2}} elsif($F[3] eq "-"){{$dStart=$F[2]-2; $aStart=$F[1]-1}} else{{die}} $aEnd=$aStart+2; $dEnd=$dStart+2; print "$F[0]"."_$dStart"."_$dEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Donor:CLS_TMs"; print "$F[0]"."_$aStart"."_$aEnd"."_$F[3]\t$F[0]"."_"."$F[1]"."_"."$F[2]"."_"."$F[3]:Acceptor:CLS_TMs";' | fgrep -w {wildcards.spliceType} | sort -T {config[TMPDIR]}  |uniq| sort -T {config[TMPDIR]}  -k1,1 | gzip> {output}
 		'''
 
 rule getGeneidScores:
@@ -52,13 +52,13 @@ rule getGeneidScores:
 	shell:
 		'''
 cls=$(uuidgen)
-zcat {input.rawReads} {input.tmReads} | sort  -k1,1 > $TMPDIR/$cls.SSs.tsv
-join -a1 -j1 $TMPDIR/$cls.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$3"\t"$4"\t"$6}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
+zcat {input.rawReads} {input.tmReads} | sort -T {config[TMPDIR]}   -k1,1 > {config[TMPDIR]}/$cls.SSs.tsv
+join -a1 -j1 {config[TMPDIR]}/$cls.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$3"\t"$4"\t"$6}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
 
 #verify that all SSs were found:
-cut -f1 $TMPDIR/$cls.SSs.tsv | sort|uniq > $TMPDIR/$cls.SSs.list
-cut -f6 {output} | sort|uniq > $TMPDIR/$cls.SSs.geneid.list
-diff=$(diff -q $TMPDIR/$cls.SSs.list $TMPDIR/$cls.SSs.geneid.list |wc -l)
+cut -f1 {config[TMPDIR]}/$cls.SSs.tsv | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$cls.SSs.list
+cut -f6 {output} | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$cls.SSs.geneid.list
+diff=$(diff -q {config[TMPDIR]}/$cls.SSs.list {config[TMPDIR]}/$cls.SSs.geneid.list |wc -l)
 if [ ! $diff -eq 0 ]; then echoerr "ERROR: List of SSs differ before/after"; exit 1; fi
 
 		'''
@@ -73,8 +73,8 @@ rule getControlGeneidScores:
 	shell:
 		'''
 uuid=$(uuidgen)
-zcat {input.gencode} | sort  -k1,1 > $TMPDIR/$uuid.SSs.tsv
-join -a1 -j1 $TMPDIR/$uuid.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk '{{print $1"\t"$3"\t"$4"\t"$6}}' > {output}
+zcat {input.gencode} | sort -T {config[TMPDIR]}   -k1,1 > {config[TMPDIR]}/$uuid.SSs.tsv
+join -a1 -j1 {config[TMPDIR]}/$uuid.SSs.tsv {input.geneidScores} |ssv2tsv | perl -lane '$_=~s/\:/\t/g; @line=split("\\t", $_); unless(defined ($line[5])){{$line[4]=$line[2];$line[5]=-35 + rand(-25 +35)}}; print join("\\t", @line)' | awk '{{print $1"\t"$3"\t"$4"\t"$6}}' > {output}
 cat {input.random} | awk '{{print $1"\t"$2"\trandom\t"$3}}' >> {output}
 
 		'''
@@ -85,7 +85,7 @@ rule aggControlGeneidScores:
 	shell:
 		'''
 echo -e "ssCategory\tssScore" > {output}
-cat {input} | sort|uniq| cut -f 3,4 >> {output}
+cat {input} | sort -T {config[TMPDIR]} |uniq| cut -f 3,4 >> {output}
 		'''
 
 
@@ -98,8 +98,8 @@ rule aggGeneidScores:
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tssCategory\tssScore" > {output}
 uuid=$(uuidgen)
 #keep non-redundant SSs
-cat {input} | cut -f1-6,8,9 > $TMPDIR/$uuid
-sort -S 14G --parallel {threads} $TMPDIR/$uuid | uniq | cut -f1-5,7,8 >> {output}
+cat {input} | cut -f1-6,8,9 > {config[TMPDIR]}/$uuid
+sort -T {config[TMPDIR]}  -S 14G --parallel {threads} {config[TMPDIR]}/$uuid | uniq | cut -f1-5,7,8 >> {output}
 		'''
 
 rule plotGeneidScores:
@@ -159,7 +159,7 @@ rule getGencodeSpliceJunctions:
 	output: "annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list"
 	shell:
 		'''
-cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort|uniq > {output}
+cat {input} | awk '$3=="exon"' |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort -T {config[TMPDIR]} |uniq > {output}
 		'''
 
 rule getClsSpliceJunctions:
@@ -167,7 +167,7 @@ rule getClsSpliceJunctions:
 	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
 	shell:
 		'''
-cat {input} | awk '$3=="exon"' |sortgff| makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort|uniq > {output}
+cat {input} | awk '$3=="exon"' |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort -T {config[TMPDIR]} |uniq > {output}
 
 		'''
 
@@ -192,7 +192,7 @@ rule aggCompareClsGencodeSJsStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
-cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
 
 
 		'''
