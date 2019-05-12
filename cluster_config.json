@@ -56,7 +56,7 @@
   },
   "getPolyAreadsList":
   {
-    "h_rt" : "00:05:00",
+    "h_rt" : "00:15:00",
         "virtual_free" : "1G"
   },
 "makeIntrons":
@@ -64,6 +64,14 @@
      "h_rt" : "6:00:00",
         "queue" : "rg-el7,short-sl7",
         "virtual_free" : "50G"
+    },
+    "getPolyAreadsStats":
+    {
+      "h_rt" : "00:25:00"
+    },
+    "getSirvDetectionStats":
+    {
+      "h_rt" : "00:25:00"
     },
     "blastDemultiplex" :
     {
@@ -125,6 +133,18 @@
         "virtual_free" : "10G",
         "h_rt" : "1:00:00"
     },
+    "getNovelIntergenicLociStats":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "nonAnchoredMergeReadsToBed":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "makeHiSeqBamOutputTracks":
+    {
+      "h_rt" : "01:00:00"
+    },
     "mergeTissuesNonAnchoredMergeReads":
     {
         "virtual_free" : "10G",
@@ -173,9 +193,13 @@
     "gffcompareToSirvAnnotation":
     {
       "virtual_free" : "1G",
-        "h_rt" : "00:5:00",
+        "h_rt" : "00:15:00",
     },
     "compareTargetsToTms":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "getTargetCoverageStats":
     {
       "h_rt" : "00:30:00"
     },
@@ -183,7 +207,36 @@
     {
       "h_rt" : "00:30:00"
     },
+    "getGffCompareSirvStats":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "getMergingStats":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "makeBamOutputTracks":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "integratePolyaAndSjInfo":
+    {
+      "h_rt" : "00:30:00"
+    },
+
+    "getTmLengthStats":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "getTmSpliceSites":
+    {
+      "h_rt" : "00:30:00"
+    },
     "getCompareClsGencodeSJsStats":
+    {
+      "h_rt" : "00:30:00"
+    },
+    "getGffCompareStats":
     {
       "h_rt" : "00:30:00"
     },
@@ -244,7 +297,7 @@
     },
     "polyASupportedthreepEnds":
     {
-      "h_rt" : "00:05:00"
+      "h_rt" : "00:25:00"
     },
     "mergeSizeFracBams":
     {
@@ -281,16 +334,13 @@
     {
         "virtual_free" : "30G"
     },
-    "makeTrackDbInputTracks":
+    "mergeAllSeqTechsFracsAndTissuesBams":
     {
-        "queue" : "short-sl7"
+      "h_rt" : "00:50:00"
     },
     "makeTmergeOutputTracks":
     {
-        "queue" : "short-sl7"
+      "h_rt" : "00:30:00"
     },
-    "makeFLTmergeOutputTracks":
-    {
-        "queue" : "short-sl7"
-    },
+
 }
