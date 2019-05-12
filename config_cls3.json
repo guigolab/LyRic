@@ -11,6 +11,7 @@
            "HpreCap": "hg38",
            "Hv3": "hg38"
          },
+         "TMPDIR": "/users/rg/jlagarde/projects/encode/scaling/whole_genome/lncRNACapture_phase3/tmpdir/",
          "minPhredQualAroundSJ": "12",
          "exonOverhangTolerance": "22",
 
