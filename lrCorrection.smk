@@ -7,9 +7,9 @@ if config["LORDEC_CORRECT"]:
 			'''
 let splitInto={splitFastqsInto}+1
 uuid=$(uuidgen)
-zcat {input} | fastq2fasta.pl|FastaToTbl > $TMPDIR/$uuid
-split -a 4 --additional-suffix .tbl -d -n l/$splitInto $TMPDIR/$uuid $TMPDIR/${{uuid}}_
-cat $TMPDIR/${{uuid}}_{wildcards.split}.tbl | TblToFasta > {output}
+zcat {input} | fastq2fasta.pl|FastaToTbl > {config[TMPDIR]}/$uuid
+split -a 4 --additional-suffix .tbl -d -n l/$splitInto {config[TMPDIR]}/$uuid {config[TMPDIR]}/${{uuid}}_
+cat {config[TMPDIR]}/${{uuid}}_{wildcards.split}.tbl | TblToFasta > {output}
 			'''
 
 if config["LORDEC_CORRECT"]:
@@ -27,7 +27,7 @@ for i in "${{!kvalues[@]}}"; do
 kval=${{kvalues[$i]}}
 echoerr "kmer $kval"
 echoerr "Building SR graph"
-lordec-build-SR-graph -T {threads} -O $TMPDIR/ -2 {input.sr1},{input.sr2} -k $kval -s {solid_kmer_abundance_threshold} -g $TMPDIR/hiSeq_{wildcards.capDesign}_k${{kval}}_s{solid_kmer_abundance_threshold}.h5
+lordec-build-SR-graph -T {threads} -O {config[TMPDIR]}/ -2 {input.sr1},{input.sr2} -k $kval -s {solid_kmer_abundance_threshold} -g {config[TMPDIR]}/hiSeq_{wildcards.capDesign}_k${{kval}}_s{solid_kmer_abundance_threshold}.h5
 
 outFileBn=$(basename {output} .Corr{lastK}.fasta).Corr${{kval}}.fasta
 outFileDn=$(dirname {output})
@@ -41,13 +41,13 @@ fileDn=$(dirname {output})
 previousFile=$fileDn"/"$previousFileBn
 
 
-lordec-correct -T {threads} -O $TMPDIR/ -2 $TMPDIR/hiSeq_{wildcards.capDesign} -k $kval -s {solid_kmer_abundance_threshold} -i $previousFile -o $outFile
+lordec-correct -T {threads} -O {config[TMPDIR]}/ -2 {config[TMPDIR]}/hiSeq_{wildcards.capDesign} -k $kval -s {solid_kmer_abundance_threshold} -i $previousFile -o $outFile
 
 
 else
-lordec-correct -T {threads} -O $TMPDIR/ -2 $TMPDIR/hiSeq_{wildcards.capDesign} -k $kval -s {solid_kmer_abundance_threshold} -i {input.lr} -o $outFile
+lordec-correct -T {threads} -O {config[TMPDIR]}/ -2 {config[TMPDIR]}/hiSeq_{wildcards.capDesign} -k $kval -s {solid_kmer_abundance_threshold} -i {input.lr} -o $outFile
 fi
-rm -f $TMPDIR/hiSeq_{wildcards.capDesign}_k${{kval}}_s{solid_kmer_abundance_threshold}.h5
+rm -f {config[TMPDIR]}/hiSeq_{wildcards.capDesign}_k${{kval}}_s{solid_kmer_abundance_threshold}.h5
 done
 
 			'''
