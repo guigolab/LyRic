@@ -3,7 +3,7 @@ rule checkNoDuplicateReadIds:
 	output: FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
 	shell:
 		'''
-zcat {input} | fastq2tsv.pl | cut -f1 | sort| uniq -dc > {output}
+zcat {input} | fastq2tsv.pl | cut -f1 | sort -T {config[TMPDIR]} | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
 		'''
@@ -21,7 +21,7 @@ echo -e "$(basename {input})\t$total" > {output}
 rule aggFastqReadCounts:
 	input: lambda wildcards: expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}.{barcodes}.fastq.readCounts.tsv"
-	shell: "cat {input} | sort > {output}"
+	shell: "cat {input} | sort -T {config[TMPDIR]}  > {output}"
 
 #get read lengths for all FASTQ files:
 rule getReadLength:
@@ -42,7 +42,7 @@ rule aggReadLength:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" > {output}
-cat {input} |sort >> {output}
+cat {input} |sort -T {config[TMPDIR]}  >> {output}
 
 		'''
 #rule addAllReadLength:
