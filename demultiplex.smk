@@ -52,7 +52,7 @@ rule discardErroneousandBarcodesAndUP:
 	output: DEMULTIPLEX_DIR + "discardErroneousandBarcodesAndUP/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demultiplexSameCapDesignBarcode.tsv"
 	shell:
 		'''
-cat {input} | fgrep "{wildcards.capDesign}_" |sort|uniq > {output}
+cat {input} | fgrep "{wildcards.capDesign}_" |sort -T {config[TMPDIR]} |uniq > {output}
 
 		'''
 
@@ -65,9 +65,9 @@ rule getBasicDemultiplexingStats:
 	shell:
 		'''
 total=$(cat {input.totals} | awk -v f={wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq.gz '$1==f' | cut -f2)
-withUP=$(cat {input.demul} | awk '$5=="UP"'| cut -f1|sort|uniq|wc -l)
-withBarcode=$(cat {input.demul} | fgrep -v -w "UP" | cut -f1|sort|uniq|wc -l)
-withSameCapDesignBarcode=$(cat {input.demulFiltered}| cut -f1|sort|uniq|wc -l)
+withUP=$(cat {input.demul} | awk '$5=="UP"'| cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
+withBarcode=$(cat {input.demul} | fgrep -v -w "UP" | cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
+withSameCapDesignBarcode=$(cat {input.demulFiltered}| cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
 let withDifferentCapDesignBarcode=$withBarcode-$withSameCapDesignBarcode
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$total\t$withUP\t$withBarcode\t$withSameCapDesignBarcode\t$withDifferentCapDesignBarcode" | awk '{{print $0"\t"$4/$3"\t"$5/$3"\t"$6/$3"\t"$7/$5}}' > {output}
 
@@ -81,7 +81,7 @@ rule aggBasicDemultiplexingStats:
 	shell:
 		'''
 echo -e "capDesign\tsizeFraction\treads\treadsWithUP\treadsWithAnyBarcode\treadsWithSameCapDesignBarcode\treadsWithDifferentCapDesignBarcode\tpcReadsWithUP\tpcReadsWithAnyBarcode\tpcReadsWithSameCapDesignBarcode\tpcReadsWithWrongBarcode"> {output};
-cat {input} | sort >> {output}
+cat {input} | sort -T {config[TMPDIR]}  >> {output}
 		'''
 
 rule plotUpStats:
@@ -161,7 +161,7 @@ rule discardAmbiguousBarcodes:
 	output: DEMULTIPLEX_DIR + "discardAmbiguousBarcodes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.ambiguousDemultiplex.list"
 	shell:
 		'''
-cat {input} | awk '$5!="UP"'|cut -f1,5 |sort|uniq | cut -f1|sort|uniq -d > {output}
+cat {input} | awk '$5!="UP"'|cut -f1,5 |sort -T {config[TMPDIR]} |uniq | cut -f1|sort -T {config[TMPDIR]} |uniq -d > {output}
 
 		'''
 
@@ -172,7 +172,7 @@ rule getAmbiguousBarcodeStats:
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.ambiguousBarcodes.reads.stats.tsv"
 	shell:
 		'''
-totalDemul=$(cat {input.demul} | cut -f1|sort|uniq | wc -l)
+totalDemul=$(cat {input.demul} | cut -f1|sort -T {config[TMPDIR]} |uniq | wc -l)
 totalAmbigBarcode=$(cat {input.ambig} | wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$totalDemul\t$totalAmbigBarcode" | awk '{{print $0"\t"$4/$3}}' > {output}
 
@@ -184,7 +184,7 @@ rule aggAmbiguousBarcodeStats:
 	output:config["STATSDATADIR"] + "{techname}Corr{corrLevel}.ambiguousBarcodes.reads.stats.tsv"
 	shell:
 		'''
-cat {input} | sort > {output}
+cat {input} | sort -T {config[TMPDIR]}  > {output}
 		'''
 
 rule plotAmbiguousBarcodeStats:
@@ -225,7 +225,7 @@ rule aggAdaptersLocationOverReads:
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}.all.adapters.location.stats.tsv"
 	shell:
 		'''
-cat {input} | sort > {output}
+cat {input} | sort -T {config[TMPDIR]}  > {output}
 		'''
 
 rule plotAdaptersLocationOverReads:
@@ -257,7 +257,7 @@ rule detectReadChimeras:
 	output: DEMULTIPLEX_DIR + "detectReadChimeras/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.chimeras.list"
 	shell:
 		'''
-cat {input} | awk '$2>0.1 && $2<0.9' | cut -f1 |sort|uniq > {output}
+cat {input} | awk '$2>0.1 && $2<0.9' | cut -f1 |sort -T {config[TMPDIR]} |uniq > {output}
 
 		'''
 
@@ -279,7 +279,7 @@ rule aggRateOfReadChimeras:
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.chimeric.reads.stats.tsv"
 	shell:
 		'''
-cat {input} |sort > {output}
+cat {input} |sort -T {config[TMPDIR]}  > {output}
 		'''
 
 rule plotRateOfReadChimeras:
@@ -314,7 +314,7 @@ rule selectNonAmbiguousNonChimericReads:
 	output: DEMULTIPLEX_DIR + "selectNonAmbiguousNonChimericReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
 	shell:
 		'''
-cat {input.chim} {input.ambig} | sort|uniq | fgrep -w -v -f - {input.demulFiltered} |sort|uniq> {output}
+cat {input.chim} {input.ambig} | sort -T {config[TMPDIR]} |uniq | fgrep -w -v -f - {input.demulFiltered} |sort -T {config[TMPDIR]} |uniq> {output}
 
 		'''
 
@@ -327,7 +327,7 @@ rule getNonAmbiguousNonChimericReadsStats:
 	shell:
 		'''
 total=$(cat {input.totals} | awk -v f={wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq.gz '$1==f' | cut -f2)
-finalDemul=$(cat {input.noAmbigNoChim} | cut -f1 |sort|uniq|wc -l)
+finalDemul=$(cat {input.noAmbigNoChim} | cut -f1 |sort -T {config[TMPDIR]} |uniq|wc -l)
 echo -e "{wildcards.capDesign}\t{wildcards.sizeFrac}\t$total\t$finalDemul" | awk '{{print $0"\t"$4/$3}}' > {output}
 
 		'''
@@ -338,7 +338,7 @@ rule aggNonAmbiguousNonChimericReadsStats:
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.finalDemul.reads.stats.tsv"
 	shell:
 		'''
-cat {input} | sort > {output}
+cat {input} | sort -T {config[TMPDIR]}  > {output}
 		'''
 
 rule plotNonAmbiguousNonChimericReadsStats:
@@ -372,7 +372,7 @@ rule checkForOnlyOneBarcodePerRead:
 	output: DEMULTIPLEX_DIR + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demul.QC1.txt"
 	shell:
 		'''
-cut -f1,5 {input} | sort|uniq | cut -f1 |sort|uniq -d |wc -l > {output}
+cut -f1,5 {input} | sort -T {config[TMPDIR]} |uniq | cut -f1 |sort -T {config[TMPDIR]} |uniq -d |wc -l > {output}
 cat {output} | while read count; do if [ $count -gt 0 ]; then echo "$count duplicates found";mv {output} {output}.tmp;  exit 1; fi; done
 		'''
 
@@ -392,11 +392,9 @@ rule demultiplexFastqs:
 	shell:
 		'''
 tmpUuid=$(uuidgen)
-cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort|uniq > $TMPDIR/$tmpUuid
-set +e
-fgrep -w -f $TMPDIR/$tmpUuid {input.tsvFastq} > $TMPDIR/$tmpUuid.fastq
-set -e
-cat $TMPDIR/$tmpUuid.fastq | tsv2fastq.pl | gzip> {output}
+cat {input.noAmbigNoChim} | awk -v b={wildcards.barcodes} '$5==b'| cut -f1|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$tmpUuid
+tgrep -F -w -f {config[TMPDIR]}/$tmpUuid {input.tsvFastq} > {config[TMPDIR]}/$tmpUuid.fastq
+cat {config[TMPDIR]}/$tmpUuid.fastq | tsv2fastq.pl | gzip> {output}
 
 		'''
 
@@ -408,8 +406,9 @@ rule checkTotalsDemultiplexed:
 	shell:
 		'''
 total=$(cat {input.totals} | awk -v f={wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}.fastq.gz '$1==f' | cut -f2)
-for file in `echo {input.demul}`; do zcat $file; done > $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}.demul.fastq
-demul=$(cat $TMPDIR/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}.demul.fastq | fastq2tsv.pl | wc -l)
+uuid=$(uuidgen)
+for file in `echo {input.demul}`; do zcat $file; done > {config[TMPDIR]}/$uuid.demul.fastq
+demul=$(cat {config[TMPDIR]}/$uuid.demul.fastq | fastq2tsv.pl | wc -l)
 echo -e "{wildcards.capDesign}.{wildcards.sizeFrac}\t$total\t$demul" | awk '{{print $2-$3}}' > {output}
 cat {output}| while read diff; do if [ $diff -lt 1 ]; then echo "Number of demultiplexed reads is greater than number of input reads (diff: $diff)";mv {output} {output}.tmp;  exit 1; fi; done
 
@@ -433,7 +432,7 @@ rule aggDemultiplexingStatsPerSample:
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.demultiplexing.perSample.stats.tsv"
 	shell:
 		'''
-cat {input} | sort | perl -slane 'if($F[2]=~/$F[0]/ || $F[2] eq "Undeter"){{print}}'> {output}
+cat {input} | sort -T {config[TMPDIR]}  | perl -slane 'if($F[2]=~/$F[0]/ || $F[2] eq "Undeter"){{print}}'> {output}
 
 		'''
 rule plotDemultiplexingStatsPerSample:
@@ -459,7 +458,3 @@ ggsave('{output}', width=13, height=9)
 cat {output}.r | R --slave
 
 		'''
-
-
-
-
