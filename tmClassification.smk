@@ -14,9 +14,9 @@ rule getTargetCoverageStats:
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats.tsv")
 	shell:
 		'''
-for type in `zcat {input} | extractGffAttributeValue.pl gene_type | sort|uniq`; do
-all=$(zcat {input} | fgrep "gene_type \\"$type\\";" | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
-detected=$(zcat {input} | fgrep "gene_type \\"$type\\";" | awk '$NF>0' | extractGffAttributeValue.pl transcript_id | sort|uniq|wc -l)
+for type in `zcat {input} | extractGffAttributeValue.pl gene_type | sort -T {config[TMPDIR]} |uniq`; do
+all=$(zcat {input} | fgrep "gene_type \\"$type\\";" | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
+detected=$(zcat {input} | fgrep "gene_type \\"$type\\";" | awk '$NF>0' | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
 let undetected=$all-$detected || true
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$type\t$all\t$detected" | awk '{{print $0"\t"$7/$6}}'
 done > {output}
@@ -29,7 +29,7 @@ rule aggTargetCoverageStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {output}
-cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'| sort >> {output}
+cat {input} | grep -v erccSpikein | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'| sort -T {config[TMPDIR]}  >> {output}
 		'''
 
 rule plotTargetCoverageStats:
@@ -128,7 +128,7 @@ rule aggGffCompareSirvStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlevel\tmetric\tvalue" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
 
 		'''
 
@@ -181,8 +181,8 @@ if SIRVpresent:
 		shell:
 			'''
 uuid=$(uuidgen)
-sirvDetectionStats.pl {input.sirvInfo} $(dirname {input.gffC})/$(basename {input.gffC} .simple.tsv).$(basename {input.tm}).refmap > $TMPDIR/$uuid
-cat $TMPDIR/$uuid | while read id l c ca; do echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$id\t$l\t$c\t$ca"; done > {output}
+sirvDetectionStats.pl {input.sirvInfo} $(dirname {input.gffC})/$(basename {input.gffC} .simple.tsv).$(basename {input.tm}).refmap > {config[TMPDIR]}/$uuid
+cat {config[TMPDIR]}/$uuid | while read id l c ca; do echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$id\t$l\t$c\t$ca"; done > {output}
 
 			'''
 
@@ -192,7 +192,7 @@ rule aggSirvDetectionStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tSIRVid\tlength\tconcentration\tdetectionStatus" > {output}
-cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
 
 		'''
 
@@ -252,7 +252,7 @@ rule getGffCompareStats:
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.stats.tsv")
 	shell:
 		'''
-cat {input} |cut -f2 | sort|uniq -c | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'>> {output}
+cat {input} |cut -f2 | sort -T {config[TMPDIR]} |uniq -c | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'>> {output}
 		'''
 
 
@@ -312,7 +312,7 @@ rule simplifyGencode:
 	output: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
 	shell:
 		'''
-cat {input}  | simplifyGencodeGeneTypes.pl - | sortgff > {output}
+cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {output}
 		'''
 
 rule mergeTmsWithGencode:
@@ -323,7 +323,7 @@ rule mergeTmsWithGencode:
 	threads:1
 	shell:
 		'''
-cat {input.annot} {input.tm}  | skipcomments | sortgff | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sortgff |gzip > {output}
+cat {input.annot} {input.tm}  | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {output}
 		'''
 
 rule makeClsGencodeLoci:
@@ -333,8 +333,8 @@ rule makeClsGencodeLoci:
 	shell:
 		'''
 uuid=$(uuidgen)
-zcat {input} > $TMPDIR/$uuid
-bedtools intersect -s -wao -a $TMPDIR/$uuid -b $TMPDIR/$uuid |fgrep -v ERCC| buildLoci.pl --locPrefix {params.locusPrefix}: - |sortgff | gzip> {output}
+zcat {input} > {config[TMPDIR]}/$uuid
+bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |fgrep -v ERCC| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {output}
 
 		'''
 
@@ -347,8 +347,8 @@ rule mergeWithRef:
 	shell:
 		'''
 uuid=$(uuidgen)
-zcat  {input.clsGencode} > $TMPDIR/$uuid
-mergeToRef.pl {input.gencode} $TMPDIR/$uuid | sortgff |gzip > {output}
+zcat  {input.clsGencode} > {config[TMPDIR]}/$uuid
+mergeToRef.pl {input.gencode} {config[TMPDIR]}/$uuid | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {output}
 		'''
 
 rule getNovelIntergenicLoci:
@@ -363,16 +363,12 @@ uuid2=$(uuidgen)
 uuid3=$(uuidgen)
 uuid4=$(uuidgen)
 uuid5=$(uuidgen)
-cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sortbed > $TMPDIR/$uuid1
-set +e
-zcat {input.tmergeGencode} | fgrep 'gene_ref_status "novel";' > $TMPDIR/$uuid4
-set -e
-cat $TMPDIR/$uuid4 | extract_locus_coords.pl - | sortbed > $TMPDIR/$uuid2
-bedtools intersect -v -a $TMPDIR/$uuid2 -b $TMPDIR/$uuid1 > $TMPDIR/$uuid5
-set +e
-cat $TMPDIR/$uuid5 |fgrep -v ERCC |cut -f4 | sort|uniq > $TMPDIR/$uuid3
-zcat {input.tmergeGencode}| fgrep -w -f $TMPDIR/$uuid3 - |gzip > {output}
-set -e
+cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid1
+zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid4
+cat {config[TMPDIR]}/$uuid4 | extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2
+bedtools intersect -v -a {config[TMPDIR]}/$uuid2 -b {config[TMPDIR]}/$uuid1 > {config[TMPDIR]}/$uuid5
+cat {config[TMPDIR]}/$uuid5 |tgrep -F -v ERCC |cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid3
+zcat {input.tmergeGencode}| tgrep -F -w -f {config[TMPDIR]}/$uuid3 - |gzip > {output}
 		'''
 
 rule getNovelIntergenicLociStats:
@@ -382,10 +378,8 @@ rule getNovelIntergenicLociStats:
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.novelLoci.stats.tsv")
 	shell:
 		'''
-set +e
-totalNovel=$(zcat {input.tmergeGencode} | fgrep 'gene_ref_status "novel";' |extractGffAttributeValue.pl gene_id | sort| uniq | wc -l)
-set -e
-interg=$(zcat {input.intergenic} | extractGffAttributeValue.pl gene_id | sort| uniq | wc -l)
+totalNovel=$(zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' |extractGffAttributeValue.pl gene_id | sort -T {config[TMPDIR]} | uniq | wc -l)
+interg=$(zcat {input.intergenic} | extractGffAttributeValue.pl gene_id | sort -T {config[TMPDIR]} | uniq | wc -l)
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalNovel\t$interg"  > {output}
 
 		'''
@@ -396,7 +390,7 @@ rule aggNovelIntergenicLociStats:
 	shell:
 		'''
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
-cat {input} | awk '{{if ($5!=0) print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t"($5-$6)/$5; else print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t0\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t0"}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort >> {output}
+cat {input} | awk '{{if ($5!=0) print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t"($5-$6)/$5; else print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t0\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t0"}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
 		'''
 
 
@@ -437,4 +431,3 @@ ggsave('{output}', width=plotWidth, height=plotHeight)
 cat {output}.r | R --slave
 
 		'''
-
