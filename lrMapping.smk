@@ -33,7 +33,7 @@ rule getMappingStats:
 	input:
 		bams = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		fastqs = DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.perSample.perFraction.stats.tsv")
 	shell:
 		'''
 totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
