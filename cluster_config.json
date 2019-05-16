@@ -10,13 +10,19 @@
         "out" : "{workflow.basedir}/qsub_logs/",
         "project": "prj006070",
         "threads" : "",
-        "node": "!node-hp0208.linux.crg.es",
+        "node": "!node-hp0102rg.linux.crg.es",
         "disk" :""
     },
     "makeReadsBlastDB":
     {
       "h_rt" : "00:20:00",
       "virtual_free" : "2G"
+    },
+    "mergeCurrentPreviousPhaseTmsWithGencodeBiotypes":
+    {
+      "h_rt" : "1:00:00",
+      "virtual_free" : "15G"
+
     },
     "readMapping" :
     {
@@ -33,7 +39,7 @@
         },
     "highConfidenceReads":{
         "h_rt" : "6:00:00",
-        "virtual_free" : "17G"
+        "virtual_free" : "27G"
     },
 "readBedToGff" :
     {
@@ -51,13 +57,25 @@
         },
   "removePolyAERCCs":
   {
-    "h_rt" : "00:05:00",
+    "h_rt" : "00:30:00",
         "virtual_free" : "1G"
+  },
+  "removeWrongPolyAs":
+  {
+    "h_rt" : "00:30:00",
+  },
+  "plotMappingStats":
+  {
+    "h_rt" : "00:30:00",
   },
   "getPolyAreadsList":
   {
     "h_rt" : "00:15:00",
         "virtual_free" : "1G"
+  },
+  "mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams":
+  {
+    "h_rt" : "00:30:00",
   },
 "makeIntrons":
 {
@@ -67,7 +85,7 @@
     },
     "getPolyAreadsStats":
     {
-      "h_rt" : "00:25:00"
+      "h_rt" : "00:55:00"
     },
     "getSirvDetectionStats":
     {
@@ -87,11 +105,15 @@
     "getIntronMotif":
     {
         "h_rt" : "1:00:00",
-        "virtual_free" : "15G",
+        "virtual_free" : "25G",
+    },
+    "makeFLTmergeOutputTracks":
+    {
+      "h_rt" : "00:30:00",
     },
     "getReadsSpliceSites":
     {
-        "h_rt" : "00:30:00",
+        "h_rt" : "01:30:00",
         "virtual_free" : "10G",
     },
     "processBlastDemultiplex":
@@ -107,7 +129,7 @@
       "getGeneidScores":
     {
         "virtual_free" : "2G",
-        "h_rt" : "01:30:00"
+        "h_rt" : "05:30:00"
     },
     "getControlGeneidScores":
     {
@@ -116,14 +138,15 @@
     },
     "getHiSSStats":
     {
-        "virtual_free" : "20G",
+        "virtual_free" : "25G",
         "h_rt" : "01:30:00"
     },
     "makeClsGencodeLoci":{
       "h_rt" : "00:40:00"
     },
     "mergeWithRef":{
-      "h_rt" : "00:40:00"
+      "virtual_free" : "12G",
+      "h_rt" : "01:40:00"
     },
     "getNovelIntergenicLoci":{
       "h_rt" : "00:40:00"
@@ -139,7 +162,7 @@
     },
     "nonAnchoredMergeReadsToBed":
     {
-      "h_rt" : "00:30:00"
+      "h_rt" : "01:30:00"
     },
     "makeHiSeqBamOutputTracks":
     {
@@ -187,8 +210,8 @@
     },
     "gffcompareToAnnotation":
     {
-      "virtual_free" : "1G",
-        "h_rt" : "00:15:00",
+      "virtual_free" : "5G",
+        "h_rt" : "00:55:00",
     },
     "gffcompareToSirvAnnotation":
     {
@@ -203,6 +226,11 @@
     {
       "h_rt" : "00:30:00"
     },
+    "getHCGMintrons":
+    {
+      "h_rt" : "00:30:00",
+      "virtual_free" : "5G",
+    },
     "getClsSpliceJunctions":
     {
       "h_rt" : "00:30:00"
@@ -213,7 +241,7 @@
     },
     "getMergingStats":
     {
-      "h_rt" : "00:30:00"
+      "h_rt" : "01:30:00"
     },
     "makeBamOutputTracks":
     {
@@ -226,7 +254,7 @@
 
     "getTmLengthStats":
     {
-      "h_rt" : "00:30:00"
+      "h_rt" : "01:30:00"
     },
     "getTmSpliceSites":
     {
@@ -238,11 +266,11 @@
     },
     "getGffCompareStats":
     {
-      "h_rt" : "00:30:00"
+      "h_rt" : "01:00:00"
     },
     "extractPooledTmsFivepEnds":
     {
-      "h_rt" : "00:30:00"
+      "h_rt" : "01:30:00"
     },
     "getCagePolyASupport":
     {
@@ -254,11 +282,12 @@
     },
     "cageSupportedfivepEnds":
     {
-      "h_rt" : "00:40:00"
+      "h_rt" : "00:40:00",
+"virtual_free" : "15G",
     },
     "colorBedAccordingToGffCompare":
     {
-      "h_rt" : "00:30:00"
+      "h_rt" : "01:30:00"
     },
     "lordecCorrectLr":
     {
@@ -273,8 +302,12 @@
     },
     "plotGeneidScores":
     {
-        "virtual_free" : "10G",
+        "virtual_free" : "20G",
         "h_rt" : "1:30:00"
+    },
+    "getHiSeqMappingStats":
+    {
+      "h_rt" : "6:00:00"
     },
     "mergeTmsWithGencode":
     {
@@ -297,7 +330,8 @@
     },
     "polyASupportedthreepEnds":
     {
-      "h_rt" : "00:25:00"
+      "h_rt" : "00:40:00",
+"virtual_free": "15G"
     },
     "mergeSizeFracBams":
     {
@@ -322,7 +356,7 @@
     "readBamToBed":
     {
       "virtual_free" : "1G",
-        "h_rt" : "00:30:00"
+        "h_rt" : "01:30:00"
 
     },
     "getCurrentPreviousPhaseTmsWithGencodeSupportedEnds":
