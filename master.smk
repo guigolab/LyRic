@@ -5,7 +5,7 @@ import itertools
 import sys
 #import pprint #pretty printing
 
-print ("TODO:\n ## include basic HiSeq mapping stats\n\n## Calculate amount of novel captured nts\n\n ## What is the intersection between PacBio TMs and ONT TMs???\n\n")
+print ("TODO:\n ## include basic HiSeq mapping stats\n\n## Calculate amount of novel captured nts\n\n ## What is the intersection between PacBio TMs and ONT TMs???\n\n", file=sys.stderr)
 
 
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
@@ -20,7 +20,7 @@ FQPATH=config["FQPATH"]
 FQ_CORR_PATH=FQPATH + "corr/"
 TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
 GENOMETOPREVIOUS=config["genomeToPreviousPhaseTMs"]
-print ("Input LR FASTQs are in: " + FQPATH)
+print ("Input LR FASTQs are in: " + FQPATH, file=sys.stderr)
 
 ENDSUPPORTcategories=["all", "cage+polyASupported"]
 
@@ -53,8 +53,8 @@ for capD in CAPDESIGNTOGENOME:
 	genome=CAPDESIGNTOGENOME[capD]
 	GENOMETOCAPDESIGNSplusMERGED[genome].append(capD)
 
-print ("Genomes:")
-print (GENOMES)
+print ("Genomes:", file=sys.stderr)
+print (GENOMES, file=sys.stderr)
 # no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 
 SIRVpresent=None
@@ -62,14 +62,14 @@ try:
 	config["SIRVgff"] and config["SIRVinfo"]
 except KeyError:
 	SIRVpresent=False
-	print ("Will NOT compare TMs to SIRVs because config['SIRVgff'] and/or config['SIRVinfo'] not found.")
+	print ("Will NOT compare TMs to SIRVs because config['SIRVgff'] and/or config['SIRVinfo'] not found.", file=sys.stderr)
 else:
 	SIRVpresent=True
-	print ("Will compare TMs to SIRVs")
+	print ("Will compare TMs to SIRVs", file=sys.stderr)
 
 
 if config["DEMULTIPLEX"]:
-	print ("Demultiplexing is ON")
+	print ("Demultiplexing is ON", file=sys.stderr)
 	# get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries so "set" them afterwards):
 	DEMULTIPLEX_DIR=config["DEMULTIPLEX_DIR"]
 	DEMULTIPLEXED_FASTQS= DEMULTIPLEX_DIR + "demultiplexFastqs/"
@@ -91,7 +91,7 @@ if config["DEMULTIPLEX"]:
 	BARCODESUNDETER=set(BARCODESUNDETER)
 
 else:
-	print ("Demultiplexing is OFF")
+	print ("Demultiplexing is OFF", file=sys.stderr)
 #	DEMULTIPLEX_DIR=FQPATH
 	DEMULTIPLEXED_FASTQS=FQ_CORR_PATH
 	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(FQPATH + "{techname, [^_/]+}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz")
@@ -134,8 +134,8 @@ if config["LORDEC_CORRECT"]:
 	graph_kmers=["17", "18", "19", "20", "21", "30", "40", "50", "60", "70", "80", "90"]
 	lastK=graph_kmers[-1]
 	FINALCORRECTIONLEVELS=["0", lastK]
-	print ("LR error correction is ON. Correction levels: ")
-	print (FINALCORRECTIONLEVELS)
+	print ("LR error correction is ON. Correction levels: ", file=sys.stderr)
+	print (FINALCORRECTIONLEVELS, file=sys.stderr)
 
 	#make string to interpolate into bash script in "lordecCorrectLr" rule
 	graph_kmers_string= "(" + " ".join(graph_kmers) + ")"
@@ -145,10 +145,10 @@ if config["LORDEC_CORRECT"]:
 	for x in range(0, splitFastqsInto, 1):
 		splitFasta.append(str(x).zfill(4))
 else:
-	print ("LR error correction is OFF. Correction levels: ")
+	print ("LR error correction is OFF. Correction levels: ", file=sys.stderr)
 	FINALCORRECTIONLEVELS=["0",]
 	lastK='NULL'
-	print (FINALCORRECTIONLEVELS)
+	print (FINALCORRECTIONLEVELS, file=sys.stderr)
 
 
 
@@ -300,9 +300,9 @@ def filtered_product(*args):
 					found=True
 					yield(wc_comb)
 	if not found:
-		print(" Error in function filtered_product. Args were:")
-		print((args))
-		quit(" Error. Could not yield any input file.")
+		print(" Error in function filtered_product. Args were:", file=sys.stderr)
+		print((args), file=sys.stderr)
+		quit(" Error. Could not yield any input file.", file=sys.stderr)
 
 def filtered_product_merge(*args):
 	found=False
@@ -331,8 +331,8 @@ def filtered_product_merge(*args):
 				#print("YIELD 3")
 				yield(wc_comb)
 	if not found:
-		print(" Error in function filtered_product_merge. Args were:")
-		print((args))
+		print(" Error in function filtered_product_merge. Args were:", file=sys.stderr)
+		print((args), file=sys.stderr)
 		quit(" Error. Could not yield any input file.")
 
 
@@ -363,8 +363,8 @@ def filtered_capDesign_product_merge(*args):
 					found=True
 					yield(wc_comb2)
 	if not found:
-		print(" Error in function filtered_capDesign_product_merge. Args were:")
-		print((args))
+		print(" Error in function filtered_capDesign_product_merge. Args were:", file=sys.stderr)
+		print((args), file=sys.stderr)
 		quit(" Error. Could not yield any input file.")
 
 
@@ -401,8 +401,8 @@ def filtered_merge_figures(*args):
 			yield(wc_comb)
 			found=True
 	if not found:
-		print(" Error in function filtered_merge_figures. Args were:")
-		print((args))
+		print(" Error in function filtered_merge_figures. Args were:", file=sys.stderr)
+		print((args), file=sys.stderr)
 		quit(" Error. Could not yield any input file.")
 
 
@@ -558,6 +558,8 @@ rule all:
 		expand(DEMULTIPLEX_DIR + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='11'), # QC on demultiplexing (checks that there is only one barcode assigned per read
 		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"])  if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='12'),
 		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand ("mappings/clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED),
 		expand(config["PLOTSDIR"] + "HiSS.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.{ext}", filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=PLOTSbySIZEFRAC, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"]),
 		expand("mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.bed", filtered_product_merge, techname=TECHNAMESplusMERGED, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
