@@ -54,7 +54,7 @@ rule getHiSeqMappingStats:
 		'''
 totalReads=$(zcat {input.reads1} {input.reads2}  | fastq2tsv.pl | wc -l)
 mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
-echo -e "{wildcards.capDesign}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$5/$4}}' > {output}
+echo -e "{wildcards.capDesign}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$3/$2}}' > {output}
 		'''
 
 rule aggHiSeqMappingStats:
@@ -108,13 +108,13 @@ echoerr "splitting"
 split -a 3 -d -e -n l/24 {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split
 rm {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
 for file in `ls {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split*`; do
-echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T {config[TMPDIR]}  -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} {config[TMPDIR]}/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
+echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} {config[TMPDIR]}/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
 done > {config[TMPDIR]}/$uuid.parallelIntrons.sh
 echoerr "extracting introns on split files"
 
 parallel -j {threads} < {config[TMPDIR]}/$uuid.parallelIntrons.sh
 echoerr "getting SJs and merging into output..."
-cat {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split*.introns.gff | perl -lane '$start=$F[3]-1; $end=$F[4]+1; print $F[0]."_".$start."_".$end."_".$F[6]' | sort -T {config[TMPDIR]}  -T {config[TMPDIR]} |uniq> {output.list}
+cat {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split*.introns.gff | perl -lane '$start=$F[3]-1; $end=$F[4]+1; print $F[0]."_".$start."_".$end."_".$F[6]' | sort  -T {config[TMPDIR]} |uniq> {output.list}
 echo -e "{wildcards.capDesign}\t$(cat {output.list} | wc -l )" > {output.stats}
 
 		'''
