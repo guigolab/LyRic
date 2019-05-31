@@ -18,10 +18,28 @@
       "h_rt" : "00:20:00",
       "virtual_free" : "2G"
     },
+    "aggTmStats":
+    {
+      "h_rt" : "00:30:00",
+    },
+    "plotMetaTmEndsStats":
+    {
+      "h_rt" : "01:00:00",
+      "virtual_free" : "15G"
+    },
+    "plotAbsTmEndsStats":
+    {
+      "h_rt" : "01:00:00",
+      "virtual_free" : "15G"
+    },
     "mergeCurrentPreviousPhaseTmsWithGencodeBiotypes":
     {
       "virtual_free" : "15G"
 
+    },
+    "mergePreviousPhaseTmsWithGencodeBiotypes":
+    {
+      "virtual_free" : "15G"
     },
     "readMapping" :
     {
