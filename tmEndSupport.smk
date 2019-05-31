@@ -109,7 +109,7 @@ scale_y_continuous(labels=comma)+
 #scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+
 scale_fill_manual (values=c(cageOnly='#98cd98', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'))+
 
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
@@ -118,5 +118,102 @@ geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel
 ggsave('{output}', width=plotWidth, height=plotHeight)
 " > {output}.r
 cat {output}.r | R --slave
+
+		'''
+
+
+
+rule plotMetaTmEndsStats:
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}.{endSupport}.TmStats.stats.tsv"
+	output: config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.TmEndsStats.meta.stats.{ext}",
+
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
+	shell:
+		'''
+echo "library(ggplot2)
+library(data.table)
+library(plyr)
+library(scales)
+dat <- fread('{input}', header=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+{params.filterDat[11]}
+
+ggplot(dat, aes(x=normDistance, color=end)) +
+stat_density(geom='line', adjust=3) +
+scale_color_manual(values=c('5p' = '#009900', '3p' = '#800000')) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
+xlab('Normalized distance of read ends to TM\\'s TSS') +
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=plotWidth, height=plotHeight)
+" > {output}.r
+cat {output}.r | R --slave
+
+
+		'''
+
+
+rule plotAbsTmEndsStats:
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}.{endSupport}.TmStats.stats.tsv"
+	output:
+		five=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.TmEndsStats.5p.abs.stats.{ext}",
+		three=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.TmEndsStats.3p.abs.stats.{ext}",
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
+	shell:
+		'''
+echo "library(ggplot2)
+library(data.table)
+library(dplyr)
+library(scales)
+dat <- fread('{input}', header=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+{params.filterDat[11]}
+
+datFive <- subset(dat, end=='5p')
+summaryStatsFive = transform(summarise(group_by(datFive,seqTech, sizeFrac, capDesign, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
+
+datThree <- subset(dat, end=='3p')
+summaryStatsThree = transform(summarise(group_by(datThree,seqTech, sizeFrac, capDesign, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
+
+
+
+ggplot(datFive, aes(x=distance)) +
+geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
+scale_fill_manual(values=c('5p' = '#009900'), name='End', labels =c('5p' = '5\\'')) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
+xlab('Distance of read ends\\nto TM\\'s TSS (mature RNA nts)') +
+geom_text(data = summaryStatsFive, aes(label = Label, x = 1000, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
+coord_cartesian(xlim=c(0, 2000)) +
+{GGPLOT_PUB_QUALITY}
+ggsave('{output.five}', width=plotWidth, height=plotHeight)
+
+ggplot(datThree, aes(x=distance)) +
+geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
+scale_fill_manual(values=c('3p' = '#800000'), name='End', labels =c('3p' = '3\\'')) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
+xlab('Distance of read ends\\n to TM\\'s 3\\' end (mature RNA nts)') +
+geom_text(data = summaryStatsThree, aes(label = Label, x = -1500, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
+coord_cartesian(xlim=c(-2000, 0)) +
+{GGPLOT_PUB_QUALITY}
+ggsave('{output.three}', width=plotWidth, height=plotHeight)
+
+
+" > {output.five}.r
+cat {output.five}.r | R --slave
 
 		'''
