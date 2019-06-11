@@ -156,7 +156,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$levelCorrlevel <- paste(sep='', dat\$level, ' (Corr: ', dat\$correctionLevel, ')')
 plotHeight = plotHeight +1
 ggplot(dat, aes(x=levelCorrlevel, y=value)) +
-geom_point(aes(color=metric, shape=correctionLevel), size=4, alpha=0.8) +
+geom_point(aes(color=metric, shape=correctionLevel), size=3, alpha=0.8) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 scale_shape_manual(values=c(16,21), name='Error correction') +
 ylab('Sn | Pr (%)') +
@@ -219,7 +219,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 
-ggplot(dat, aes(x=concentration, y=length, color=detectionStatus, shape=correctionLevel)) + geom_point(alpha=0.23) +
+ggplot(dat, aes(x=concentration, y=length, color=detectionStatus, shape=correctionLevel)) + geom_point(alpha=0.93) +
 coord_trans(x='log2') +
 scale_color_manual(values=palette) +
 scale_shape_manual(values=c('Yes'=16, 'No'=17), name='Error correction') +
