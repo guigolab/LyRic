@@ -19,12 +19,16 @@ EXONOVERHANG=["0","2","4","6","8","10","12","14", "16"]
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
 #TmergeEndFuzz="100"
 
+optimalMINSEQQUAL="10"
+optimalEXONOVERHANG="8"
+optimalMINREADSUPPORT="2"
+
 
 def filtered_product(*args): #to avoid useless combinations of wildcards
 	found=False
 	for wc_comb in itertools.product(*args):
 		#yield(wc_comb)
-	# 	print(wc_comb)
+		#print(wc_comb)
 
 		if (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('0')):
 			found=True
@@ -42,7 +46,7 @@ def filtered_product(*args): #to avoid useless combinations of wildcards
 			found=True
 			#print ("AUTH")
 			yield(wc_comb)
-		elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('2')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('12')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('22')):
+		elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] == optimalMINREADSUPPORT) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] == optimalMINSEQQUAL) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] == optimalEXONOVERHANG):
 			found=True
 			#print ("AUTH")
 			yield(wc_comb)
@@ -60,6 +64,7 @@ rule all:
 		expand("plots/non_snakemake/all.tmerge.minByreads.minQual0.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
 		expand("plots/non_snakemake/all.tmerge.min1reads.minQualBy.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
 		expand("plots/non_snakemake/all.tmerge.min1reads.minQual0.exonOverhangBy.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
+		expand("plots/non_snakemake/all.tmerge.optimalParams.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
 		expand("test/sirvMappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.SIRVome.minQual{minSeqQual}.exonOverhang{exonOverhang}_lib{libProt}.all.bed", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=MINREADSUPPORT, minSeqQual=MINSEQQUAL, exonOverhang=EXONOVERHANG, libProt=HISEQ_LIB_PROTOCOLS)
 
 
@@ -356,6 +361,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat <- subset(dat, level=='Transcript')
 dat <- subset(dat, minReadSupport==1)
 dat <- subset(dat, exonOverhang==0)
+dat <- subset(dat, metric!='SnPr')
 dat\$seqM <- paste(dat\$seqTech, dat\$metric)
 palette <- c('Sn' = '#cc6600', 'Pr' = '#2d8659', 'SnPr' = '#999999')
 ggplot(data=dat, aes(x=minSeqQual, y=value, group=seqM, color=metric)) +
@@ -380,6 +386,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat <- subset(dat, level=='Transcript')
 dat <- subset(dat, minSeqQual==0)
 dat <- subset(dat, exonOverhang==0)
+dat <- subset(dat, metric!='SnPr')
 dat\$seqM <- paste(dat\$seqTech, dat\$metric)
 palette <- c('Sn' = '#cc6600', 'Pr' = '#2d8659', 'SnPr' = '#999999')
 ggplot(data=dat, aes(x=minReadSupport, y=value, group=seqM, color=metric)) +
@@ -405,6 +412,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat <- subset(dat, level=='Transcript')
 dat <- subset(dat, minSeqQual==0)
 dat <- subset(dat, minReadSupport==1)
+dat <- subset(dat, metric!='SnPr')
 dat\$seqM <- paste(dat\$seqTech, dat\$metric)
 palette <- c('Sn' = '#cc6600', 'Pr' = '#2d8659', 'SnPr' = '#999999')
 ggplot(data=dat, aes(x=exonOverhang, y=value, group=seqM, color=metric)) +
@@ -416,4 +424,39 @@ ylim(0, 100) +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=5)
 "  | R --slave
+		'''
+
+rule plotGffCompareSirvStats:
+	input:"test/Rinput/all.tmerge.vs.SIRVs_lib{libProt}.stats.tsv"
+	output: "plots/non_snakemake/all.tmerge.optimalParams.vs.SIRVs_lib{libProt}.stats.png"
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+cbPalette <- c('Sn'='#cc6600', 'Pr'='#2d8659')
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+dat\$seqTech <- gsub(':$', '', dat\$seqTech)
+dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
+
+dat <- subset(dat, minReadSupport=={optimalMINREADSUPPORT})
+dat <- subset(dat, exonOverhang=={optimalEXONOVERHANG})
+dat <- subset(dat, minSeqQual=={optimalMINSEQQUAL})
+dat <- subset(dat, metric!='SnPr')
+
+#dat\$levelCorrlevel <- paste(sep='', dat\$level, ' (Corr: ', dat\$correctionLevel, ')')
+ggplot(dat, aes(x=level, y=value)) +
+geom_point(aes(color=metric, shape=correctionLevel), size=3, alpha=0.8) +
+scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
+scale_shape_manual(values=c(16,21), name='Error correction') +
+ylab('Sn | Pr (%)') +
+xlab('Evaluation level') +
+scale_y_continuous() +
+expand_limits(y=c(0,100))+
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+facet_grid(capDesign + tissue ~  seqTech + sizeFrac )+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=5.5, height=3)
+" > {output}.r
+cat {output}.r | R --slave
 		'''
