@@ -439,6 +439,7 @@ def merge_figures_params(c,bf,bt,cl, tn, splicing_status=None):
 	else:
 		seqTechFilterString="dat <- subset(dat, seqTech!='allSeqTechs')\n"
 	substSeqTechString="""
+dat\$seqTech <- gsub(':$', '', dat\$seqTech)
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 """
 	substTissueString="dat\$tissue <- gsub('" + c + "_', '', dat\$tissue)\n"
