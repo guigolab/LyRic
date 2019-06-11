@@ -18,6 +18,10 @@
       "h_rt" : "00:20:00",
       "virtual_free" : "2G"
     },
+"plotReadLength":
+{
+"virtual_free" : "10G",
+},
     "aggTmStats":
     {
       "h_rt" : "00:30:00",
