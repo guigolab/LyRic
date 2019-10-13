@@ -431,3 +431,13 @@ ggsave('{output}', width=plotWidth, height=plotHeight)
 cat {output}.r | R --slave
 
 		'''
+
+rule gffCompareAll:
+	input:
+		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.gff", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport),
+		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+	output: "mappings/nonAnchoredMergeReads/gffcompareAll/{capDesign}_min{minReadSupport}reads_{endSupport}.gffcompare.tracking"
+	shell:
+		'''
+gffcompare -o $(dirname {output})/$(basename {output} .tracking) -r {input.gencode} {input.gencode} {input.tm}
+		'''

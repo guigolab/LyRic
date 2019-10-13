@@ -27,35 +27,35 @@ optimalMINREADSUPPORT="2"
 def filtered_product(*args): #to avoid useless combinations of wildcards
 	found=False
 	for wc_comb in itertools.product(*args):
-		#yield(wc_comb)
+		yield(wc_comb)
 		#print(wc_comb)
 
-		if (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('0')):
-			found=True
-			#print ("AUTH")
-			yield(wc_comb)
-		elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] not in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('0')):
-			found=True
-			#print ("AUTH")
-			yield(wc_comb)
-		elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] not in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('0')):
-			found=True
-			#print ("AUTH")
-			yield(wc_comb)
-		elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] not in ('0')):
-			found=True
-			#print ("AUTH")
-			yield(wc_comb)
-		elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] == optimalMINREADSUPPORT) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] == optimalMINSEQQUAL) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] == optimalEXONOVERHANG):
-			found=True
-			#print ("AUTH")
-			yield(wc_comb)
-		#else:
-			#print ("NO")
-	if not found:
-		print(" Error in function filtered_product. Args were:")
-		print((args))
-		quit(" Error. Could not yield any input file.")
+	# 	if (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('0')):
+	# 		found=True
+	# 		#print ("AUTH")
+	# 		yield(wc_comb)
+	# 	elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] not in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('0')):
+	# 		found=True
+	# 		#print ("AUTH")
+	# 		yield(wc_comb)
+	# 	elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] not in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] in ('0')):
+	# 		found=True
+	# 		#print ("AUTH")
+	# 		yield(wc_comb)
+	# 	elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] in ('1')) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] in ('0')) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] not in ('0')):
+	# 		found=True
+	# 		#print ("AUTH")
+	# 		yield(wc_comb)
+	# 	elif (wc_comb[5][0] in ('minReadSupport') and wc_comb[5][1] == optimalMINREADSUPPORT) and (wc_comb[6][0] in ('minSeqQual') and wc_comb[6][1] == optimalMINSEQQUAL) and (wc_comb[7][0] in ('exonOverhang') and wc_comb[7][1] == optimalEXONOVERHANG):
+	# 		found=True
+	# 		#print ("AUTH")
+	# 		yield(wc_comb)
+	# 	#else:
+	# 		#print ("NO")
+	# if not found:
+	# 	print(" Error in function filtered_product. Args were:")
+	# 	print((args))
+	# 	quit(" Error. Could not yield any input file.")
 
 
 

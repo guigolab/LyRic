@@ -20,21 +20,21 @@
     },
 "plotReadLength":
 {
-"virtual_free" : "10G",
+"virtual_free" : "25G",
 },
     "aggTmStats":
     {
-      "h_rt" : "00:30:00",
+      "h_rt" : "01:00:00",
     },
     "plotMetaTmEndsStats":
     {
       "h_rt" : "01:00:00",
-      "virtual_free" : "15G"
+      "virtual_free" : "30G"
     },
     "plotAbsTmEndsStats":
     {
       "h_rt" : "01:00:00",
-      "virtual_free" : "15G"
+      "virtual_free" : "30G"
     },
     "mergeCurrentPreviousPhaseTmsWithGencodeBiotypes":
     {
@@ -78,11 +78,15 @@
   {
         "virtual_free" : "1G"
   },
+  "getPolyAreadsStats":
+  {
+    "h_rt" : "6:00:00",
+  },
 
 "makeIntrons":
 {
-     "h_rt" : "6:00:00",
-        "queue" : "rg-el7,short-sl7",
+     "h_rt" : "10:00:00",
+        "queue" : "rg-el7,long-sl7",
         "virtual_free" : "50G"
     },
     "blastDemultiplex" :
@@ -120,10 +124,11 @@
     "getHiSSStats":
     {
         "virtual_free" : "25G",
+        "h_rt" : "06:00:00"
     },
     "mergeWithRef":{
       "virtual_free" : "12G",
-      "h_rt" : "05:40:00"
+      "h_rt" : "06:00:00"
     },
      "nonAnchoredMergeReads":
     {
@@ -214,7 +219,9 @@
     },
     "getHiSeqMappingStats":
     {
-      "h_rt" : "6:00:00"
+      "h_rt" : "8:00:00",
+      "queue" : "rg-el7,long-sl7",
+
     },
     "mergeTmsWithGencode":
     {

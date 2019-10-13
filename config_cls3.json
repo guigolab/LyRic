@@ -9,7 +9,8 @@
        "STATSDATADIR" : "Rinput/",
        "capDesignToGenome" : {
            "HpreCap": "hg38",
-           "Hv3": "hg38"
+           "Hv3": "hg38",
+           "MpreCap": "mm10"
          },
          "TMPDIR": "$TMPDIR",
          "minPhredQualAroundSJ": "10",
@@ -18,7 +19,7 @@
        "capDesignToAnnotGtf" : {
            "HpreCap": "annotations/hs.gencode24+SIRVS.gff",
            "Hv3": "annotations/hs.gencode24+SIRVS.gff",
-            "MpreCap": "annotations/hs.gencode24+SIRVS.gff"},
+            "MpreCap": "annotations/mm.gencodeM7+SIRVS.gff"},
        "genomeToPreviousPhaseTMs":{
           "hg38": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Hv1Hv2_allFracs_allTissues.tmerge.min2reads.all.gff",
           "mm10": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Mv1_allFracs_allTissues.tmerge.min2reads.all.gff"
