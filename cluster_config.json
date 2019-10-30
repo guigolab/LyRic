@@ -60,11 +60,12 @@
         },
     "highConfidenceReads":{
         "h_rt" : "6:00:00",
-        "virtual_free" : "27G"
+        "virtual_free" : "15G"
     },
 "readBedToGff" :
     {
-        "h_rt" : "6:00:00",
+        "queue" : "rg-el7,long-sl7",
+        "h_rt" : "10:00:00",
         "virtual_free" : "1G"
         },
 
@@ -87,7 +88,7 @@
 {
      "h_rt" : "10:00:00",
         "queue" : "rg-el7,long-sl7",
-        "virtual_free" : "50G"
+        "virtual_free" : "20G"
     },
     "blastDemultiplex" :
     {
@@ -98,7 +99,7 @@
     },
     "getIntronMotif":
     {
-        "virtual_free" : "25G",
+        "virtual_free" : "15G",
     },
     "getReadsSpliceSites":
     {
@@ -123,7 +124,7 @@
     },
     "getHiSSStats":
     {
-        "virtual_free" : "25G",
+        "virtual_free" : "20G",
         "h_rt" : "06:00:00"
     },
     "mergeWithRef":{
@@ -132,7 +133,7 @@
     },
      "nonAnchoredMergeReads":
     {
-        "virtual_free" : "10G",
+        "virtual_free" : "15G",
     },
 
     "mergeTissuesNonAnchoredMergeReads":
@@ -214,7 +215,7 @@
     },
     "plotGeneidScores":
     {
-        "virtual_free" : "25G",
+        "virtual_free" : "30G",
         "h_rt" : "5:30:00"
     },
     "getHiSeqMappingStats":

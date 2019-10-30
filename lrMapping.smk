@@ -50,7 +50,7 @@ cat {input} | sort -T {config[TMPDIR]}  > {output}
 
 rule plotMappingStats:
 	input: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.tsv"
-	output: config["PLOTSDIR"] + "{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.{ext}"
+	output: config["PLOTSDIR"] + "lrMapping.stats/{techname}Corr{corrLevel}.mapping.perSample.perFraction.stats.{ext}"
 	shell:
 		'''
 echo "library(ggplot2)
