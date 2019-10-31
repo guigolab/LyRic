@@ -294,7 +294,7 @@ palette <- c('Intergenic' = '#0099cc', 'Extends' ='#00bfff', 'Intronic' = '#4dd2
 ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual(values=palette) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
  ylab('# TMs') +
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+
@@ -420,7 +420,7 @@ geom_bar(stat='identity') +
 ylab('# Novel CLS loci') +
 scale_y_continuous(labels=comma)+
 scale_fill_manual (values=c(intronic='#d98c8c', intergenic='#33ccff'))+
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+

@@ -215,7 +215,7 @@
     },
     "plotGeneidScores":
     {
-        "virtual_free" : "30G",
+        "virtual_free" : "35G",
         "h_rt" : "5:30:00"
     },
     "getHiSeqMappingStats":

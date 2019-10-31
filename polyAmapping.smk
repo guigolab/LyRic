@@ -176,7 +176,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') + scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
 ylab('# mapped reads') +
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
