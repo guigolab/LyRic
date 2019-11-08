@@ -47,9 +47,21 @@ rule highConfidenceReads:
 		strandedReads = "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
 		bam = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	output:
-		"mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+		gff="mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz",
+		stats=temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.highConfSplicedReads.stats.tsv")
 	shell:
 		'''
+#### reads QC stats
+totalSplicedReads=$(cat {input.transcriptStrandInfo} | tgrep -v -P "^#" | wc -l)
+# reads with 100% canonical SJs
+canonSjReads=$(cat {input.transcriptStrandInfo} | awk '$6==1'| wc -l)
+# reads with no fishy SJs (i.e. not surrounded by direct repeats)
+noFishySjReads=$(cat {input.transcriptStrandInfo} | awk '$7==1'| wc -l)
+# reads with no fishy SJs and canonical SJs
+noFishyCanonSjReads=$(cat {input.transcriptStrandInfo} | awk '$6==1 && $7==1'| wc -l)
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalSplicedReads\t$canonSjReads\t$noFishySjReads\t$noFishyCanonSjReads" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5"\\t"$8/$5}}' > {output.stats}
+
+
 #select read IDs with canonical GT|GC/AG and high-confidence SJs
 uuid=$(uuidgen)
 cat {input.transcriptStrandInfo} | tgrep -v -P "^#" | awk '$6==1 && $7==1' | cut -f1 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
@@ -66,8 +78,17 @@ cat {config[TMPDIR]}/$uuid.str.gff | extractGffAttributeValue.pl transcript_id |
 tgrep -F -w -f {config[TMPDIR]}/$uuid.tmp {config[TMPDIR]}/$uuid.str.gff > {config[TMPDIR]}/$uuid.tmp2
 cat {config[TMPDIR]}/$uuid.tmp2  > {config[TMPDIR]}/$uuid.monoPolyA.gff
  echo $?
-cat {config[TMPDIR]}/$uuid.gtag.gff {config[TMPDIR]}/$uuid.monoPolyA.gff | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip> {output}
+cat {config[TMPDIR]}/$uuid.gtag.gff {config[TMPDIR]}/$uuid.monoPolyA.gff | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip> {output.gff}
  echo $?
+		'''
+
+rule aggHighConfSplicedReadsStats:
+	input: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.highConfSplicedReads.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED)
+	output: config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalSplicedReads\tcanonSjReads\tnoFishySjReads\tnoFishyCanonSjReads" > {output}
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
 		'''
 
 
@@ -454,7 +475,7 @@ return(data.frame(y=-8.5,label= paste0('Median=', comma(median(x)))))
 }}
 ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, color=category)) +
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
-coord_cartesian(ylim=c(100, 2500)) +
+coord_cartesian(ylim=c(100, 5000)) +
 scale_y_continuous(labels=comma)+
 scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='CLS TMs', 'CLS_FL_TMs'='CLS FL TMs')) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
@@ -463,9 +484,10 @@ stat_summary(aes(x=factor(correctionLevel), group=category), position=position_d
 stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, color='#666666') +
 ylab('Mature RNA length') +
 xlab('{params.filterDat[6]}') +
-coord_flip(ylim=c(100, 2500)) +
+coord_flip(ylim=c(100, 5000)) +
 {params.filterDat[9]}
-{GGPLOT_PUB_QUALITY}
+{GGPLOT_PUB_QUALITY} +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ggsave('{output}', width=plotWidth, height=plotHeight)
 
 " > {output}.r

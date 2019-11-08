@@ -169,6 +169,10 @@ rule plotAbsTmEndsStats:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
 	shell:
 		'''
+#R --version
+#module list
+#ldd /nfs/users2/rg/jlagarde/R_libs/scales/libs/scales.so
+
 echo "library(ggplot2)
 library(data.table)
 library(dplyr)
