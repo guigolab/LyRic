@@ -62,9 +62,9 @@ noFishyCanonSjReads=$(cat {input.transcriptStrandInfo} | awk '$6==1 && $7==1'| w
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalSplicedReads\t$canonSjReads\t$noFishySjReads\t$noFishyCanonSjReads" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5"\\t"$8/$5}}' > {output.stats}
 
 
-#select read IDs with canonical GT|GC/AG and high-confidence SJs
+#select read IDs with canonical GT|GC/AG
 uuid=$(uuidgen)
-cat {input.transcriptStrandInfo} | tgrep -v -P "^#" | awk '$6==1 && $7==1' | cut -f1 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
+cat {input.transcriptStrandInfo} | tgrep -v -P "^#" | awk '$6==1' | cut -f1 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
 wc -l {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
 zcat {input.strandedReads} > {config[TMPDIR]}/$uuid.str.gff
 
