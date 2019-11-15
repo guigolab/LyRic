@@ -9,19 +9,6 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 		'''
 
 
-rule getFastqReadCounts:
-	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv"
-	shell:
-		'''
-let total=$(zcat {input} | wc -l)/4 || true # "true" serves to avoid "let" exiting with status > 0 when its output is = 0
-echo -e "$(basename {input})\t$total" > {output}
-		'''
-
-rule aggFastqReadCounts:
-	input: lambda wildcards: expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand (config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.readCounts.tsv", filtered_product, techname=wildcards.techname, corrLevel={wildcards.corrLevel}, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}.fastq.readCounts.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "{techname}Corr{corrLevel}.{barcodes}.fastq.readCounts.tsv"
-	shell: "cat {input} | sort -T {config[TMPDIR]}  > {output}"
 
 #get read lengths for all FASTQ files:
 rule getReadLength:

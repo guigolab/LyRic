@@ -19,6 +19,14 @@ zcat {input.introns} | grep -vP "^ERCC"| extract_intron_strand_motif.pl - {input
 
 		'''
 
+""" rule compareIntronDupScoreIntronGeneidScore:
+	input: 
+		intronDupScores="mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff",
+		geneidScores= lambda wildcards: expand(config["SPLICE_SITE_SCORES_DIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".{spliceType}.geneid.loose.spliceSites.sorted.tsv", spliceType=wildcards.spliceType),
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv")
+
+ """
+
 rule getGencodePcgSpliceSites:
 	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	output: "annotations/spliceSites/{capDesign}.gencode.PCG.spliceSites.{spliceType}.tsv.gz"

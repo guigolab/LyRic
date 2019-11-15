@@ -5,6 +5,9 @@ import itertools
 import sys
 #import pprint #pretty printing
 
+#prefix all shell scripts with the following command
+shell.prefix("source ~/.bashrc; ")
+
 print ("TODO:\n## Calculate amount of novel captured nts\n\n ## What is the intersection between PacBio TMs and ONT TMs???\n\n", file=sys.stderr)
 
 
