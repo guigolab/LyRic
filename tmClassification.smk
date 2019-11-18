@@ -446,7 +446,9 @@ rule tmergeAll:
 	input:
 		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.gff", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport),
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-	output: "mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads_{endSupport}.tmerge.gff"
+	output: "mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.tmerge.gff"
+	params:
+		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -454,9 +456,44 @@ uuid2=$(uuidgen)
 cat {input.gencode} | perl -ne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=gencode=$1\"/g; print' > $TMPDIR/$uuid
 for file in `echo {input.tm}`; do
 bn=$(basename $file .tmerge.min{wildcards.minReadSupport}reads.{wildcards.endSupport}.gff)
-cat $file | perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
+cat $file {params.grepSpliced}| perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
 done > $TMPDIR/$uuid2
 
 cat $TMPDIR/$uuid $TMPDIR/$uuid2 | skipcomments | sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {output}
+
+		'''
+
+rule getSampleComparisonStats:
+	input: "mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.tmerge.gff"
+	output: 
+		fullMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.stats.tsv",
+		simpsonMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.overlap_coeff.tsv",
+		jaccardMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.jaccard_ind.tsv",
+		OneMinusSimpsonMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusSimpson_coeff.tsv"
+	shell:
+		'''
+cat {input} | tmergeToMatrix.pl - $(dirname {output.simpsonMatrix})/$(basename {output.simpsonMatrix} .overlap_coeff.tsv) |perl -ne '$_=~s/(\S+):Corr\d+_(\S+)/$1 $2/g; print' > {output.fullMatrix}
+
+#convert simpson matrix to dissimilarity matrix (1-simpson)
+ cat {output.simpsonMatrix} |perl -ne 'chomp; @line=split "\\t"; for($i=0; $i<=$#line;$i++){{$t=$line[$i];if ($t=~/^-?(?:\d+\.?|\.\d)\d*\z/ ){{$line[$i]=1-$line[$i]}}}}; print join("\\t", @line)."\\n"' > {output.OneMinusSimpsonMatrix}
+
+		'''
+
+rule plotSampleComparisonStats:
+	input: config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusSimpson_coeff.tsv"
+	output: config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.dendrogram.sampleComparison.{ext}"
+	shell:
+		'''
+echo "
+library(cluster)
+library(ggplot2)
+library(ggdendro)
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t', row.names=1)
+hc <- hclust(as.dist(dat))
+ggdendrogram(hc, rotate = TRUE) +
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}')
+" > {output}.r
+cat {output}.r | R --slave
 
 		'''

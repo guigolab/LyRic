@@ -133,7 +133,7 @@
     },
      "nonAnchoredMergeReads":
     {
-        "virtual_free" : "15G",
+        "virtual_free" : "20G",
     },
 
     "mergeTissuesNonAnchoredMergeReads":
