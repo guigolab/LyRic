@@ -153,14 +153,14 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-dat\$levelCorrlevel <- paste(sep='', dat\$level, ' (Corr: ', dat\$correctionLevel, ')')
+#dat\$levelCorrlevel <- paste(sep='', dat\$level, ' (Corr: ', dat\$correctionLevel, ')')
 plotHeight = plotHeight +1
-ggplot(dat, aes(x=levelCorrlevel, y=value)) +
+ggplot(dat, aes(x=level, y=value)) +
 geom_point(aes(color=metric, shape=correctionLevel), size=3, alpha=0.8) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 scale_shape_manual(values=c(16,21), name='Error correction') +
 ylab('Sn | Pr (%)') +
-xlab('Evaluation level / (Error correction)') +
+xlab('Evaluation level') +
 scale_y_continuous() +
 expand_limits(y=c(0,100))+
 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
@@ -253,6 +253,69 @@ rule getGffCompareStats:
 	shell:
 		'''
 cat {input} |cut -f2 | sort -T {config[TMPDIR]} |uniq -c | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'>> {output}
+		'''
+
+rule getGffCompareGencodeSnPrStats:
+	input:"mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.simple.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.SnPr.stats.tsv")
+	shell:
+		'''
+file=$(dirname {input})/$(basename {input} .simple.tsv)
+for level in `echo Baselevel Exonlevel Intronchainlevel Intronlevel Locuslevel Transcriptlevel`; do
+Sn=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2` || Sn='NaN'
+Sp=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3` || Sp='NaN'
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$level\t$Sn\t$Sp";
+done |sed 's/level//g' > {output}
+
+		'''
+
+rule aggGffCompareGencodeSnPrStats:
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.SnPr.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.SnPr.stats.tsv"
+	shell:
+		'''
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlevel\tmetric\tvalue" > {output}
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
+
+		'''
+
+rule plotGffCompareGencodeSnPrStats:
+	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.SnPr.stats.tsv"
+	output: config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.vs.gencode.SnPr.stats.{ext}"
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	shell:
+		'''
+echo "library(ggplot2)
+library(plyr)
+library(scales)
+cbPalette <- c('Sn'='#cc6600', 'Pr'='#2d8659')
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+#dat\$levelCorrlevel <- paste(sep='', dat\$level, ' (Corr: ', dat\$correctionLevel, ')')
+plotHeight = plotHeight +1
+ggplot(dat, aes(x=level, y=value)) +
+geom_point(aes(color=metric, shape=correctionLevel), size=3, alpha=0.8) +
+scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
+scale_shape_manual(values=c(16,21), name='Error correction') +
+ylab('Sn | Pr (%)') +
+xlab('Evaluation level') +
+scale_y_continuous() +
+expand_limits(y=c(0,100))+
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', width=plotWidth, height=plotHeight)
+" > {output}.r
+cat {output}.r | R --slave
 		'''
 
 
@@ -432,20 +495,12 @@ cat {output}.r | R --slave
 
 		'''
 
-rule gffCompareAll:
-	input:
-		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.gff", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport),
-		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-	output: "mappings/nonAnchoredMergeReads/gffcompareAll/{capDesign}_min{minReadSupport}reads_{endSupport}.gffcompare.tracking"
-	shell:
-		'''
-gffcompare -o $(dirname {output})/$(basename {output} .tracking) -r {input.gencode} {input.gencode} {input.tm}
-		'''
+
 
 rule tmergeAll:
 	input:
 		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.{endSupport}.gff", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport),
-		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		#gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 	output: "mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.tmerge.gff"
 	params:
 		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
@@ -453,7 +508,6 @@ rule tmergeAll:
 		'''
 uuid=$(uuidgen)
 uuid2=$(uuidgen)
-cat {input.gencode} | perl -ne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=gencode=$1\"/g; print' > $TMPDIR/$uuid
 for file in `echo {input.tm}`; do
 bn=$(basename $file .tmerge.min{wildcards.minReadSupport}reads.{wildcards.endSupport}.gff)
 cat $file {params.grepSpliced}| perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
@@ -469,31 +523,124 @@ rule getSampleComparisonStats:
 		fullMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.stats.tsv",
 		simpsonMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.overlap_coeff.tsv",
 		jaccardMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.jaccard_ind.tsv",
-		OneMinusSimpsonMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusSimpson_coeff.tsv"
+		OneMinusSimpsonMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusSimpson_coeff.tsv",
+		OneMinusJaccardMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusJaccard_coeff.tsv"
 	shell:
 		'''
 cat {input} | tmergeToMatrix.pl - $(dirname {output.simpsonMatrix})/$(basename {output.simpsonMatrix} .overlap_coeff.tsv) |perl -ne '$_=~s/(\S+):Corr\d+_(\S+)/$1 $2/g; print' > {output.fullMatrix}
 
 #convert simpson matrix to dissimilarity matrix (1-simpson)
  cat {output.simpsonMatrix} |perl -ne 'chomp; @line=split "\\t"; for($i=0; $i<=$#line;$i++){{$t=$line[$i];if ($t=~/^-?(?:\d+\.?|\.\d)\d*\z/ ){{$line[$i]=1-$line[$i]}}}}; print join("\\t", @line)."\\n"' > {output.OneMinusSimpsonMatrix}
+ cat {output.jaccardMatrix} |perl -ne 'chomp; @line=split "\\t"; for($i=0; $i<=$#line;$i++){{$t=$line[$i];if ($t=~/^-?(?:\d+\.?|\.\d)\d*\z/ ){{$line[$i]=1-$line[$i]}}}}; print join("\\t", @line)."\\n"' > {output.OneMinusJaccardMatrix}
 
 		'''
 
 rule plotSampleComparisonStats:
-	input: config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusSimpson_coeff.tsv"
-	output: config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.dendrogram.sampleComparison.{ext}"
+	input: 
+		simpson=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusSimpson_coeff.tsv",
+		jaccard=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.oneMinusJaccard_coeff.tsv",
+
+	output: 
+		simpson=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.dendrogram.sampleComparison.simpson.png",
+		jaccard=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.dendrogram.sampleComparison.jaccard.png"
 	shell:
 		'''
 echo "
+
 library(cluster)
-library(ggplot2)
-library(ggdendro)
-dat <- read.table('{input}', header=T, as.is=T, sep='\\t', row.names=1)
-hc <- hclust(as.dist(dat))
-ggdendrogram(hc, rotate = TRUE) +
-{GGPLOT_PUB_QUALITY}
-ggsave('{output}')
-" > {output}.r
-cat {output}.r | R --slave
+library(dendextend)
+dat <- read.table('{input.simpson}', header=T, as.is=T, sep='\t', row.names=1)
+dend <- as.dendrogram(hclust(as.dist(dat)))
+lib_type <- rep('Other', length(rownames(dat)))
+is_x <- grepl('CapTrap', rownames(dat))
+lib_type[is_x] <- 'CapTrap'
+is_x <- grepl('Telop', rownames(dat))
+lib_type[is_x] <- 'Telop'
+is_x <- grepl('Smarter', rownames(dat))
+lib_type[is_x] <- 'Smarter'
+is_x <- grepl('dRNA', rownames(dat))
+lib_type[is_x] <- 'dRNA'
+lib_type <- factor(lib_type)
+n_lib_types <- length(unique(lib_type))
+cols_lib <- colorspace::rainbow_hcl(n_lib_types, c = 100, l  = 70, start = -360, end =-180)
+col_lib_type <- cols_lib[lib_type]
+
+seqPlatform <- rep('Other', length(rownames(dat)))
+is_x <- grepl('ont', rownames(dat))
+seqPlatform[is_x] <- 'ont'
+is_x <- grepl('pacBio', rownames(dat))
+seqPlatform[is_x] <- 'pacBio'
+seqPlatform <- factor(seqPlatform)
+n_seqPlatforms <- length(unique(seqPlatform))
+cols_seqPlatform <- colorspace::rainbow_hcl(n_seqPlatforms, c = 50, l  = 60, start = -350, end =200)
+col_seqPlatform <- cols_seqPlatform[seqPlatform]
+
+tissue <- rep('Other', length(rownames(dat)))
+is_x <- grepl('Brain', rownames(dat))
+tissue[is_x] <- 'Brain'
+is_x <- grepl('Heart', rownames(dat))
+tissue[is_x] <- 'Heart'
+tissue <- factor(tissue)
+n_tissues <- length(unique(tissue))
+cols_tissue <- colorspace::rainbow_hcl(n_tissues, c = 120, l  = 100, start = -300, end =180)
+col_tissue <- cols_tissue[tissue]
+
+png(file = '{output.simpson}', width=1500, height=1500)
+par(mar = c(10,1,1,25), cex=3)
+plot(dend, axes=F, horiz=TRUE)
+colored_bars(cbind(col_lib_type, col_seqPlatform, col_tissue), dend, rowLabels = c('Library type', 'Seq platform', 'Biosample'), horiz=TRUE, text_shift=16)
+dev.off()
+
+" > {output.simpson}.r
+cat {output.simpson}.r | R --slave
+
+echo "
+
+library(cluster)
+library(dendextend)
+dat <- read.table('{input.jaccard}', header=T, as.is=T, sep='\t', row.names=1)
+dend <- as.dendrogram(hclust(as.dist(dat)))
+lib_type <- rep('Other', length(rownames(dat)))
+is_x <- grepl('CapTrap', rownames(dat))
+lib_type[is_x] <- 'CapTrap'
+is_x <- grepl('Telop', rownames(dat))
+lib_type[is_x] <- 'Telop'
+is_x <- grepl('Smarter', rownames(dat))
+lib_type[is_x] <- 'Smarter'
+is_x <- grepl('dRNA', rownames(dat))
+lib_type[is_x] <- 'dRNA'
+lib_type <- factor(lib_type)
+n_lib_types <- length(unique(lib_type))
+cols_lib <- colorspace::rainbow_hcl(n_lib_types, c = 100, l  = 70, start = -360, end =-180)
+col_lib_type <- cols_lib[lib_type]
+
+seqPlatform <- rep('Other', length(rownames(dat)))
+is_x <- grepl('ont', rownames(dat))
+seqPlatform[is_x] <- 'ont'
+is_x <- grepl('pacBio', rownames(dat))
+seqPlatform[is_x] <- 'pacBio'
+seqPlatform <- factor(seqPlatform)
+n_seqPlatforms <- length(unique(seqPlatform))
+cols_seqPlatform <- colorspace::rainbow_hcl(n_seqPlatforms, c = 50, l  = 60, start = -350, end =200)
+col_seqPlatform <- cols_seqPlatform[seqPlatform]
+
+tissue <- rep('Other', length(rownames(dat)))
+is_x <- grepl('Brain', rownames(dat))
+tissue[is_x] <- 'Brain'
+is_x <- grepl('Heart', rownames(dat))
+tissue[is_x] <- 'Heart'
+tissue <- factor(tissue)
+n_tissues <- length(unique(tissue))
+cols_tissue <- colorspace::rainbow_hcl(n_tissues, c = 120, l  = 100, start = -300, end =180)
+col_tissue <- cols_tissue[tissue]
+
+png(file = '{output.jaccard}', width=1500, height=1500)
+par(mar = c(10,1,1,25), cex=3)
+plot(dend, axes=F, horiz=TRUE)
+colored_bars(cbind(col_lib_type, col_seqPlatform, col_tissue), dend, rowLabels = c('Library type', 'Seq platform', 'Biosample'), horiz=TRUE, text_shift=16)
+dev.off()
+
+" > {output.jaccard}.r
+cat {output.jaccard}.r | R --slave
 
 		'''
