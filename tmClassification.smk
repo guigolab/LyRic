@@ -550,7 +550,7 @@ echo "
 library(cluster)
 library(dendextend)
 dat <- read.table('{input.simpson}', header=T, as.is=T, sep='\t', row.names=1)
-dend <- as.dendrogram(hclust(as.dist(dat)))
+dend <- as.dendrogram(hclust(as.dist(dat), method ='ward.D'))
 lib_type <- rep('Other', length(rownames(dat)))
 is_x <- grepl('CapTrap', rownames(dat))
 lib_type[is_x] <- 'CapTrap'

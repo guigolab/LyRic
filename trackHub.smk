@@ -262,7 +262,7 @@ echo -e "
 
 rule makeFLTmergeOutputTracks:
 	input:
-		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cage+polyASupported.bed",
+		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.cage+polyASupported.bed",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output:
 		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FL.tmerge.min{minReadSupport}reads.bb",

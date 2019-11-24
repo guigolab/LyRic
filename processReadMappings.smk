@@ -429,7 +429,7 @@ cat {output}.r | R --slave
 rule aggTmLengthStats:
 	input:
 		all=lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.all.TmStats.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport),
-		fl=lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.cage+polyASupported.TmStats.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
+		fl=lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.cage+polyASupported.TmStats.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
 	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicedLength.stats.tsv"
 	shell:
 		'''
@@ -475,7 +475,7 @@ return(data.frame(y=-8.5,label= paste0('Median=', comma(median(x)))))
 }}
 ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, color=category)) +
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
-coord_cartesian(ylim=c(100, 5000)) +
+coord_cartesian(ylim=c(100, 3000)) +
 scale_y_continuous(labels=comma)+
 scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='CLS TMs', 'CLS_FL_TMs'='CLS FL TMs')) +
 facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
@@ -484,7 +484,7 @@ stat_summary(aes(x=factor(correctionLevel), group=category), position=position_d
 stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, color='#666666') +
 ylab('Mature RNA length') +
 xlab('{params.filterDat[6]}') +
-coord_flip(ylim=c(100, 5000)) +
+coord_flip(ylim=c(100, 3000)) +
 {params.filterDat[9]}
 {GGPLOT_PUB_QUALITY} +
 theme(axis.text.x = element_text(angle = 45, hjust = 1))
