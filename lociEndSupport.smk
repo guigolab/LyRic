@@ -49,11 +49,11 @@ mergeToRef.pl {input.gencode} {config[TMPDIR]}/$uuid | sort -T {config[TMPDIR]} 
 
 rule mergeCurrentPreviousPhaseTmsWithGencode:
 	input:
-		current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
+		current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 		previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 	threads:1
-	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz"
+	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz"
 	# wildcard_constraints:
 	# 	barcodes='allTissues',
 	# 	sizeFrac='allFracs',
@@ -71,9 +71,9 @@ bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM
 
 rule mergeCurrentPreviousPhaseTmsWithGencodeBiotypes:
 	input:
-		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz",
+		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz",
 		gencode="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz"
+	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -113,7 +113,7 @@ fgrep -w -f {config[TMPDIR]}/$uuidcagePASsupported {input.tm} |sort -T {config[T
 
 rule getCurrentPreviousPhaseTmsWithGencodeSupportedEnds:
 	input:
-		tm="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz",
+		tm="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz",
 		cagePeaks=lambda wildcards: CAPDESIGNTOCAGEPEAKS[wildcards.capDesign],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome",
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
@@ -173,7 +173,7 @@ zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuidcagePASsupported - |sort -T 
 rule getFlLocusStats:
 	input:
 		gencode="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf",
-		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff.gz",
+		clsGencode="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz",
 		gencodeFL="mappings/nonAnchoredMergeReads/mergeWithPrevious/gencode/{capDesign}.gencode.cage+PASsupported.gff.gz",
 		previous="mappings/nonAnchoredMergeReads/previous+biotypes/{capDesign}.previous.tmerge.all.gff.gz",
 		previousFL="mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.cage+PASsupported.gff.gz",
@@ -225,7 +225,7 @@ echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{
 
 
 rule aggFlLocusStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv", techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac='allFracs', barcodes='allTissues', minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv", techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes='allTissues', minReadSupport=wildcards.minReadSupport)
 	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.FLloci.stats.tsv"
 	shell:
 		'''
@@ -259,7 +259,7 @@ dat <- subset(dat, annotation_set=='GENCODE')
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('FL', 'non-FL')))
 
-dat\$annotbiotype <- paste(sep='', dat\$biotype, '\n(', dat\$annotation_set, ')')
+dat\$annotbiotype <- paste(sep='', dat\$biotype, '\\n(', dat\$annotation_set, ')')
 plotHeight = plotHeight +1
 plotWidth = plotWidth +0.5
 
@@ -269,7 +269,7 @@ ylab('# gene loci') +
 scale_y_continuous(labels=comma)+
 scale_fill_manual (values=c('FL'='#C453C4', 'non-FL'='#a6a6a6'))+
 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+facet_grid( seqTech ~ capDesign + tissue)+
 xlab('Biotype (Annotation set)') +
 guides(fill = guide_legend(title='Category'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(annotbiotype), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
@@ -305,7 +305,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('FL', 'non-FL')))
 
-dat\$annotbiotype <- paste(sep='', dat\$biotype, '\n(', dat\$annotation_set, ')')
+dat\$annotbiotype <- paste(sep='', dat\$biotype, '\\n(', dat\$annotation_set, ')')
 
 plotHeight = plotHeight +1
 plotWidth = plotWidth +2.5
@@ -316,7 +316,7 @@ ylab('# gene loci') +
 scale_y_continuous(labels=comma)+
 scale_fill_manual (values=c('FL'='#C453C4', 'non-FL'='#a6a6a6'))+
 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+facet_grid( seqTech ~ capDesign + tissue)+
 xlab('Biotype (Annotation set)') +
 guides(fill = guide_legend(title='Category'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(annotbiotype), y = count, label = paste(sep='',percent(round(percent, digits=2)),' ','(',comma(count),')'), hjust = 0.5, vjust = 1))+

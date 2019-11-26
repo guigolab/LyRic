@@ -61,10 +61,10 @@ def filtered_product(*args): #to avoid useless combinations of wildcards
 
 rule all:
 	input:
-		expand("plots/non_snakemake/all.tmerge.minByreads.minQual0.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
-		expand("plots/non_snakemake/all.tmerge.min1reads.minQualBy.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
-		expand("plots/non_snakemake/all.tmerge.min1reads.minQual0.exonOverhangBy.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
-		expand("plots/non_snakemake/all.tmerge.optimalParams.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
+		expand("plots_protected/all.tmerge.minByreads.minQual0.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
+		expand("plots_protected/all.tmerge.min1reads.minQualBy.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
+		expand("plots_protected/all.tmerge.min1reads.minQual0.exonOverhangBy.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
+		expand("plots_protected/all.tmerge.optimalParams.vs.SIRVs_lib{libProt}.stats.png", libProt=HISEQ_LIB_PROTOCOLS),
 		expand("test/sirvMappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.SIRVome.minQual{minSeqQual}.exonOverhang{exonOverhang}_lib{libProt}.all.bed", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=MINREADSUPPORT, minSeqQual=MINSEQQUAL, exonOverhang=EXONOVERHANG, libProt=HISEQ_LIB_PROTOCOLS)
 
 
@@ -353,7 +353,7 @@ xargs -a tmp.1 -n 20000 -L 20000 cat | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"
 
 rule plotGffCompareSirvByminQualStats:
 	input: "test/Rinput/all.tmerge.vs.SIRVs_lib{libProt}.stats.tsv"
-	output: "plots/non_snakemake/all.tmerge.min1reads.minQualBy.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png"
+	output: "plots_protected/all.tmerge.min1reads.minQualBy.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -378,7 +378,7 @@ ggsave('{output}', width=7, height=5)
 
 rule plotGffCompareSirvByminReadSupport:
 	input: "test/Rinput/all.tmerge.vs.SIRVs_lib{libProt}.stats.tsv"
-	output: "plots/non_snakemake/all.tmerge.minByreads.minQual0.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png"
+	output: "plots_protected/all.tmerge.minByreads.minQual0.exonOverhang0.vs.SIRVs_lib{libProt}.stats.png"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -404,7 +404,7 @@ ggsave('{output}', width=7, height=5)
 
 rule plotGffCompareSirvByExonOverhang:
 	input: "test/Rinput/all.tmerge.vs.SIRVs_lib{libProt}.stats.tsv"
-	output: "plots/non_snakemake/all.tmerge.min1reads.minQual0.exonOverhangBy.vs.SIRVs_lib{libProt}.stats.png"
+	output: "plots_protected/all.tmerge.min1reads.minQual0.exonOverhangBy.vs.SIRVs_lib{libProt}.stats.png"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -428,7 +428,7 @@ ggsave('{output}', width=7, height=5)
 
 rule plotGffCompareSirvStats:
 	input:"test/Rinput/all.tmerge.vs.SIRVs_lib{libProt}.stats.tsv"
-	output: "plots/non_snakemake/all.tmerge.optimalParams.vs.SIRVs_lib{libProt}.stats.png"
+	output: "plots_protected/all.tmerge.optimalParams.vs.SIRVs_lib{libProt}.stats.png"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -454,7 +454,7 @@ xlab('Evaluation level') +
 scale_y_continuous() +
 expand_limits(y=c(0,100))+
 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-facet_grid(capDesign + tissue ~  seqTech + sizeFrac )+
+facet_grid(capDesign + tissue ~  seqTech )+
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=5.5, height=3)
 " > {output}.r

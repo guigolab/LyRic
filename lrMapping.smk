@@ -82,7 +82,7 @@ ggplot(data=dat, aes(x=tissue, y=percentMappedReads, fill=sizeFrac)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
 geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
-facet_grid(seqTech + sizeFrac ~ capDesign + tissue, scales='free') +
+facet_grid(seqTech  ~ capDesign + tissue, scales='free') +
 geom_text(aes(group=sizeFrac, y=0.01, label = paste(sep='',percent(percentMappedReads),'\\n','(',comma(mappedReads),')')), angle=90, size=geom_textSize, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
 scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
 xlab ('Sample') +
@@ -131,7 +131,7 @@ ggplot(data=dat, aes(x=factor(correctionLevel), y=percent, fill=category)) +
 geom_bar(stat='identity', position=position_dodge()) +
 geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 0, label = paste(sep='',percent(percent),'\\n','(',comma(count),')')), hjust = 0, vjust = 0.5, angle=90) +
 scale_fill_manual(values=c('ERCCs' = '#e4b5ff', 'SIRVs' = '#5edba9')) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ ylab('% reads mapped on\\nspike-in sequences') +
+facet_grid( seqTech  ~ capDesign + tissue)+ ylab('% reads mapped on\\nspike-in sequences') +
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Spike-in set'))+
 scale_y_continuous(labels=percent)+
@@ -143,19 +143,19 @@ cat {output}.r | R --slave
 
 		'''
 
-rule mergeSizeFracBams:
-	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
-	wildcard_constraints:
-		barcodes='(?!allTissues).+',
-		techname='(?!allSeqTechs).+'
-	shell:
-		'''
+# rule mergeSizeFracBams:
+# 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
+# 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
+# 	wildcard_constraints:
+# 		barcodes='(?!allTissues).+',
+# 		techname='(?!allSeqTechs).+'
+# 	shell:
+# 		'''
 
-samtools merge {output} {input}
-sleep 120s
-samtools index {output}
-		'''
+# samtools merge {output} {input}
+# sleep 120s
+# samtools index {output}
+# 		'''
 
 rule mergeBarcodeBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
@@ -172,26 +172,26 @@ samtools index {output}
 		'''
 
 
-rule mergeSizeFracAndBarcodeBams:
-	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
-	wildcard_constraints:
-		techname='(?!allSeqTechs).+',
-		capDesign='|'.join(CAPDESIGNS)
-	shell:
-		'''
-samtools merge {output} {input}
-sleep 120s
-samtools index {output}
+# rule mergeSizeFracAndBarcodeBams:
+# 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+# 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
+# 	wildcard_constraints:
+# 		techname='(?!allSeqTechs).+',
+# 		capDesign='|'.join(CAPDESIGNS)
+# 	shell:
+# 		'''
+# samtools merge {output} {input}
+# sleep 120s
+# samtools index {output}
 
-		'''
+# 		'''
 
 rule mergeAllSeqTechsFracsAndTissuesBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes)
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
 #		techname='allSeqTechs',
-		sizeFrac='allFracs',
+#		sizeFrac='allFracs',
 		barcodes='allTissues',
 		capDesign='|'.join(CAPDESIGNS)
 	shell:
@@ -208,7 +208,7 @@ rule mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams:
 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	wildcard_constraints:
 #		techname='allSeqTechs',
-		sizeFrac='allFracs',
+#		sizeFrac='allFracs',
 		barcodes='allTissues',
 		capDesign='|'.join(MERGEDCAPDESIGNS)
 	shell:

@@ -44,7 +44,7 @@ zcat {input} | awk '$3=="exon"' | makeIntrons.pl -| awk '{{print $1"\t"$4-1"\t"$
 		'''
 
 rule getTmSpliceSites:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff"
 	output: "mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.introns.{spliceType}.tsv.gz"
 	shell:
 		'''
@@ -98,7 +98,7 @@ cat {input} | sort -T {config[TMPDIR]} |uniq| cut -f 3,4 >> {output}
 
 
 rule aggGeneidScores:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES, minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES, minReadSupport=wildcards.minReadSupport)
 	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv"
 	threads: 8
 	shell:
@@ -144,7 +144,7 @@ ggplot(dat, aes(x=ssCategory, y=ssScore, color=ssCategory)) +
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(-9, 4.5)) +
 scale_color_manual(values=palette, name='Category', labels = c(random = 'Random', GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_reads='CLS raw reads')) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+
+facet_grid( seqTech ~ capDesign + tissue)+
 geom_boxplot(data=dat2, position=position_dodge(0.9), outlier.shape=NA) +
 
 stat_summary(aes(x=ssCategory, group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black', size=geom_textSize) +
@@ -171,7 +171,7 @@ cat {input} | awk '$3=="exon"' |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | 
 		'''
 
 rule getClsSpliceJunctions:
-	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
+	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff"
 	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
 	shell:
 		'''
@@ -195,7 +195,7 @@ echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{
 		'''
 
 rule aggCompareClsGencodeSJsStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] +"{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand(config["STATSDATADIR"] +"{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
 	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
 	shell:
 		'''
@@ -233,7 +233,7 @@ scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E')
 ylab('# Splice Junctions')+
 xlab('{params.filterDat[6]}') +
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue)+ xlab('Error correction') +
+facet_grid( seqTech ~ capDesign + tissue)+ xlab('Error correction') +
 {params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)

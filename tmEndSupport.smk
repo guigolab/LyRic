@@ -1,5 +1,5 @@
 rule extractPooledTmsFivepEnds:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.bed"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
 	output: temp("mappings/nonAnchoredMergeReads/5pEnds/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed")
 	shell:
 		'''
@@ -9,7 +9,7 @@ cat {input} |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,
 rule cageSupportedfivepEnds:
 	input:
 		fivePends="mappings/nonAnchoredMergeReads/5pEnds/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed",
-		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.bed",
+		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
 		cagePeaks=lambda wildcards: CAPDESIGNTOCAGEPEAKS[wildcards.capDesign],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output: temp("mappings/nonAnchoredMergeReads/cageSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed")
@@ -20,7 +20,7 @@ cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtool
 
 
 rule extractPooledTmsThreepEnds:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.bed"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
 	output: temp("mappings/nonAnchoredMergeReads/3pEnds/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.3pEnds.bed")
 	shell:
 		'''
@@ -30,7 +30,7 @@ cat {input} |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,
 rule polyASupportedthreepEnds:
 	input:
 		threePends="mappings/nonAnchoredMergeReads/3pEnds/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.3pEnds.bed",
-		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.bed",
+		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
 		polyAsites="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output: temp("mappings/nonAnchoredMergeReads/polyASupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed")
@@ -45,20 +45,19 @@ rule getCagePolyASupport:
 	input:
 		polyA="mappings/nonAnchoredMergeReads/polyASupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed",
 		cage="mappings/nonAnchoredMergeReads/cageSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed",
-		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.all.gff"
+		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff"
 	output:
 		stats=temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"),
-		FLbed="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.cage+polyASupported.bed",
-		FLgff="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.cage+polyASupported.gff"
-	params:
-		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
+		FLbed="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.bed",
+		FLgff="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.gff"
+
 
 
 	shell:
 		'''
 
 uuid=$(uuidgen)
-cat {input.tms} {params.grepSpliced} |extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.all.list
+cat {input.tms} |extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.all.list
 
 cat {input.polyA} | fgrep -w -f {config[TMPDIR]}/$uuid.all.list | cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.polyA.list
 cat {input.cage} | fgrep -w -f {config[TMPDIR]}/$uuid.all.list | cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.cage.list
@@ -69,14 +68,14 @@ cageOnly=$(comm -2 -3 {config[TMPDIR]}/$uuid.cage.list {config[TMPDIR]}/$uuid.po
 polyAOnly=$(comm -2 -3 {config[TMPDIR]}/$uuid.polyA.list {config[TMPDIR]}/$uuid.cage.list |wc -l)
 cageAndPolyA=$(cat {config[TMPDIR]}/$uuid.cage+PolyA.list | wc -l)
 let total=$noCageNoPolyA+$cageOnly+$polyAOnly+$cageAndPolyA
-fgrep -w -f {config[TMPDIR]}/$uuid.cage+PolyA.list {input.tms} {params.grepSpliced} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {output.FLgff}
+fgrep -w -f {config[TMPDIR]}/$uuid.cage+PolyA.list {input.tms} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {output.FLgff}
 cat {output.FLgff} |gff2bed_full.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {output.FLbed}
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA"  > {output.stats}
 		'''
 
 
 rule aggCagePolyAStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACSpluSMERGED, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
 	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
 	shell:
 		'''
@@ -113,7 +112,7 @@ scale_y_continuous(labels=comma)+
 #scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+
 scale_fill_manual (values=c(cageOnly='#98cd98', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'))+
 
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
+facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
@@ -128,8 +127,8 @@ cat {output}.r | R --slave
 
 
 rule plotMetaTmEndsStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}.{endSupport}.TmStats.stats.tsv"
-	output: config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.TmEndsStats.meta.stats.{ext}",
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+	output: config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.meta.stats.{ext}",
 
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
@@ -153,7 +152,7 @@ dat <- fread('{input}', header=T, sep='\\t')
 ggplot(dat, aes(x=normDistance, color=end)) +
 stat_density(geom='line', adjust=3) +
 scale_color_manual(values=c('5p' = '#009900', '3p' = '#800000')) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
+facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
 xlab('Normalized distance of read ends to TM\\'s TSS') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=plotWidth, height=plotHeight)
@@ -165,10 +164,10 @@ cat {output}.r | R --slave
 
 
 rule plotAbsTmEndsStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}.{endSupport}.TmStats.stats.tsv"
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
 	output:
-		five=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.TmEndsStats.5p.abs.stats.{ext}",
-		three=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.{endSupport}.TmEndsStats.3p.abs.stats.{ext}",
+		five=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.5p.abs.stats.{ext}",
+		three=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.3p.abs.stats.{ext}",
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
 	shell:
@@ -203,7 +202,7 @@ summaryStatsThree = transform(summarise(group_by(datThree,seqTech, sizeFrac, cap
 ggplot(datFive, aes(x=distance)) +
 geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
 scale_fill_manual(values=c('5p' = '#009900'), name='End', labels =c('5p' = '5\\'')) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
+facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
 xlab('Distance of read ends\\nto TM\\'s TSS (mature RNA nts)') +
 geom_text(data = summaryStatsFive, aes(label = Label, x = 1000, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
 coord_cartesian(xlim=c(0, 2000)) +
@@ -213,7 +212,7 @@ ggsave('{output.five}', width=plotWidth, height=plotHeight)
 ggplot(datThree, aes(x=distance)) +
 geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
 scale_fill_manual(values=c('3p' = '#800000'), name='End', labels =c('3p' = '3\\'')) +
-facet_grid( seqTech + sizeFrac ~ capDesign + tissue, scales='free_y')+
+facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
 xlab('Distance of read ends\\n to TM\\'s 3\\' end (mature RNA nts)') +
 geom_text(data = summaryStatsThree, aes(label = Label, x = -1500, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
 coord_cartesian(xlim=c(-2000, 0)) +
