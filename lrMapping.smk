@@ -59,14 +59,18 @@ cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config
 
 rule plotMappingStats:
 	input: config["STATSDATADIR"] + "all.basic.mapping.stats.tsv"
-	output: config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats.{ext}"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
-echo "library(ggplot2)
+echo "
+library(cowplot)
 library(plyr)
 library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -77,23 +81,36 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-#colnames(dat)<-c('capDesign', 'sizeFraction','barcode','totalReads', 'mappedReads', 'percentMappedReads')
-ggplot(data=dat, aes(x=tissue, y=percentMappedReads, fill=sizeFrac)) +
+plotBase <- \\"ggplot(data=dat, aes(x=tissue, y=percentMappedReads, fill=sizeFrac)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
 geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
-facet_grid(seqTech  ~ capDesign + tissue, scales='free') +
 geom_text(aes(group=sizeFrac, y=0.01, label = paste(sep='',percent(percentMappedReads),'\\n','(',comma(mappedReads),')')), angle=90, size=geom_textSize, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
 scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
 xlab ('Sample') +
+{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
-#theme_bw(base_size=17) +
-{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-#ggsave('{output}', width=13, height=9)
-ggsave('{output}', width=plotWidth, height=plotHeight)
+{params.filterDat[12]}
 
-" > {output}.r
-cat {output}.r | R --slave
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
 
@@ -109,14 +126,19 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"
 
 rule plotSpikeInsMappingStats:
 	input: config["STATSDATADIR"] + "all.spikeIns.mapping.stats.tsv"
-	output: config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats.{ext}"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
-echo "library(ggplot2)
+echo "
+library(cowplot)
 library(plyr)
 library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -127,19 +149,40 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-ggplot(data=dat, aes(x=factor(correctionLevel), y=percent, fill=category)) +
+maxY <- max(dat\$percent)
+plotBase <- \\"ggplot(data=dat, aes(x=factor(correctionLevel), y=percent, fill=category)) +
 geom_bar(stat='identity', position=position_dodge()) +
 geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 0, label = paste(sep='',percent(percent),'\\n','(',comma(count),')')), hjust = 0, vjust = 0.5, angle=90) +
 scale_fill_manual(values=c('ERCCs' = '#e4b5ff', 'SIRVs' = '#5edba9')) +
-facet_grid( seqTech  ~ capDesign + tissue)+ ylab('% reads mapped on\\nspike-in sequences') +
+ylab('% reads mapped on\\nspike-in sequences') +
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Spike-in set'))+
 scale_y_continuous(labels=percent)+
+expand_limits(y=c(0,maxY))+
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=plotWidth, height=plotHeight)
-" > {output}.r
-cat {output}.r | R --slave
+{GGPLOT_PUB_QUALITY} + \\"
+
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
 

@@ -86,14 +86,19 @@ cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tcageOnly\\t"$6"\\t"$6/$5"\
 
 rule plotCagePolyAStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
-	output: config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.{ext}"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
-echo "library(ggplot2)
+echo "
+library(cowplot)
 library(plyr)
 library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -105,22 +110,37 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cageAndPolyA', 'polyAOnly', 'noCageNoPolyA')))
-ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 ylab('# CLS TMs') +
 scale_y_continuous(labels=comma)+
-#scale_fill_manual (values=c(cageOnly='#66B366', cageAndPolyA='#82865f', polyAOnly = '#D49090', noCageNoPolyA='#a6a6a6'))+
-scale_fill_manual (values=c(cageOnly='#98cd98', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'))+
-
-facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
+scale_fill_manual (values=c(cageOnly='#e5b3e5', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'))+
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+
-geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+#geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=plotWidth, height=plotHeight)
-" > {output}.r
-cat {output}.r | R --slave
+{GGPLOT_PUB_QUALITY} + \\"
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
 
@@ -128,16 +148,20 @@ cat {output}.r | R --slave
 
 rule plotMetaTmEndsStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
-	output: config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.meta.stats.{ext}",
+	output: returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.meta.stats"),
 
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
 	shell:
 		'''
-echo "library(ggplot2)
-library(data.table)
+echo "
+library(cowplot)
 library(plyr)
 library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(data.table)
 dat <- fread('{input}', header=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -149,15 +173,33 @@ dat <- fread('{input}', header=T, sep='\\t')
 {params.filterDat[8]}
 {params.filterDat[11]}
 
-ggplot(dat, aes(x=normDistance, color=end)) +
+plotBase <- \\"ggplot(dat, aes(x=normDistance, color=end)) +
 stat_density(geom='line', adjust=3) +
 scale_color_manual(values=c('5p' = '#009900', '3p' = '#800000')) +
-facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
 xlab('Normalized distance of read ends to TM\\'s TSS') +
-{GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=plotWidth, height=plotHeight)
-" > {output}.r
-cat {output}.r | R --slave
+{GGPLOT_PUB_QUALITY}+ \\"
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
 
 
 		'''
@@ -166,20 +208,22 @@ cat {output}.r | R --slave
 rule plotAbsTmEndsStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
 	output:
-		five=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.5p.abs.stats.{ext}",
-		three=config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.3p.abs.stats.{ext}",
+		five=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.5p.abs.stats"),
+		three=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.3p.abs.stats"),
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
 	shell:
 		'''
-#R --version
-#module list
-#ldd /nfs/users2/rg/jlagarde/R_libs/scales/libs/scales.so
 
-echo "library(ggplot2)
+echo "
+library(cowplot)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
 library(data.table)
 library(dplyr)
-library(scales)
+
 dat <- fread('{input}', header=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -199,28 +243,62 @@ summaryStatsThree = transform(summarise(group_by(datThree,seqTech, sizeFrac, cap
 
 
 
-ggplot(datFive, aes(x=distance)) +
+plotBase <- \\"ggplot(datFive, aes(x=distance)) +
 geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
-scale_fill_manual(values=c('5p' = '#009900'), name='End', labels =c('5p' = '5\\'')) +
-facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
-xlab('Distance of read ends\\nto TM\\'s TSS (mature RNA nts)') +
-geom_text(data = summaryStatsFive, aes(label = Label, x = 1000, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
+scale_fill_manual(values=c('5p' = '#009900'), name='End', labels =c('5p' = '5´')) +
+xlab('Distance of read ends\\nto TM´s TSS (mature RNA nts)') +
+geom_text(data = summaryStatsFive, aes(label = Label, x = 0, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
 coord_cartesian(xlim=c(0, 2000)) +
-{GGPLOT_PUB_QUALITY}
-ggsave('{output.five}', width=plotWidth, height=plotHeight)
+{GGPLOT_PUB_QUALITY}+ \\"
 
-ggplot(datThree, aes(x=distance)) +
+{params.filterDat[12]}
+
+save_plot('{output.five[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.five[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output.five[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.five[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output.five[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.five[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output.five[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.five[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output.five[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.five[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+
+
+
+plotBase <- \\"ggplot(datThree, aes(x=distance)) +
 geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
-scale_fill_manual(values=c('3p' = '#800000'), name='End', labels =c('3p' = '3\\'')) +
-facet_grid( seqTech  ~ capDesign + tissue, scales='free_y')+
-xlab('Distance of read ends\\n to TM\\'s 3\\' end (mature RNA nts)') +
-geom_text(data = summaryStatsThree, aes(label = Label, x = -1500, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
+scale_fill_manual(values=c('3p' = '#800000'), name='End', labels =c('3p' = '3´')) +
+xlab('Distance of read ends\\n to TM´s 3´ end (mature RNA nts)') +
+geom_text(data = summaryStatsThree, aes(label = Label, x = -Inf, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
 coord_cartesian(xlim=c(-2000, 0)) +
-{GGPLOT_PUB_QUALITY}
-ggsave('{output.three}', width=plotWidth, height=plotHeight)
+{GGPLOT_PUB_QUALITY}+ \\"
 
+{params.filterDat[12]}
 
-" > {output.five}.r
-cat {output.five}.r | R --slave
+save_plot('{output.three[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.three[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output.three[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.three[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output.three[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.three[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output.three[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.three[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output.three[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.three[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+" > $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r
+cat $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r | R --slave
+
 
 		'''

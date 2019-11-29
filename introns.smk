@@ -114,16 +114,20 @@ rule plotGeneidScores:
 	input:
 		cls=config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv",
 		control=config["STATSDATADIR"] + "all.control.spliceSites.stats.tsv"
-	output: config["PLOTSDIR"] + "spliceSites.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.spliceSites.stats.{ext}"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "spliceSites.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.spliceSites.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "
 library(data.table)
-library(ggplot2)
-library(scales)
+library(cowplot)
 library(plyr)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+
 palette <- c('random' = '#999999', 'GENCODE_protein_coding' = '#009900', 'CLS_reads' = '#b3d9ff', 'CLS_TMs' = '#cc9966')
 dat<-fread('{input.cls}', header=T, sep='\\t')
 dat2<-fread('{input.control}', header=T, sep='\\t')
@@ -140,24 +144,42 @@ fun_length <- function(x){{
 return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
 }}
 
-ggplot(dat, aes(x=ssCategory, y=ssScore, color=ssCategory)) +
+plotBase <- \\"ggplot(dat, aes(x=ssCategory, y=ssScore, color=ssCategory)) +
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(-9, 4.5)) +
 scale_color_manual(values=palette, name='Category', labels = c(random = 'Random', GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_reads='CLS raw reads')) +
-facet_grid( seqTech ~ capDesign + tissue)+
 geom_boxplot(data=dat2, position=position_dodge(0.9), outlier.shape=NA) +
-
 stat_summary(aes(x=ssCategory, group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black', size=geom_textSize) +
 stat_summary(data=dat2, aes(x=ssCategory, group=ssCategory), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, angle=90, show.legend=FALSE, color='black', size=geom_textSize) +
 geom_hline(aes(yintercept=0), linetype='dashed', alpha=0.7)+
 ylab('Splice site score') +
 xlab('{params.filterDat[6]}') +
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=plotWidth, height=plotHeight)
+{GGPLOT_PUB_QUALITY} + \\"
 
-" > {output}.r
-cat {output}.r | R --slave
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+
+
 
 		'''
 
@@ -207,14 +229,20 @@ cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n
 
 rule plotCompareClsGencodeSJsStats:
 	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
-	output: config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.{ext}"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
-echo "library(ggplot2)
+echo "
+library(cowplot)
 library(plyr)
 library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(data.table)
+
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -227,18 +255,37 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('common', 'novel')))
 
-ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='In CLS+GENCODE', novel='Only in CLS')) +
 ylab('# Splice Junctions')+
 xlab('{params.filterDat[6]}') +
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
-facet_grid( seqTech ~ capDesign + tissue)+ xlab('Error correction') +
+xlab('Error correction') +
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY}
-ggsave('{output}', width=plotWidth, height=plotHeight)
-" > {output}.r
-cat {output}.r | R --slave
+{GGPLOT_PUB_QUALITY} + \\"
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
 
 
 		'''

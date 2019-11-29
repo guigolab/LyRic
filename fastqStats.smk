@@ -39,14 +39,18 @@ cat {input} |sort -T {config[TMPDIR]}  >> {output}
 # plot histograms with R:
 rule plotReadLength:
 	input: config["STATSDATADIR"] + "all.readlength.tsv"
-	output: config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readLength.stats.{ext}"  if config["DEMULTIPLEX"] else config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats.{ext}"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readLength.stats")  if config["DEMULTIPLEX"] else returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, 'allTissues', wildcards.corrLevel, wildcards.techname) if config["DEMULTIPLEX"] else merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
-echo "library(ggplot2)
-library(dplyr)
+echo "
+library(cowplot)
 library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(dplyr)
 library(data.table)
 dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat[10]}
@@ -61,19 +65,35 @@ dat<-fread('{input}', header=T, sep='\\t')
 dat\$sizeFrac_f=factor(dat\$sizeFrac, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
 summaryStats = transform(summarise(group_by(dat, seqTech, sizeFrac_f, capDesign, tissue), Label = paste0('N= ', comma(length(length)), '\\n', 'Median= ', comma(median(length)))))
 
-ggplot(dat, aes(x=length)) +
+plotBase <- \\"ggplot(dat, aes(x=length)) +
 geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=200) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-facet_grid( seqTech + sizeFrac_f ~ capDesign + tissue, scales='free_y') +
-geom_text(data = summaryStats, aes(label = Label, x = 10, y = Inf), hjust=0, vjust=3.8,  size=geom_textSize) +
-
+geom_text(data = summaryStats, aes(label = Label, x = 10, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
 coord_cartesian(xlim=c(0, 3500)) +
 scale_y_continuous(labels=scientific)+
 scale_x_continuous(labels=comma)+
-#theme_bw(base_size=17) +
-{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave('{output}', width=plotWidth, height=plotHeight)
-" > {output}.r
-cat {output}.r | R --slave
+{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
 
 	 	'''
