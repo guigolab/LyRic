@@ -17,16 +17,20 @@ rule readMapping:
 	shell:
 		'''
 uuid=$(uuidgen)
+uuidTmpOut=$(uuidgen)
 echoerr "Mapping"
 minimap2 -x {params.minimap_preset} -t {threads} --secondary=no -L -a {input.genome} {input.reads} > {config[TMPDIR]}/$uuid
 echoerr "Mapping done"
 echoerr "Creating/sorting BAM"
 samtools view -H {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuid.2
 samtools view -F 256 -F4 -F 2048 {config[TMPDIR]}/$uuid >> {config[TMPDIR]}/$uuid.2
-cat {config[TMPDIR]}/$uuid.2 | samtools sort -T {config[TMPDIR]}  --threads {threads}  -m 5G - > {output}
+cat {config[TMPDIR]}/$uuid.2 | samtools sort -T {config[TMPDIR]}  --threads {threads}  -m 5G - > {config[TMPDIR]}/$uuidTmpOut
 echoerr "Done creating/sorting BAM"
 sleep 70s
-samtools index {output}
+samtools index {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
+
 		'''
 
 rule getMappingStats:
@@ -38,12 +42,16 @@ rule getMappingStats:
 		spikeIns=temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv")
 	shell:
 		'''
+uuidTmpOutB=$(uuidgen)
+uuidTmpOutS=$(uuidgen)
 totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
 mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
 erccMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep ERCC- | wc -l)
 sirvMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep SIRVome_isoforms | wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$6/$5}}' > {output.basic}
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$erccMappedReads\t$sirvMappedReads" | awk '{{print $0"\t"$6/$5"\t"$7/$5}}' > {output.spikeIns}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOutB
+mv {config[TMPDIR]}/$uuidTmpOutB {output.basic}
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$erccMappedReads\t$sirvMappedReads" | awk '{{print $0"\t"$6/$5"\t"$7/$5}}' > {config[TMPDIR]}/$uuidTmpOutS
+mv {config[TMPDIR]}/$uuidTmpOutS {output.spikeIns}
 
 		'''
 
@@ -52,8 +60,10 @@ rule aggMappingStats:
 	output: config["STATSDATADIR"] + "all.basic.mapping.stats.tsv"
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalReads\tmappedReads\tpercentMappedReads" > {output}
-cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
+uuidTmpOut=$(uuidgen)
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalReads\tmappedReads\tpercentMappedReads" > {config[TMPDIR]}/$uuidTmpOut
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
@@ -119,8 +129,10 @@ rule aggSpikeInsMappingStats:
 	output: config["STATSDATADIR"] + "all.spikeIns.mapping.stats.tsv"
 	shell:
 		'''
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {output}
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tERCCs\\t"$6"\\t"$8}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {output}
+uuidTmpOut=$(uuidgen)
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tERCCs\\t"$6"\\t"$8}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
@@ -186,19 +198,6 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
 
-# rule mergeSizeFracBams:
-# 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=wildcards.barcodes)
-# 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_{barcodes}.bam"
-# 	wildcard_constraints:
-# 		barcodes='(?!allTissues).+',
-# 		techname='(?!allSeqTechs).+'
-# 	shell:
-# 		'''
-
-# samtools merge {output} {input}
-# sleep 120s
-# samtools index {output}
-# 		'''
 
 rule mergeBarcodeBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
@@ -208,26 +207,15 @@ rule mergeBarcodeBams:
 		techname='(?!allSeqTechs).+' #to avoid ambiguity with downstream merging rules
 	shell:
 		'''
-
-samtools merge {output} {input}
+uuidTmpOut=$(uuidgen)
+samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 120s
-samtools index {output}
+samtools index {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
+
 		'''
 
-
-# rule mergeSizeFracAndBarcodeBams:
-# 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-# 	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_allFracs_allTissues.bam"
-# 	wildcard_constraints:
-# 		techname='(?!allSeqTechs).+',
-# 		capDesign='|'.join(CAPDESIGNS)
-# 	shell:
-# 		'''
-# samtools merge {output} {input}
-# sleep 120s
-# samtools index {output}
-
-# 		'''
 
 rule mergeAllSeqTechsFracsAndTissuesBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes)
@@ -239,9 +227,12 @@ rule mergeAllSeqTechsFracsAndTissuesBams:
 		capDesign='|'.join(CAPDESIGNS)
 	shell:
 		'''
-samtools merge {output} {input}
+uuidTmpOut=$(uuidgen)
+samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 120s
-samtools index {output}
+samtools index {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
 
 		'''
 
@@ -256,9 +247,12 @@ rule mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams:
 		capDesign='|'.join(MERGEDCAPDESIGNS)
 	shell:
 		'''
-samtools merge {output} {input}
+uuidTmpOut=$(uuidgen)
+samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 120s
-samtools index {output}
+samtools index {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
 
 		'''
 
@@ -268,9 +262,12 @@ rule checkOnlyOneHit:
 	output: "mappings/readMapping/qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
 	shell:
 		'''
-samtools view {input} | cut -f1 | sort -T {config[TMPDIR]} | uniq -dc > {output}
-count=$(cat {output} | wc -l)
+uuidTmpOut=$(uuidgen)
+samtools view {input} | cut -f1 | sort -T {config[TMPDIR]} | uniq -dc > {config[TMPDIR]}/$uuidTmpOut
+count=$(cat {config[TMPDIR]}/$uuidTmpOut | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {input} {input}.dup.bkp; exit 1; fi
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+
 		'''
 
 
@@ -281,7 +278,9 @@ rule readBamToBed:
 	#output: "mappings/readBamToBed/{basename}.bed"
 	shell:
 		'''
-bedtools bamtobed -i {input} -bed12 | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {output}
+uuidTmpOut=$(uuidgen)
+bedtools bamtobed -i {input} -bed12 | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
@@ -290,7 +289,9 @@ rule readBedToGff:
 	output: "mappings/readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
 	shell:
 		'''
-zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip > {output}
+uuidTmpOut=$(uuidgen)
+zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip > {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 

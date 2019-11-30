@@ -11,6 +11,7 @@ rule hiSeqReadMapping:
 		barcodes='[^(allTissues)][\S]+',
 	shell:
 		'''
+uuidTmpOut=$(uuidgen)
 echoerr "Mapping"
 mkdir -p mappings/STAR/`basename {output}`/
 STAR \
@@ -36,10 +37,12 @@ STAR \
 --outFilterIntronMotifs RemoveNoncanonical \
 --outSAMstrandField intronMotif \
 --outSAMattributes NH HI NM MD AS nM XS \
-| samtools view -b -u -S - | samtools sort -T {config[TMPDIR]}  -@ 2   -m 15000000000 - > {output}
+| samtools view -b -u -S - | samtools sort -T {config[TMPDIR]}  -@ 2   -m 15000000000 - > {config[TMPDIR]}/$uuidTmpOut
 sleep 120s
-samtools index {output}
+samtools index {config[TMPDIR]}/$uuidTmpOut
 echoerr "Mapping done"
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
 
 		'''
 
@@ -52,9 +55,11 @@ rule getHiSeqMappingStats:
 	output: temp(config["STATSDATADIR"] + "{capDesign}_tmp.hiSeq.mapping.stats.tsv")
 	shell:
 		'''
+uuidTmpOut=$(uuidgen)
 totalReads=$(zcat {input.reads1} {input.reads2}  | fastq2tsv.pl | wc -l)
 mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
-echo -e "{wildcards.capDesign}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$3/$2}}' > {output}
+echo -e "{wildcards.capDesign}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$3/$2}}' > {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggHiSeqMappingStats:
@@ -62,7 +67,9 @@ rule aggHiSeqMappingStats:
 	output: config["STATSDATADIR"] + "all.hiSeq.mapping.stats.tsv"
 	shell:
 		'''
-cat {input} | sort -T {config[TMPDIR]}  > {output}
+uuidTmpOut=$(uuidgen)
+cat {input} | sort -T {config[TMPDIR]}  > {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 
@@ -102,6 +109,8 @@ rule getHiSeqCanonicalIntronsList:
 	shell:
 		'''
 uuid=$(uuidgen)
+uuidTmpOutL=$(uuidgen)
+uuidTmpOutS=$(uuidgen)
 echoerr "making bed"
 samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
 echoerr "splitting"
@@ -114,8 +123,10 @@ echoerr "extracting introns on split files"
 
 parallel -j {threads} < {config[TMPDIR]}/$uuid.parallelIntrons.sh
 echoerr "getting SJs and merging into output..."
-cat {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split*.introns.gff | perl -lane '$start=$F[3]-1; $end=$F[4]+1; print $F[0]."_".$start."_".$end."_".$F[6]' | sort  -T {config[TMPDIR]} |uniq> {output.list}
-echo -e "{wildcards.capDesign}\t$(cat {output.list} | wc -l )" > {output.stats}
+cat {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split*.introns.gff | perl -lane '$start=$F[3]-1; $end=$F[4]+1; print $F[0]."_".$start."_".$end."_".$F[6]' | sort  -T {config[TMPDIR]} |uniq> {config[TMPDIR]}/$uuidTmpOutL
+echo -e "{wildcards.capDesign}\t$(cat {config[TMPDIR]}/$uuidTmpOutL | wc -l )" > {config[TMPDIR]}/$uuidTmpOutS
+mv {config[TMPDIR]}/$uuidTmpOutS {output.stats}
+mv {config[TMPDIR]}/$uuidTmpOutL {output.list}
 
 		'''
 
@@ -124,7 +135,9 @@ rule aggHiSeqSjStats:
 	output: config["STATSDATADIR"] + "all.hiSeq.SJs.stats.tsv"
 	shell:
 		'''
-cat {input} | sort -T {config[TMPDIR]}  > {output}
+uuidTmpOut=$(uuidgen)
+cat {input} | sort -T {config[TMPDIR]}  > {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotHiSeqSjStats:
