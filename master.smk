@@ -469,11 +469,10 @@ dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 	graphDimensions="""
 horizCats <- length(unique(dat\$correctionLevel)) * length(unique(dat\$capDesign)) * length(unique(dat\$tissue))
 vertCats <- length(unique(dat\$seqTech))
-#plotWidth = horizCats + 3.5
-#plotHeight = vertCats + 3.5
+
 plotWidth = (horizCats * 2.5) 
 plotHeight = (vertCats * 2.5)
-geom_textSize=3.8
+geom_textSize=3.5 # * (max(vertCats, horizCats))
 """
 	facetPlotSetup= f"""
 plotFacetXy <- parse(text =paste(plotBase, \\"facet_grid( seqTech ~ capDesign + tissue, scales='free_y')\\"))

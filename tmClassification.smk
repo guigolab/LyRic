@@ -107,15 +107,22 @@ rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
 		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff"
-	output: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.simple.tsv"
+	output: 
+		standard="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.simple.tsv",
+		adjustedSn="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
+
 	shell:
 		'''
-pref=$(basename {output} .simple.tsv)
+pref=$(basename {output.standard} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
 tmFullPath=$(fullpath {input.tm})
-cd $(dirname {output})
+cd $(dirname {output.standard})
 gffcompare -o $pref -r $annotFullPath $tmFullPath
-cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
+cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output.standard})
+
+pref=$(basename {output.adjustedSn} .simple.tsv)
+gffcompare -o $pref -r $annotFullPath -R $tmFullPath
+cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output.adjustedSn})
 
 		'''
 
@@ -340,7 +347,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getGffCompareGencodeSnPrStats:
-	input:"mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.simple.tsv"
+	input:"mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv")
 	shell:
 		'''
