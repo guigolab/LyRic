@@ -101,7 +101,7 @@ rule aggHighConfSplicedReadsStats:
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalSplicedReads\tcanonSjReads\tnoFishySjReads\tnoFishyCanonSjReads" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut 
+mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 

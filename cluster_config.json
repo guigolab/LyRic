@@ -11,7 +11,7 @@
         "project": "prj006070",
         "threads" : "",
         "node": "*",
-        "disk" :""
+        "disk" :"2G"
     },
     "makeReadsBlastDB":
     {
@@ -274,6 +274,10 @@
     "getPreviousPhaseTmsWithGencodeSupportedEnds":
     {
         "virtual_free" : "30G"
+    },
+    "tmergeAll":
+    {
+      "disk": "50G"
     },
 
 }

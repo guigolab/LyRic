@@ -676,18 +676,25 @@ rule tmergeAll:
 	input:
 		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, endSupport=wildcards.endSupport,  minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
 		#gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-	output: "mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.gff"
+	output: 
+		tm="mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.gff",
+		quant="mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.expQuant.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
-uuidTmpOut=$(uuidgen)
+uuidTmpOutT=$(uuidgen)
+uuidTmpOutQ=$(uuidgen)
 for file in `echo {input.tm}`; do
 bn=$(basename $file .tmerge.min{wildcards.minReadSupport}reads.{wildcards.endSupport}.gff)
 cat $file | perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
 done > {config[TMPDIR]}/$uuid
-
-cat {config[TMPDIR]}/$uuid  | skipcomments | sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "transcript_id\tspliced\tflrpm\trpm" > {config[TMPDIR]}/$uuidTmpOutQ
+cat {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl transcript_id spliced flrpm rpm | sort|uniq >> {config[TMPDIR]}/$uuidTmpOutQ
+countDups=$(cat {config[TMPDIR]}/$uuidTmpOutQ |cut -f1 |sort|uniq -d |wc -l)
+if [ $countDups -gt 0 ]; then echoerr "$countDups duplicates found"; exit 1; fi;
+cat {config[TMPDIR]}/$uuid  | skipcomments | sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOutT
+mv {config[TMPDIR]}/$uuidTmpOutT {output.tm}
+mv {config[TMPDIR]}/$uuidTmpOutQ {output.quant}
 
 		'''
 
