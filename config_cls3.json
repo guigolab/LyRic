@@ -12,6 +12,7 @@
            "Hv3": "hg38",
            "MpreCap": "mm10"
          },
+         "SAMPLE_ANNOT": "annotations/samples/sample_annotations.csv",
          "TMPDIR": "$TMPDIR",
          "minPhredQualAroundSJ": "10",
          "exonOverhangTolerance": "8",

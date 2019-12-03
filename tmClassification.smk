@@ -691,8 +691,9 @@ rule tmergeAll:
 uuid=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 uuidTmpOutQ=$(uuidgen)
-for file in `echo {input.tm}`; do
-bn=$(basename $file .tmerge.min{wildcards.minReadSupport}reads.{wildcards.endSupport}.gff)
+for file in `ls {input.tm} | grep -v AlzhBrain`; do
+bn=$(basename $file .tmerge.min{wildcards.minReadSupport}reads.splicing_status:{wildcards.splicedStatus}.endSupport:{wildcards.endSupport}.gff | sed 's/Corr0_/_/g')
+
 cat $file | perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
 done > {config[TMPDIR]}/$uuid
 echo -e "transcript_id\tspliced\tflrpm\trpm" > {config[TMPDIR]}/$uuidTmpOutQ
@@ -725,108 +726,47 @@ cat {input} | tmergeToBinaryMatrix.pl - $(dirname {output.simpsonMatrix})/$(base
 
 rule plotSampleComparisonStats:
 	input: 
-		simpson=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.oneMinusSimpson_coeff.tsv",
-		jaccard=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.oneMinusJaccard_coeff.tsv",
+		simpson=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.overlap_coeff.tsv",
+		jaccard=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.jaccard_ind.tsv",
 
 	output: 
-		simpson=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.dendrogram.sampleComparison.simpson.png",
-		jaccard=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.dendrogram.sampleComparison.jaccard.png"
+		simpson=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.simpson.png",
+		jaccard=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.jaccard.png"
 	shell:
 		'''
 echo "
-
 library(cluster)
-library(dendextend)
+library(pheatmap)
+library(tidyverse)
+library(RColorBrewer)
+library(viridis)
+
 dat <- read.table('{input.simpson}', header=T, as.is=T, sep='\t', row.names=1)
-dend <- as.dendrogram(hclust(as.dist(dat), method ='ward.D'))
-lib_type <- rep('Other', length(rownames(dat)))
-is_x <- grepl('CapTrap', rownames(dat))
-lib_type[is_x] <- 'CapTrap'
-is_x <- grepl('Telop', rownames(dat))
-lib_type[is_x] <- 'Telop'
-is_x <- grepl('Smarter', rownames(dat))
-lib_type[is_x] <- 'Smarter'
-is_x <- grepl('dRNA', rownames(dat))
-lib_type[is_x] <- 'dRNA'
-lib_type <- factor(lib_type)
-n_lib_types <- length(unique(lib_type))
-cols_lib <- colorspace::rainbow_hcl(n_lib_types, c = 100, l  = 70, start = -360, end =-180)
-col_lib_type <- cols_lib[lib_type]
-
-seqPlatform <- rep('Other', length(rownames(dat)))
-is_x <- grepl('ont', rownames(dat))
-seqPlatform[is_x] <- 'ont'
-is_x <- grepl('pacBio', rownames(dat))
-seqPlatform[is_x] <- 'pacBio'
-seqPlatform <- factor(seqPlatform)
-n_seqPlatforms <- length(unique(seqPlatform))
-cols_seqPlatform <- colorspace::rainbow_hcl(n_seqPlatforms, c = 50, l  = 60, start = -350, end =200)
-col_seqPlatform <- cols_seqPlatform[seqPlatform]
-
-tissue <- rep('Other', length(rownames(dat)))
-is_x <- grepl('Brain', rownames(dat))
-tissue[is_x] <- 'Brain'
-is_x <- grepl('Heart', rownames(dat))
-tissue[is_x] <- 'Heart'
-tissue <- factor(tissue)
-n_tissues <- length(unique(tissue))
-cols_tissue <- colorspace::rainbow_hcl(n_tissues, c = 120, l  = 100, start = -300, end =180)
-col_tissue <- cols_tissue[tissue]
-
-png(file = '{output.simpson}', width=1500, height=1500)
-par(mar = c(10,1,1,25), cex=3)
-plot(dend, axes=F, horiz=TRUE)
-colored_bars(cbind(col_lib_type, col_seqPlatform, col_tissue), dend, rowLabels = c('Library type', 'Seq platform', 'Biosample'), horiz=TRUE, text_shift=16)
-dev.off()
+annot <- read.table('{config[SAMPLE_ANNOT]}', header=T, as.is=T, sep='\t')
+annotSumm <- annot %>% select(sample_name, seqTech, libraryPrep, tissue)
+annotSumm <- column_to_rownames(annotSumm, 'sample_name')
+#simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
+#pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4)
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4)
 
 " > {output.simpson}.r
 cat {output.simpson}.r | R --slave
 
 echo "
-
 library(cluster)
-library(dendextend)
+library(pheatmap)
+library(tidyverse)
+library(RColorBrewer)
+library(viridis)
+
 dat <- read.table('{input.jaccard}', header=T, as.is=T, sep='\t', row.names=1)
-dend <- as.dendrogram(hclust(as.dist(dat)))
-lib_type <- rep('Other', length(rownames(dat)))
-is_x <- grepl('CapTrap', rownames(dat))
-lib_type[is_x] <- 'CapTrap'
-is_x <- grepl('Telop', rownames(dat))
-lib_type[is_x] <- 'Telop'
-is_x <- grepl('Smarter', rownames(dat))
-lib_type[is_x] <- 'Smarter'
-is_x <- grepl('dRNA', rownames(dat))
-lib_type[is_x] <- 'dRNA'
-lib_type <- factor(lib_type)
-n_lib_types <- length(unique(lib_type))
-cols_lib <- colorspace::rainbow_hcl(n_lib_types, c = 100, l  = 70, start = -360, end =-180)
-col_lib_type <- cols_lib[lib_type]
+annot <- read.table('{config[SAMPLE_ANNOT]}', header=T, as.is=T, sep='\t')
+annotSumm <- annot %>% select(sample_name, seqTech, libraryPrep, tissue)
+annotSumm <- column_to_rownames(annotSumm, 'sample_name')
+#simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
+#pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4)
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4)
 
-seqPlatform <- rep('Other', length(rownames(dat)))
-is_x <- grepl('ont', rownames(dat))
-seqPlatform[is_x] <- 'ont'
-is_x <- grepl('pacBio', rownames(dat))
-seqPlatform[is_x] <- 'pacBio'
-seqPlatform <- factor(seqPlatform)
-n_seqPlatforms <- length(unique(seqPlatform))
-cols_seqPlatform <- colorspace::rainbow_hcl(n_seqPlatforms, c = 50, l  = 60, start = -350, end =200)
-col_seqPlatform <- cols_seqPlatform[seqPlatform]
-
-tissue <- rep('Other', length(rownames(dat)))
-is_x <- grepl('Brain', rownames(dat))
-tissue[is_x] <- 'Brain'
-is_x <- grepl('Heart', rownames(dat))
-tissue[is_x] <- 'Heart'
-tissue <- factor(tissue)
-n_tissues <- length(unique(tissue))
-cols_tissue <- colorspace::rainbow_hcl(n_tissues, c = 120, l  = 100, start = -300, end =180)
-col_tissue <- cols_tissue[tissue]
-
-png(file = '{output.jaccard}', width=1500, height=1500)
-par(mar = c(10,1,1,25), cex=3)
-plot(dend, axes=F, horiz=TRUE)
-colored_bars(cbind(col_lib_type, col_seqPlatform, col_tissue), dend, rowLabels = c('Library type', 'Seq platform', 'Biosample'), horiz=TRUE, text_shift=16)
-dev.off()
 
 " > {output.jaccard}.r
 cat {output.jaccard}.r | R --slave
