@@ -515,7 +515,7 @@ plotBase <- \\"ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, c
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(100, 3000)) +
 scale_y_continuous(labels=comma)+
-scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='CLS TMs', 'CLS_FL_TMs'='CLS FL TMs')) +
+scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='TMs', 'CLS_FL_TMs'='FL TMs')) +
 
 stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +
 stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +

@@ -128,7 +128,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cageAndPolyA', 'polyAOnly', 'noCageNoPolyA')))
 plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
-ylab('# CLS TMs') +
+ylab('# TMs') +
 scale_y_continuous(labels=comma)+
 scale_fill_manual (values=c(cageOnly='#e5b3e5', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'))+
 xlab('{params.filterDat[6]}') +

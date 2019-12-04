@@ -106,23 +106,40 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff"
 	output: 
-		standard="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.simple.tsv",
-		adjustedSn="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
+		standard="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv",
+		adjustedSn="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
 
 	shell:
 		'''
 pref=$(basename {output.standard} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
-tmFullPath=$(fullpath {input.tm})
-cd $(dirname {output.standard})
-gffcompare -o $pref -r $annotFullPath $tmFullPath
-cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output.standard})
+uuid=$(uuidgen)
+outdir="$PWD/$(dirname {output.standard})"
+cp {input.tm} {config[TMPDIR]}/$uuid
+cd {config[TMPDIR]}
+gffcompare -o ${{uuid}}PREF -r $annotFullPath $uuid
+cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
+
+mv ${{uuid}}PREF.simple.tsv $outdir/$(basename {output.standard})
+mv ${{uuid}}PREF.loci $outdir/$pref.loci
+mv ${{uuid}}PREF.stats $outdir/$pref
+mv ${{uuid}}PREF.tracking $outdir/$pref.tracking
+mv ${{uuid}}PREF.$uuid.refmap $outdir/$pref.refmap
+mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
+
+##### ADJUSTED METRICS (gffcompare -R)
 
 pref=$(basename {output.adjustedSn} .simple.tsv)
-gffcompare -o $pref -r $annotFullPath -R $tmFullPath
-cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output.adjustedSn})
+gffcompare -o ${{uuid}}PREF -r $annotFullPath -R $uuid
+cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
+mv ${{uuid}}PREF.simple.tsv $outdir/$(basename {output.adjustedSn})
+mv ${{uuid}}PREF.loci $outdir/$pref.loci
+mv ${{uuid}}PREF.stats $outdir/$pref
+mv ${{uuid}}PREF.tracking $outdir/$pref.tracking
+mv ${{uuid}}PREF.$uuid.refmap $outdir/$pref.refmap
+mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
 
 		'''
 
@@ -136,10 +153,19 @@ if SIRVpresent:
 			'''
 pref=$(basename {output} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
-cat {input.tm} | awk '$1=="SIRVome_isoforms" ' > $(dirname {output})/$(basename {input.tm})
-cd $(dirname {output})
-gffcompare -o $pref -r $annotFullPath $(basename {input.tm})
-cat $pref.tracking | simplifyGffCompareClasses.pl - > $(basename {output})
+uuid=$(uuidgen)
+outdir="$PWD/$(dirname {output})"
+cat {input.tm} | awk '$1=="SIRVome_isoforms" ' > {config[TMPDIR]}/$uuid
+cd {config[TMPDIR]}
+gffcompare -o ${{uuid}}PREF -r $annotFullPath $uuid
+cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
+mv ${{uuid}}PREF.simple.tsv $outdir/$(basename {output})
+mv ${{uuid}}PREF.loci $outdir/$pref.loci
+mv ${{uuid}}PREF.stats $outdir/$pref
+mv ${{uuid}}PREF.tracking $outdir/$pref.tracking
+mv ${{uuid}}PREF.$uuid.refmap $outdir/$pref.refmap
+mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
+
 
 			'''
 
@@ -242,7 +268,7 @@ if SIRVpresent:
 			'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-sirvDetectionStats.pl {input.sirvInfo} $(dirname {input.gffC})/$(basename {input.gffC} .simple.tsv).$(basename {input.tm}).refmap > {config[TMPDIR]}/$uuid
+sirvDetectionStats.pl {input.sirvInfo} $(dirname {input.gffC})/$(basename {input.gffC} .simple.tsv).refmap > {config[TMPDIR]}/$uuid
 cat {config[TMPDIR]}/$uuid | while read id l c ca; do echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$id\t$l\t$c\t$ca"; done > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -324,7 +350,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule colorBedAccordingToGffCompare:
 	input:
-		classes="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.simple.tsv",
+		classes="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.simple.tsv",
 		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed"
 	output: "mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.bed"
 	shell:
@@ -337,8 +363,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule getGffCompareStats:
-	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.simple.tsv"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.stats.tsv")
+	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats.tsv")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -347,8 +373,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getGffCompareGencodeSnPrStats:
-	input:"mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv")
+	input:"mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -363,8 +389,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggGffCompareGencodeSnPrStats:
-	input: lambda wildcards:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport)
-	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv"
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -375,8 +401,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotGffCompareGencodeSnPrStats:
-	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.SnPr.stats")
+	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -440,8 +466,8 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule aggGffCompareStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport)
-	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -451,8 +477,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotGffCompareStats:
-	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.stats")
+	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:

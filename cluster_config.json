@@ -28,12 +28,12 @@
     },
     "plotMetaTmEndsStats":
     {
-      "h_rt" : "01:00:00",
+      "h_rt" : "02:00:00",
       "virtual_free" : "30G"
     },
     "plotAbsTmEndsStats":
     {
-      "h_rt" : "01:00:00",
+      "h_rt" : "02:00:00",
       "virtual_free" : "30G"
     },
     "mergeCurrentPreviousPhaseTmsWithGencodeBiotypes":
