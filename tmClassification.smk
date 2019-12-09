@@ -597,6 +597,7 @@ dat\$ref_match_len <- as.numeric(dat\$ref_match_len)
 plotBase <- \\"ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
 geom_abline(intercept=0, alpha=0.09, size=1) +
 geom_point(alpha=0.1,size=0.5, stroke = 0) + 
+#geom_density_2d(size=0.1, alpha=0.3) +
 scale_y_log10(limits=c(100,10000)) +  
 scale_x_log10(limits=c(100, 20000)) + 
 geom_smooth() + 

@@ -397,7 +397,12 @@ def merge_figures_params(c,bf,bt,cl, tn, splicing_status=None):
 	else:
 		clBool=cl
 	seqTechFilterString=''
-
+	removeFacetLabels=''
+	if tn not in ('byTech') and c not in ('byCapDesign') and bt not in ('byTissue'):
+		removeFacetLabels = """
+plotFacetXy <- parse(text =paste(plotFacetXy, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
+plotFacetYx <- parse(text=paste(plotFacetYx, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
+"""		
 	splicingStatusFilterString=''
 	if splicing_status != None:
 		if splicing_status == 'spliced':
@@ -435,7 +440,7 @@ geom_textSize=3.5 # * (max(vertCats, horizCats))
 	facetPlotSetup= f"""
 plotFacetXy <- parse(text =paste(plotBase, \\"facet_grid( seqTech ~ capDesign + tissue, scales='free_y')\\"))
 plotFacetYx <- parse(text=paste(plotBase, \\"facet_grid( capDesign + tissue ~ seqTech, scales='free_y')\\"))
-
+{removeFacetLabels}
 pXy <- eval(plotFacetXy)
 pYx <- eval(plotFacetYx)
 
@@ -469,12 +474,12 @@ wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 	if c not in ('byCapDesign'):
 		capDesignFilterString+="dat <- subset(dat, capDesign=='" + c + "')\n"
-	if clBool not in ('byCorr'):
-		corrLevelFilterString+="dat <- subset(dat, correctionLevel=='" + clBool + "')\n"
-		xlabString=''
-		hideXaxisLabels="theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
-		hideYaxisLabels="theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) +"
-#	if bf in ('allFracs'):
+# 	if clBool not in ('byCorr'):
+# 		corrLevelFilterString+="dat <- subset(dat, correctionLevel=='" + clBool + "')\n"
+# 		xlabString=''
+# 		hideXaxisLabels="theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
+# 		hideYaxisLabels="theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) +"
+# #	if bf in ('allFracs'):
 #		sizeFracFilterString+="dat <- subset(dat, sizeFrac=='" + bf + "')\n"
 #	else:
 	sizeFracFilterString+="dat <- subset(dat, sizeFrac=='" + bf + "')\n"
