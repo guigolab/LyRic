@@ -580,6 +580,7 @@ library(scales)
 library(gridExtra)
 library(grid)
 library(ggplotify)
+library(ggExtra)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 palette <- c('unspliced' = '#cc3300', 'spliced' = '#0099cc', 'all' = '#666666')
 dat\$len <- as.numeric(dat\$len)
@@ -594,6 +595,8 @@ dat\$ref_match_len <- as.numeric(dat\$ref_match_len)
 {params.filterDat[5]}
 {params.filterDat[8]}
 
+datAll <- subset(dat, splicingStatus=='all')
+
 plotBase <- \\"ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
 geom_abline(intercept=0, alpha=0.09, size=1) +
 geom_point(alpha=0.1,size=0.5, stroke = 0) + 
@@ -601,28 +604,55 @@ geom_point(alpha=0.1,size=0.5, stroke = 0) +
 scale_y_log10(limits=c(100,10000)) +  
 scale_x_log10(limits=c(100, 20000)) + 
 geom_smooth() + 
+annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
+annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
 guides(color = guide_legend(title='TM splicing\\nstatus'))+
 xlab('Annotated length\\n(mature RNA, nts)') +
 ylab('TM length\\n(mature RNA, nts)') +
 scale_color_manual(values=palette) +
-{GGPLOT_PUB_QUALITY} + \\"
+{GGPLOT_PUB_QUALITY} + theme(legend.position='left') \\"
 
-{params.filterDat[12]}
+plotFull <- parse(text =plotBase)
+pXy <- eval(plotFull)
+legend <- get_legend(pXy)
+pXyNoLegend <- pXy + theme(legend.position='none')
+pXyMar <- ggMarginal(pXy, groupColour = TRUE, groupFill = TRUE, xparams = list(size=0.1), yparams = list(size=0.1))
+pXyMarNoLegend <- ggMarginal(pXyNoLegend, groupColour = TRUE, groupFill = TRUE, xparams = list(size=0.1), yparams = list(size=0.1))
+
+
+
+legendOnly <- grid.arrange(legend)
+pXyGrob <- as.grob(pXyMar)
+pXyNoLegendGrob <- as.grob(pXyMarNoLegend)
+
+
+hLegendOnly <- convertUnit(sum(legend\$heights), 'in', valueOnly=TRUE)
+wLegendOnly <- convertUnit(sum(legend\$widths), 'in', valueOnly=TRUE)
+
+hXyPlot <- plotHeight
+wXyPlot <- plotWidth +2
+
+
+hXyNoLegendPlot<- hXyPlot 
+wXyNoLegendPlot<- wXyPlot - wLegendOnly
+
+
+
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 
-save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[2]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[4]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
 
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[6]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[7]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[8]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
