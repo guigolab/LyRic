@@ -568,7 +568,10 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule plotTmVsGencodeLengthStats:
 	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.length.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.gencode.length.stats")
+	output: 
+		bySS=returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:bySplicingStatus.endSupport:{endSupport}.vs.gencode.length.stats"),
+		all=returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.length.stats"),
+
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -619,7 +622,64 @@ pXyNoLegend <- pXy + theme(legend.position='none')
 pXyMar <- ggMarginal(pXy, groupColour = TRUE, groupFill = TRUE, xparams = list(size=0.1), yparams = list(size=0.1))
 pXyMarNoLegend <- ggMarginal(pXyNoLegend, groupColour = TRUE, groupFill = TRUE, xparams = list(size=0.1), yparams = list(size=0.1))
 
+legendOnly <- grid.arrange(legend)
+pXyGrob <- as.grob(pXyMar)
+pXyNoLegendGrob <- as.grob(pXyMarNoLegend)
 
+
+hLegendOnly <- convertUnit(sum(legend\$heights), 'in', valueOnly=TRUE)
+wLegendOnly <- convertUnit(sum(legend\$widths), 'in', valueOnly=TRUE)
+
+hXyPlot <- plotHeight
+wXyPlot <- plotWidth +2
+
+
+hXyNoLegendPlot<- hXyPlot 
+wXyNoLegendPlot<- wXyPlot - wLegendOnly
+
+
+
+
+save_plot('{output.bySS[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.bySS[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output.bySS[2]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.bySS[3]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output.bySS[4]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.bySS[5]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output.bySS[6]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.bySS[7]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output.bySS[8]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.bySS[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+
+
+
+
+plotBase <- \\"ggplot(datAll, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
+geom_abline(intercept=0, alpha=0.09, size=1) +
+geom_point(alpha=0.1,size=0.5, stroke = 0) + 
+#geom_density_2d(size=0.1, alpha=0.3) +
+scale_y_log10(limits=c(100,10000)) +  
+scale_x_log10(limits=c(100, 20000)) + 
+geom_smooth() + 
+annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
+annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
+guides(color = guide_legend(title='TM splicing\\nstatus'))+
+xlab('Annotated length\\n(mature RNA, nts)') +
+ylab('TM length\\n(mature RNA, nts)') +
+scale_color_manual(values=palette) +
+{GGPLOT_PUB_QUALITY} + theme(legend.position='left') \\"
+
+plotFull <- parse(text =plotBase)
+pXy <- eval(plotFull)
+legend <- get_legend(pXy)
+pXyNoLegend <- pXy + theme(legend.position='none')
+pXyMar <- ggMarginal(pXy, groupColour = TRUE, groupFill = TRUE, xparams = list(size=0.1), yparams = list(size=0.1))
+pXyMarNoLegend <- ggMarginal(pXyNoLegend, groupColour = TRUE, groupFill = TRUE, xparams = list(size=0.1), yparams = list(size=0.1))
 
 legendOnly <- grid.arrange(legend)
 pXyGrob <- as.grob(pXyMar)
@@ -639,24 +699,24 @@ wXyNoLegendPlot<- wXyPlot - wLegendOnly
 
 
 
-save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.all[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.all[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 
-save_plot('{output[2]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.all[2]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.all[3]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[4]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.all[4]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.all[5]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
 
-save_plot('{output[6]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[7]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.all[6]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.all[7]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[8]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.all[8]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.all[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
 
 
-" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
-cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+" > $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
 
