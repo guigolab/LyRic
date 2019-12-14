@@ -1,8 +1,8 @@
 rule compareTargetsToTms:
 	input:
-		tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
+		tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
 		targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
-	output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.gfftsv.gz"
+	output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -12,7 +12,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getTargetCoverageStats:
-	input: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.gfftsv.gz"
+	input: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
 	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats.tsv")
 	shell:
 		'''
@@ -106,7 +106,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff"
 	output: 
 		standard="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv",
 		adjustedSn="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
@@ -147,8 +147,8 @@ if SIRVpresent:
 	rule gffcompareToSirvAnnotation:
 		input:
 			annot=config["SIRVgff"],
-			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
-		output: "mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
+			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+		output: "mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
 		shell:
 			'''
 pref=$(basename {output} .simple.tsv)
@@ -170,15 +170,27 @@ mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
 			'''
 
 rule getGffCompareSirvStats:
-	input:"mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv")
+	input:"mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
+	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
+uuid=$(uuidgen)
 file=$(dirname {input})/$(basename {input} .simple.tsv)
 for level in `echo Baselevel Exonlevel Intronchainlevel Intronlevel Locuslevel Transcriptlevel`; do
-Sn=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2`
-Sp=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3`
+
+cat $file |grep "level:" > {config[TMPDIR]}/$uuid || true
+SnDEFAULT=0
+SpDEFAULT='NA'
+
+Sn=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2`
+Sn=${{Sn:-$SnDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
+
+
+Sp=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3`
+Sp=${{Sp:-$SpDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
+
+
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$level\t$Sn\t$Sp";
 done |sed 's/level//g' > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -186,8 +198,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggGffCompareSirvStats:
-	input: lambda wildcards:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
-	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport, filt=wildcards.filt)
+	output: config["STATSDATADIR"] + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -198,8 +210,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotGffCompareSirvStats:
-	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats")
+	input:config["STATSDATADIR"] + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -225,9 +237,8 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 plotHeight = plotHeight +1
 plotWidth = plotWidth +1
 plotBase <- \\"ggplot(dat, aes(x=level, y=value)) +
-geom_point(aes(color=metric, shape=correctionLevel), size=3, alpha=0.8) +
+geom_point(aes(color=metric), shape=18, size=9, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
-scale_shape_manual(values=c(16,21), name='Error correction') +
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
 scale_y_continuous() +
@@ -260,8 +271,8 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 if SIRVpresent:
 	rule getSirvDetectionStats:
 		input:
-			gffC="mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv",
-			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
+			gffC="mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv",
+#			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
 			sirvInfo=config["SIRVinfo"]
 		output:temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv")
 		shell:
@@ -314,10 +325,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 
-plotBase <- \\"ggplot(dat, aes(x=concentration, y=length, color=detectionStatus, shape=correctionLevel)) + geom_point(alpha=0.93) +
+plotBase <- \\"ggplot(dat, aes(x=concentration, y=length, color=detectionStatus)) + geom_point(alpha=0.8, shape=18) +
 coord_trans(x='log2') +
 scale_color_manual(values=palette) +
-scale_shape_manual(values=c('Yes'=16, 'No'=17), name='Error correction') +
 xlab('SIRV molarity (fmol/uL)') +
 ylab('SIRV length (nt)') +
 {GGPLOT_PUB_QUALITY} + \\"
@@ -378,10 +388,20 @@ rule getGffCompareGencodeSnPrStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
+uuid=$(uuidgen)
 file=$(dirname {input})/$(basename {input} .simple.tsv)
 for level in `echo Baselevel Exonlevel Intronchainlevel Intronlevel Locuslevel Transcriptlevel`; do
-Sn=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2` 
-Sp=`cat $file |grep "level:" |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3` 
+cat $file |grep "level:" > {config[TMPDIR]}/$uuid || true
+SnDEFAULT=0
+SpDEFAULT='NA'
+
+
+Sn=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2` 
+Sn=${{Sn:-$SnDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
+
+Sp=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3` 
+Sp=${{Sp:-$SpDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
+
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$level\t$Sn\t$Sp";
 done |sed 's/level//g' > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -430,9 +450,8 @@ plotHeight = plotHeight +1
 plotWidth = plotWidth +1
 
 plotBase <- \\"ggplot(dat, aes(x=level, y=value)) +
-geom_point(aes(color=metric, shape=correctionLevel), size=3, alpha=0.8) +
+geom_point(aes(color=metric), shape=18, size=9, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
-scale_shape_manual(values=c(16,21), name='Error correction') +
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
 scale_y_continuous() +
@@ -578,7 +597,7 @@ rule plotTmVsGencodeLengthStats:
 		'''
 echo "
 library(cowplot)
-library(plyr)
+library(dplyr)
 library(scales)
 library(gridExtra)
 library(grid)
@@ -600,6 +619,13 @@ dat\$ref_match_len <- as.numeric(dat\$ref_match_len)
 
 datAll <- subset(dat, splicingStatus=='all')
 
+geom_textSize=geom_textSize-1
+dat %>%
+  group_by(splicingStatus) %>%
+  summarise(n=n()) -> datSumm
+
+summaryStats = transform(datSumm, Label = paste0('N= ', comma(n)) )
+
 plotBase <- \\"ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
 geom_abline(intercept=0, alpha=0.09, size=1) +
 geom_point(alpha=0.1,size=0.5, stroke = 0) + 
@@ -607,8 +633,14 @@ geom_point(alpha=0.1,size=0.5, stroke = 0) +
 scale_y_log10(limits=c(100,10000)) +  
 scale_x_log10(limits=c(100, 20000)) + 
 geom_smooth() + 
-annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
-annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
+annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
+annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
+
+geom_text(data = summaryStats[summaryStats\$splicingStatus=='all',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=-1,  size=geom_textSize, show.legend=FALSE) +
+geom_text(data = summaryStats[summaryStats\$splicingStatus=='unspliced',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=0,  size=geom_textSize, show.legend=FALSE) +
+geom_text(data = summaryStats[summaryStats\$splicingStatus=='spliced',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=1,  size=geom_textSize, show.legend=FALSE) +
+
+
 guides(color = guide_legend(title='TM splicing\\nstatus'))+
 xlab('Annotated length\\n(mature RNA, nts)') +
 ylab('TM length\\n(mature RNA, nts)') +
@@ -666,8 +698,10 @@ geom_point(alpha=0.1,size=0.5, stroke = 0) +
 scale_y_log10(limits=c(100,10000)) +  
 scale_x_log10(limits=c(100, 20000)) + 
 geom_smooth() + 
-annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
-annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=2.5, color='#666666', hjust=0, vjust=1) +
+annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
+annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
+geom_text(data = summaryStats[summaryStats\$splicingStatus=='all',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=-1,  size=geom_textSize, show.legend=FALSE) +
+
 guides(color = guide_legend(title='TM splicing\\nstatus'))+
 xlab('Annotated length\\n(mature RNA, nts)') +
 ylab('TM length\\n(mature RNA, nts)') +
@@ -733,7 +767,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule mergeTmsWithGencode:
 	input:
 		annot="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff"
 	output: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.gff.gz"
 	threads:1
 	shell:
@@ -887,7 +921,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule tmergeAll:
 	input:
-		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, endSupport=wildcards.endSupport,  minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, endSupport=wildcards.endSupport,  minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
 		#gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 	output: 
 		tm="mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.gff",
@@ -898,7 +932,7 @@ uuid=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 uuidTmpOutQ=$(uuidgen)
 for file in `ls {input.tm} | grep -v AlzhBrain`; do
-bn=$(basename $file .tmerge.min{wildcards.minReadSupport}reads.splicing_status:{wildcards.splicedStatus}.endSupport:{wildcards.endSupport}.gff | sed 's/Corr0_/_/g')
+bn=$(basename $file .HiSS.tmerge.min{wildcards.minReadSupport}reads.splicing_status:{wildcards.splicedStatus}.endSupport:{wildcards.endSupport}.gff | sed 's/Corr0_/_/g')
 
 cat $file | perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
 done > {config[TMPDIR]}/$uuid

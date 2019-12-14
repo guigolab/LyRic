@@ -6,7 +6,7 @@ import sys
 #import pprint #pretty printing
 
 #prefix all shell scripts with the following command
-shell.prefix("source ~/.bashrc; ")
+shell.prefix("source ~/.bashrc; set -euo pipefail; ")
 
 print ("TODO:\n## Calculate amount of novel captured nts\n\n ## What is the intersection between PacBio TMs and ONT TMs???\n\n", file=sys.stderr)
 
@@ -27,6 +27,7 @@ print ("Input LR FASTQs are in: " + FQPATH, file=sys.stderr)
 
 ENDSUPPORTcategories=["all", "cagePolyASupported"]
 TMSPLICEDSTATUScategories=["all", "spliced", "unspliced"]
+READFILTERS=['HiSS', 'noFilt']
 
 GENOMES=[]
 GENOMETOCAPDESIGNS=defaultdict(list)
@@ -116,7 +117,8 @@ wildcard_constraints:
  	corrLevel = "[^_/]+",
 	minReadSupport = '|'.join(config["MINIMUM_TMERGE_READ_SUPPORT"]),
 	endSupport  = '|'.join(ENDSUPPORTcategories),
-	splicedStatus = '|'.join(TMSPLICEDSTATUScategories)
+	splicedStatus = '|'.join(TMSPLICEDSTATUScategories),
+	filt= '|'.join(READFILTERS)
 
 
 
@@ -203,6 +205,11 @@ for comb in itertools.product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
 					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),]):
 						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
+					for filt in READFILTERS:
+						for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),], [("filt", filt),]):
+							AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
+						for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),], [("filt", filt),]):
+							AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
 				for endSupport in ENDSUPPORTcategories:
 					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("endSupport", endSupport),]):
 						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
@@ -474,11 +481,11 @@ wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 	if c not in ('byCapDesign'):
 		capDesignFilterString+="dat <- subset(dat, capDesign=='" + c + "')\n"
-# 	if clBool not in ('byCorr'):
-# 		corrLevelFilterString+="dat <- subset(dat, correctionLevel=='" + clBool + "')\n"
-# 		xlabString=''
-# 		hideXaxisLabels="theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
-# 		hideYaxisLabels="theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) +"
+ 	if clBool not in ('byCorr'):
+ 		corrLevelFilterString+="dat <- subset(dat, correctionLevel=='" + clBool + "')\n"
+ 		xlabString=''
+ 		hideXaxisLabels="theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
+ 		hideYaxisLabels="theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) +"
 # #	if bf in ('allFracs'):
 #		sizeFracFilterString+="dat <- subset(dat, sizeFrac=='" + bf + "')\n"
 #	else:
@@ -607,7 +614,7 @@ rule all:
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "polyAreads.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.novelLoci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='13'),
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], filt=READFILTERS) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='13'),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:bySplicingStatus.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_merge_figures, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_merge_figures, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),

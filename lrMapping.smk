@@ -274,12 +274,11 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule readBamToBed:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	output: "mappings/readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
-	#input: "mappings/readMapping/{basename}.bam"
-	#output: "mappings/readBamToBed/{basename}.bed"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-bedtools bamtobed -i {input} -bed12 | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {config[TMPDIR]}/$uuidTmpOut
+#remove mappings with ultra-short exons after bamtobed
+bedtools bamtobed -i {input} -bed12 | perl -ne '$line=$_; @line=split ("\\t", $line); @blockSizes=split(",", $line[10]); $allExonsOK=1; foreach $block (@blockSizes){{if ($block<2){{$allExonsOK=0; last;}}}}; if ($allExonsOK==1){{print $line}}'| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''

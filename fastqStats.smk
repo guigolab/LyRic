@@ -68,11 +68,11 @@ dat<-fread('{input}', header=T, sep='\\t')
 
 dat\$sizeFrac_f=factor(dat\$sizeFrac, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
 summaryStats = transform(summarise(group_by(dat, seqTech, sizeFrac_f, capDesign, tissue), Label = paste0('N= ', comma(length(length)), '\\n', 'Median= ', comma(median(length)))))
-
+geom_textSize = geom_textSize + 1
 plotBase <- \\"ggplot(dat, aes(x=length)) +
 geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=200) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-geom_text(data = summaryStats, aes(label = Label, x = 10, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
+geom_text(data = summaryStats, aes(label = Label, x = 10, y = Inf), hjust=0, vjust=1,  size=geom_textSize, fontface = 'bold') +
 coord_cartesian(xlim=c(0, 3500)) +
 scale_y_continuous(labels=scientific)+
 scale_x_continuous(labels=comma)+

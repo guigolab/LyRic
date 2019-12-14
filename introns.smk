@@ -50,7 +50,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getTmSpliceSites:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff"
 	output: "mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.introns.{spliceType}.tsv.gz"
 	shell:
 		'''
@@ -215,7 +215,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getClsSpliceJunctions:
-	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff"
+	input:"mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff"
 	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
 	shell:
 		'''
