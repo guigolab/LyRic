@@ -20,7 +20,8 @@
     },
 "plotReadLength":
 {
-"virtual_free" : "25G",
+"virtual_free" : "30G",
+"h_rt": "03:00:00",
 },
     "aggTmStats":
     {

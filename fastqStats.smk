@@ -67,16 +67,23 @@ dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat[8]}
 
 dat\$sizeFrac_f=factor(dat\$sizeFrac, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
-summaryStats = transform(summarise(group_by(dat, seqTech, sizeFrac_f, capDesign, tissue), Label = paste0('N= ', comma(length(length)), '\\n', 'Median= ', comma(median(length)))))
+dat %>%
+  group_by(seqTech, sizeFrac_f, capDesign, tissue) %>%
+  summarise(n=n(), med=median(length)) -> datSumm
+
+
+summaryStats = transform(datSumm, Label = paste0('N= ', comma(n), '\\n', 'Median= ', comma(med)))
+
 geom_textSize = geom_textSize + 1
 plotBase <- \\"ggplot(dat, aes(x=length)) +
 geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=200) +
+geom_vline(data = summaryStats, aes(xintercept=med), color='#ff0055', linetype='solid', size=1.2) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-geom_text(data = summaryStats, aes(label = Label, x = 10, y = Inf), hjust=0, vjust=1,  size=geom_textSize, fontface = 'bold') +
+geom_text(data = summaryStats, aes(label = Label, x = Inf, y = Inf), hjust=1, vjust=1,  size=geom_textSize, fontface = 'bold') +
 coord_cartesian(xlim=c(0, 3500)) +
-scale_y_continuous(labels=scientific)+
-scale_x_continuous(labels=comma)+
-{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
+#scale_y_continuous(labels=scientific)+
+scale_x_continuous(labels=comma, name='Read length (nts)')+
+{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text.y = element_blank()) + \\"
 
 {params.filterDat[12]}
 

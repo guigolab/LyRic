@@ -223,7 +223,9 @@ library(scales)
 library(gridExtra)
 library(grid)
 library(ggplotify)
-cbPalette <- c('Sn'='#cc6600', 'Pr'='#2d8659')
+library(ggforce)
+
+cbPalette <- c('Sn'='#ffb366', 'Pr'='#2d8659')
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -237,7 +239,8 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 plotHeight = plotHeight +1
 plotWidth = plotWidth +1
 plotBase <- \\"ggplot(dat, aes(x=level, y=value)) +
-geom_point(aes(color=metric), shape=18, size=9, alpha=0.7) +
+geom_mark_rect(aes(filter = level == 'Transcript' & metric == 'Pr'), size=2, expand = unit(7, 'mm'), radius = unit(4, 'mm'), color='#4d4d4d', fill='#ffff00') +
+geom_point(aes(color=metric), shape=18, size=10, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
@@ -435,7 +438,7 @@ library(gridExtra)
 library(grid)
 library(ggplotify)
 
-cbPalette <- c('Sn'='#cc6600', 'Pr'='#2d8659')
+cbPalette <- c('Sn'='#ffb366', 'Pr'='#2d8659')
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[10]}
 {params.filterDat[0]}
@@ -450,7 +453,7 @@ plotHeight = plotHeight +1
 plotWidth = plotWidth +1
 
 plotBase <- \\"ggplot(dat, aes(x=level, y=value)) +
-geom_point(aes(color=metric), shape=18, size=9, alpha=0.7) +
+geom_point(aes(color=metric), shape=18, size=10, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
