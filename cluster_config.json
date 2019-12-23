@@ -61,7 +61,7 @@
         },
     "highConfidenceReads":{
         "h_rt" : "6:00:00",
-        "virtual_free" : "22G"
+        "virtual_free" : "25G"
     },
 "readBedToGff" :
     {
@@ -125,7 +125,7 @@
     },
     "getHiSSStats":
     {
-        "virtual_free" : "20G",
+        "virtual_free" : "35G",
         "h_rt" : "06:00:00"
     },
     "mergeWithRef":{
@@ -134,7 +134,7 @@
     },
      "nonAnchoredMergeReads":
     {
-        "virtual_free" : "20G",
+        "virtual_free" : "30G",
     },
 
     "mergeTissuesNonAnchoredMergeReads":
@@ -181,7 +181,7 @@
     },
      "getHCGMintrons":
     {
-      "virtual_free" : "5G",
+      "virtual_free" : "10G",
     },
     "getClsSpliceJunctions":
     {
