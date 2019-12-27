@@ -105,9 +105,12 @@ rule getGencodeSupportedEnds:
 		'''
 uuid5pEnds=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-cat {input.tm} |gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
+uuid2=$(uuidgen)
+cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}  |uniq > {config[TMPDIR]}/$uuid2
+
+cat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2 | gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
 uuid3pEnds=$(uuidgen)
-cat {input.tm} |gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
+cat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
 
 uuidCageSupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
@@ -169,9 +172,12 @@ rule getPreviousPhaseTmsWithGencodeSupportedEnds:
 		'''
 uuid5pEnds=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-zcat {input.tm} |gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
+uuid2=$(uuidgen)
+cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}  |uniq > {config[TMPDIR]}/$uuid2
+
+zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
 uuid3pEnds=$(uuidgen)
-zcat {input.tm} |gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
+zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
 
 uuidCageSupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
@@ -197,7 +203,7 @@ rule getFlLocusStats:
 		previous="mappings/nonAnchoredMergeReads/previous+biotypes/{capDesign}.previous.tmerge.all.gff.gz",
 		previousFL="mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.cage+PASsupported.gff.gz",
 		clsGencodeFL="mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.cage+PASsupported.gff.gz"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv")
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv"
 	shell:
 		'''
 #PCG stats
@@ -245,7 +251,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule aggFlLocusStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv", techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes='allTissues', minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats.tsv", techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes='allTissues', minReadSupport=wildcards.minReadSupport)
 	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.FLloci.stats.tsv"
 	shell:
 		'''

@@ -64,7 +64,7 @@ rule getGeneidScores:
 		rawReads="mappings/makeIntrons/readSpliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.{spliceType}.tsv.gz",
 		tmReads="mappings/nonAnchoredMergeReads/spliceSites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.introns.{spliceType}.tsv.gz",
 		geneidScores= lambda wildcards: expand(config["SPLICE_SITE_SCORES_DIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".{spliceType}.geneid.loose.spliceSites.sorted.tsv", spliceType=wildcards.spliceType),
-	output:  temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv")
+	output:  config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -87,7 +87,7 @@ rule getControlGeneidScores:
 		random =lambda wildcards: "annotations/spliceSites/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".geneid.loose.spliceSites.OnDetectedRegions.NotDetected.random100K.{spliceType}.tsv",
 		geneidScores= lambda wildcards: expand(config["SPLICE_SITE_SCORES_DIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".{spliceType}.geneid.loose.spliceSites.sorted.tsv", spliceType=wildcards.spliceType),
 
-	output: temp(config["STATSDATADIR"] + "{capDesign}.control.spliceSites.{spliceType}.stats.tsv")
+	output: config["STATSDATADIR"] + "tmp/{capDesign}.control.spliceSites.{spliceType}.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -101,7 +101,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggControlGeneidScores:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{capDesign}.control.spliceSites.{spliceType}.stats.tsv", capDesign=CAPDESIGNS,  spliceType=SPLICE_SITE_TYPES)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{capDesign}.control.spliceSites.{spliceType}.stats.tsv", capDesign=CAPDESIGNS,  spliceType=SPLICE_SITE_TYPES)
 	output: config["STATSDATADIR"] + "all.control.spliceSites.stats.tsv"
 	shell:
 		'''
@@ -114,7 +114,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule aggGeneidScores:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES, minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.{spliceType}.spliceSites.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, spliceType=SPLICE_SITE_TYPES, minReadSupport=wildcards.minReadSupport)
 	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv"
 	threads: 8
 	shell:
@@ -229,7 +229,7 @@ rule getCompareClsGencodeSJsStats:
 	input:
 		gencodeSJs="annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list",
 		clsSJs="mappings/nonAnchoredMergeReads/spliceJunctions/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
-	output: temp(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv")
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -243,7 +243,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggCompareClsGencodeSJsStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] +"{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand(config["STATSDATADIR"] +"tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
 	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
 	shell:
 		'''

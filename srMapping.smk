@@ -52,7 +52,7 @@ rule getHiSeqMappingStats:
 		bams = "mappings/hiSeq_{capDesign}.bam",
 		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz",
 		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz",
-	output: temp(config["STATSDATADIR"] + "{capDesign}_tmp.hiSeq.mapping.stats.tsv")
+	output: config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -63,7 +63,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggHiSeqMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{capDesign}_tmp.hiSeq.mapping.stats.tsv",capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv",capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.hiSeq.mapping.stats.tsv"
 	shell:
 		'''
@@ -105,7 +105,7 @@ rule getHiSeqCanonicalIntronsList:
 	threads: 6
 	output:
 		list="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list",
-		stats=temp(config["STATSDATADIR"] + "{capDesign}_tmp.hiSeq.SJs.stats.tsv")
+		stats=config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -131,7 +131,7 @@ mv {config[TMPDIR]}/$uuidTmpOutL {output.list}
 		'''
 
 rule aggHiSeqSjStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "{capDesign}_tmp.hiSeq.SJs.stats.tsv",capDesign=CAPDESIGNS)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv",capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.hiSeq.SJs.stats.tsv"
 	shell:
 		'''
