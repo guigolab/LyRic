@@ -8,7 +8,7 @@ import sys
 #prefix all shell scripts with the following command
 shell.prefix("source ~/.bashrc; set -euo pipefail; ")
 
-print ("TODO:\n## Calculate amount of novel captured nts\n\n ## What is the intersection between PacBio TMs and ONT TMs???\n\n", file=sys.stderr)
+print ("TODO:\n## Calculate amount of novel captured nts\n\n", file=sys.stderr)
 
 
 GGPLOT_PUB_QUALITY=config["GGPLOT_PUB_QUALITY"]
@@ -576,6 +576,10 @@ include: "tmEndSupport.smk"
 include: "trackHub.smk"
 include: "lociEndSupport.smk"
 
+
+
+
+
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
@@ -603,7 +607,7 @@ rule all:
 		expand(config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand ("mappings/clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand("mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand("mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
 		config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv",
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "merged.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),

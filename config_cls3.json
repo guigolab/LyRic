@@ -6,13 +6,19 @@
        "SPLICE_SITE_SCORES_DIR": "/users/rg/jlagarde/projects/splice_sites/geneid/",
        "SIZEFRACTION_RPALETTE": "c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')",
        "LONG_RPALETTE":"c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')",
+       "SAMPLE_ANNOT_RPALETTE":"list(seqTech = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3'), tissue = c(Brain = '#b3de69', Heart = '#fccde5'))",
        "STATSDATADIR" : "Rinput/",
        "capDesignToGenome" : {
            "HpreCap": "hg38",
            "Hv3": "hg38",
-           "MpreCap": "mm10"
+           "MpreCap": "mm10",
+           "Mv2": "mm10"
          },
-         "SAMPLE_ANNOT": "annotations/samples/sample_annotations.csv",
+         "POSTPRECAPTURE" : {
+          "Hv3" : "HpreCap",
+          "Mv2" : "MpreCap"
+         },
+         "SAMPLE_ANNOT": "annotations/samples/sample_annotations.tsv",
          "TMPDIR": "$TMPDIR",
          "minPhredQualAroundSJ": "10",
          "exonOverhangTolerance": "8",
@@ -20,7 +26,9 @@
        "capDesignToAnnotGtf" : {
            "HpreCap": "annotations/hs.gencode24+SIRVS.gff",
            "Hv3": "annotations/hs.gencode24+SIRVS.gff",
-            "MpreCap": "annotations/mm.gencodeM7+SIRVS.gff"},
+            "MpreCap": "annotations/mm.gencodeM7+SIRVS.gff",
+          "Mv2": "annotations/mm.gencodeM7+SIRVS.gff"
+          },
        "genomeToPreviousPhaseTMs":{
           "hg38": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Hv1Hv2_allFracs_allTissues.tmerge.min2reads.all.gff",
           "mm10": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Mv1_allFracs_allTissues.tmerge.min2reads.all.gff"
@@ -42,7 +50,8 @@
     "capDesignToCAGEpeaks": {
       "HpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
       "Hv3": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
-      "MpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
+      "MpreCap": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed",
+      "Mv2": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
 
     },
     "genomeToPAS": {

@@ -28,7 +28,6 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule aggTargetCoverageStats:
 	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats.tsv",filtered_product_merge,  techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=wildcards.minReadSupport)
-#lambda wildcards: expand(config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_pooled.targetCoverage.stats.tsv", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS)
 	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.targetCoverage.stats.tsv"
 	shell:
 		'''
@@ -365,7 +364,7 @@ rule colorBedAccordingToGffCompare:
 	input:
 		classes="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.simple.tsv",
 		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed"
-	output: "mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.bed"
+	output: "mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed"
 	shell:
 			'''
 uuidTmpOut=$(uuidgen)
@@ -990,10 +989,12 @@ annotSumm <- annot %>% select(sample_name, seqTech, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
 #pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4)
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
 
 " > {output.simpson}.r
 cat {output.simpson}.r | R --slave
+
+
 
 echo "
 library(cluster)
@@ -1008,7 +1009,7 @@ annotSumm <- annot %>% select(sample_name, seqTech, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
 #pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4)
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
 
 
 " > {output.jaccard}.r

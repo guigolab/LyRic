@@ -258,7 +258,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
 
 rule makeTmergeOutputTracks:
 	input:
-		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:all.bed",
+		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output:
 		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.bb",
