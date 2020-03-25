@@ -88,7 +88,7 @@ uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}  |uniq > {config[TMPDIR]}/$uuid2
 
-cat {input.gff} | grep -P "^chr" |gff2bed_full.pl -|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid3
+cat {input.gff} | grep -P "^chr" | grep -v "chrIS" |gff2bed_full.pl -|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid3
 join  -j1 {config[TMPDIR]}/$uuid2 {config[TMPDIR]}/$uuid3 |ssv2tsv > {config[TMPDIR]}/$uuid
 bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
 mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
@@ -138,7 +138,7 @@ if config["USE_MATCHED_ILLUMINA"]:
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 samtools view -H {input} > {config[TMPDIR]}/$uuid
-samtools view {input} | grep -P "\tchr" >> {config[TMPDIR]}/$uuid
+samtools view {input} | grep -P "\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
 samtools view -b {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuidTmpOut
 sleep 60s
 samtools index {config[TMPDIR]}/$uuidTmpOut
@@ -213,7 +213,7 @@ rule makeBamOutputTracks:
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 samtools view -H {input} > {config[TMPDIR]}/$uuid
-samtools view {input} | grep -P "\tchr" >> {config[TMPDIR]}/$uuid
+samtools view {input} | grep -P "\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
 samtools view -b {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuidTmpOut
 sleep 60s
 samtools index {config[TMPDIR]}/$uuidTmpOut
@@ -271,7 +271,7 @@ uuid=$(uuidgen)
 uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 
-cat {input.bed} | grep -P "^chr"  > {config[TMPDIR]}/$uuid
+cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {config[TMPDIR]}/$uuid
 bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
 mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
 
@@ -306,7 +306,7 @@ uuid=$(uuidgen)
 uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 
-cat {input.bed} | grep -P "^chr"  > {config[TMPDIR]}/$uuid
+cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {config[TMPDIR]}/$uuid
 bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
 mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
 

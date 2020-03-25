@@ -251,7 +251,7 @@ rule makePolyABigWigs:
 		'''
 tmpIn=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-cat {input.sites} | grep -P "^chr" > {config[TMPDIR]}/$tmpIn
+cat {input.sites} | grep -P "^chr" | grep -v "chrIS" > {config[TMPDIR]}/$tmpIn
 
 bedtools genomecov -strand {wildcards.strand} -split -bg -i {config[TMPDIR]}/$tmpIn -g {input.genome} > {config[TMPDIR]}/$uuidTmpOut.bedgraph
 bedGraphToBigWig {config[TMPDIR]}/$uuidTmpOut.bedgraph {input.genome} {config[TMPDIR]}/$uuidTmpOut

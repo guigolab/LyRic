@@ -266,7 +266,7 @@ rule nonAnchoredMergeUnfilteredSirvReads:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-zcat {input} | awk '$1=="SIRVome_isoforms"' > {config[TMPDIR]}/$uuid
+zcat {input} | awk '$1=="SIRVome_isoforms" || $1=="chrIS"' > {config[TMPDIR]}/$uuid
 
 cat {config[TMPDIR]}/$uuid| tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
