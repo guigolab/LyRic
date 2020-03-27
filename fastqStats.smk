@@ -1,8 +1,13 @@
-rule checkNoDuplicateReadIds:
+rule basicFASTQqc:
 	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
 	output: FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
 	shell:
 		'''
+
+# check that read IDs don't contain spaces (frequent with ONT)
+zcat {input} | perl -lane 'if ($F[3]) {{die}}' 
+
+# check that there are no read ID duplicates
 zcat {input} | fastq2tsv.pl | cut -f1 | sort -T {config[TMPDIR]} | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
