@@ -499,9 +499,10 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 
-rule plotTmLengthStats:
+rule plotBoxTmLengthStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.stats")
+	output: 
+		box=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.box.stats"),
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
 	shell:
@@ -551,23 +552,99 @@ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
 {params.filterDat[12]}
 
-save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.box[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.box[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 
-save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.box[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.box[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.box[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.box[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
 
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.box[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.box[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
 
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.box[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.box[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
-" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
-cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+" > $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r
+cat $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r | R --slave
+
+		'''
+
+
+
+rule plotHistTmLengthStats:
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv"
+	output: 
+		hist=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats")
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
+	shell:
+		'''
+echo "
+library(cowplot)
+library(dplyr)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(data.table)
+
+palette <- c('GENCODE_protein_coding' = '#009900', 'CLS_TMs' = '#cc9966', 'CLS_FL_TMs' = '#cc00cc')
+dat<-fread('{input}', header=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+{params.filterDat[11]}
+
+
+dat %>%
+  group_by(seqTech, correctionLevel, sizeFrac, capDesign, tissue, category) %>%
+  summarise(med=median(mature_RNA_length)) -> datSumm
+
+summaryStats = transform(datSumm, LabelM = comma(med)) 
+
+geom_textSize = geom_textSize + 1
+
+
+plotBase <- \\"ggplot(dat, aes(x=mature_RNA_length, fill=category)) +
+geom_histogram(binwidth=100, alpha=0.35, position='identity') +
+geom_vline(data=summaryStats, aes(xintercept=med, color=category), size=1) +
+
+coord_cartesian(xlim=c(0, 3000)) +
+scale_x_continuous(labels=comma)+
+scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='TMs', 'CLS_FL_TMs'='FL TMs')) +
+scale_fill_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='TMs', 'CLS_FL_TMs'='FL TMs')) +
+
+xlab('Mature RNA length') +
+{GGPLOT_PUB_QUALITY} +
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
+
+{params.filterDat[12]}
+
+save_plot('{output.hist[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.hist[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output.hist[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.hist[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output.hist[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.hist[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output.hist[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.hist[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output.hist[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.hist[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+" > $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r
+cat $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r | R --slave
 
 		'''

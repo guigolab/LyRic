@@ -81,7 +81,7 @@ summaryStats = transform(datSumm, LabelN = paste0('N= ', comma(n)), LabelM = pas
 
 geom_textSize = geom_textSize + 1
 plotBase <- \\"ggplot(dat, aes(x=length)) +
-geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=200) +
+geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=100) +
 geom_vline(data = summaryStats, aes(xintercept=med), color='#ff0055', linetype='solid', size=1.2) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
 geom_text(data = summaryStats, aes(label = LabelN, x = Inf, y = Inf), hjust=1, vjust=1,  size=geom_textSize, fontface = 'bold') +
