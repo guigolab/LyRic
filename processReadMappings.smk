@@ -609,14 +609,16 @@ dat %>%
   group_by(seqTech, correctionLevel, sizeFrac, capDesign, tissue, category) %>%
   summarise(med=median(mature_RNA_length)) -> datSumm
 
-summaryStats = transform(datSumm, LabelM = comma(med)) 
+summaryStats = transform(datSumm, LabelM = comma(round(med, digits = 0))) 
 
 geom_textSize = geom_textSize + 1
 
 
 plotBase <- \\"ggplot(dat, aes(x=mature_RNA_length, fill=category)) +
 geom_histogram(binwidth=100, alpha=0.35, position='identity') +
-geom_vline(data=summaryStats, aes(xintercept=med, color=category), size=1) +
+geom_vline(data=summaryStats, aes(xintercept=med, color=category), size=1, show.legend=FALSE) +
+geom_text(data = summaryStats[summaryStats\$category=='CLS_TMs',], aes(label = LabelM, x = Inf, y = Inf, color=category), hjust=1.2, vjust=1,  size=geom_textSize, show.legend=FALSE) +
+geom_text(data = summaryStats[summaryStats\$category=='CLS_FL_TMs',], aes(label = LabelM, x = Inf, y = Inf, color=category), hjust=1.2, vjust=2.1,  size=geom_textSize, show.legend=FALSE) +
 
 coord_cartesian(xlim=c(0, 3000)) +
 scale_x_continuous(labels=comma)+
