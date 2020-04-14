@@ -89,7 +89,7 @@ geom_text(data = summaryStats, aes(label = LabelM, x = med, y = Inf), hjust=-0.1
 coord_cartesian(xlim=c(0, 3500)) +
 #scale_y_continuous(labels=scientific)+
 scale_x_continuous(labels=comma, name='Read length (nts)')+
-{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text.y = element_blank()) + \\"
+{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
 {params.filterDat[12]}
 
