@@ -569,11 +569,12 @@ rule getTmVsGencodeLengthStats:
 		'''
 uuid=$(uuidgen)
 file="$(dirname {input})/$(basename {input} .simple.tsv).tmap"
-cat $file | awk '$3=="c" || $3=="="' | cut -f10,12 > {config[TMPDIR]}/$uuid
+tail -n+2 $file | awk '$3=="c" || $3=="="' | cut -f10,12 > {config[TMPDIR]}/$uuid
 cat {config[TMPDIR]}/$uuid | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} -v sp={wildcards.splicedStatus} '{{print s"\t"c"\t"si"\t"b"\t"sp"\t"$0}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {config[TMPDIR]}/$uuid.TmpOut
 mv {config[TMPDIR]}/$uuid.TmpOut {output}
 
 		'''
+
 
 rule aggTmVsGencodeLengthStats:
 	input: lambda wildcards:expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.length.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=TMSPLICEDSTATUScategories)
@@ -755,6 +756,70 @@ save_plot('{output.all[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_he
 cat $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
+
+
+rule getDetectedAnnTranscriptLength:
+	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+file="$(dirname {input})/$(basename {input} .simple.tsv).tmap"
+tail -n+2 $file | awk '$2!="-"' | cut -f1,2,12 > {config[TMPDIR]}/$uuid
+cat {config[TMPDIR]}/$uuid | awk -v sid={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes} -v co=Corr{wildcards.corrLevel} -v sp={wildcards.splicedStatus} -v rs={wildcards.minReadSupport} -v es={wildcards.endSupport} '{{print sid"\\t"co"\\t"sp"\\t"rs"\\t"es"\\t"$0}}' | sed 's/Corr0/No/' | sed 's/Corr{lastK}/Yes/' > {config[TMPDIR]}/$uuid.TmpOut
+mv {config[TMPDIR]}/$uuid.TmpOut {output}
+
+		'''
+
+rule aggDetectedAnnTranscriptLength:
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	output: config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv"
+	shell:
+		'''
+uuidTmpOut=$(uuidgen)
+echo -e "sample_name\tcorrectionLevel\tsplicingStatus\tminReadSupport\tendSupport\tref_gene_id\tref_id\tref_match_len" > {config[TMPDIR]}/$uuidTmpOut
+cat {input} >> {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+
+		'''
+
+rule plotDetectedAnnTranscriptLength:
+	input: 
+		stats=config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv",
+		sampleAnnot=config["SAMPLE_ANNOT"]
+	output: config["PLOTSDIR"] + "gencode.detected.length.stats/{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.{ext}"
+	shell:
+		'''
+echo "
+library(tidyverse)
+library(data.table)
+library(scales)
+annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\\t')
+dat<-fread('{input.stats}', header=T, sep='\\t')
+dat <- inner_join(dat,annot,by='sample_name')
+annot <- mutate(annot, label=paste(sep=':', seqPlatform, tissue))
+paletteList={config[SAMPLE_ANNOT_RPALETTE]}
+
+libraryPrepPalette=paletteList\$libraryPrep
+labeller <- deframe(select(annot, sample_name, label))
+
+
+p <- ggplot(dat, aes(x=sample_name, y=ref_match_len, fill=libraryPrep)) +
+geom_violin(width=1.1, colour=NA) +
+scale_fill_manual(values=libraryPrepPalette) +
+geom_boxplot(width=0.2, alpha=0.8, outlier.shape=NA) +
+scale_y_continuous(labels=comma)+
+coord_flip(ylim=c(0,5000)) +
+ylab('Length of detected GENCODE transcript (nts)') +
+scale_x_discrete('Sample', labels=labeller) +
+
+{GGPLOT_PUB_QUALITY}
+ggsave('{output}', p, width=9, height=7)
+" > {output}.r
+cat {output}.r | R --slave
+		'''
+
+
 
 rule simplifyGencode:
 	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
@@ -970,7 +1035,7 @@ rule plotSampleComparisonStats:
 	input: 
 		simpson=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.overlap_coeff.tsv",
 		jaccard=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.jaccard_ind.tsv",
-
+		sampleAnnot=config["SAMPLE_ANNOT"]
 	output: 
 		simpson=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.simpson.png",
 		jaccard=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.jaccard.png"
@@ -984,8 +1049,8 @@ library(RColorBrewer)
 library(viridis)
 
 dat <- read.table('{input.simpson}', header=T, as.is=T, sep='\t', row.names=1)
-annot <- read.table('{config[SAMPLE_ANNOT]}', header=T, as.is=T, sep='\t')
-annotSumm <- annot %>% select(sample_name, seqTech, libraryPrep, tissue)
+annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
+annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
 #pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4)
@@ -1004,8 +1069,8 @@ library(RColorBrewer)
 library(viridis)
 
 dat <- read.table('{input.jaccard}', header=T, as.is=T, sep='\t', row.names=1)
-annot <- read.table('{config[SAMPLE_ANNOT]}', header=T, as.is=T, sep='\t')
-annotSumm <- annot %>% select(sample_name, seqTech, libraryPrep, tissue)
+annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
+annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
 #pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4)
