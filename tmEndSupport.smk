@@ -12,7 +12,7 @@ rule cageSupportedfivepEnds:
 	input:
 		fivePends="mappings/nonAnchoredMergeReads/5pEnds/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed",
 		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
-		cagePeaks=lambda wildcards: CAPDESIGNTOCAGEPEAKS[wildcards.capDesign],
+		cagePeaks=lambda wildcards: GENOMETOCAGEPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
 	output: "mappings/nonAnchoredMergeReads/cageSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
 	shell:
@@ -21,6 +21,64 @@ uuidTmpOut=$(uuidgen)
 cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
+
+rule dhsSupportedfivepEnds:
+	input:
+		fivePends="mappings/nonAnchoredMergeReads/5pEnds/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed",
+		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		dhsPeaks=lambda wildcards: GENOMETODHSPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
+	output: "mappings/nonAnchoredMergeReads/dhsSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed"
+	shell:
+		'''
+uuidTmpOut=$(uuidgen)
+cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools intersect -u -a stdin -b {input.dhsPeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+		'''
+
+rule plotDhsVsCage5primeComparisonStats:
+	input: 
+		dhs="mappings/nonAnchoredMergeReads/dhsSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed",
+		cage="mappings/nonAnchoredMergeReads/cageSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
+	output: config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf"
+	shell:
+		'''
+uuidTmpCage=$(uuidgen)
+uuidTmpDhs=$(uuidgen)
+cat {input.cage} | cut -f4 |sort|uniq > {config[TMPDIR]}/$uuidTmpCage
+cat {input.dhs} | cut -f4 |sort|uniq > {config[TMPDIR]}/$uuidTmpDhs
+
+area1=$(cat {config[TMPDIR]}/$uuidTmpCage | wc -l)
+area2=$(cat {config[TMPDIR]}/$uuidTmpDhs | wc -l)
+oneItwo=$(comm -1 -2 {config[TMPDIR]}/$uuidTmpCage {config[TMPDIR]}/$uuidTmpDhs |wc -l)
+
+echo "
+pdf(file='{output}', bg = 'white')
+library(VennDiagram)
+venn.plot <- draw.pairwise.venn(
+area1=$area1,
+area2=$area2,
+cross.area=$oneItwo,
+fill = c('#ff8000', '#00cc00'),
+cat.pos=c(-20,20),
+col='black',
+alpha=0.6,
+fontfamily = rep('Helvetica', 3),
+cat.fontfamily = rep('Helvetica', 2),
+cat.fontface = rep('bold.italic', 2),
+euler.d=TRUE,
+scaled=TRUE,
+cex=3,
+cat.cex=2,
+cat.dist = c(0.05, 0.05),
+lty = rep('blank', 2),
+category=c('CAGE-supported', 'DHS-supported')
+)
+dev.off()
+" > {output}.r
+cat {output}.r | R --slave
+
+		'''
+
 
 
 rule extractPooledTmsThreepEnds:

@@ -16,7 +16,8 @@ CAPDESIGNTOGENOME=config["capDesignToGenome"]
 CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
 sizeFrac_Rpalette=config["SIZEFRACTION_RPALETTE"]
 long_Rpalette=config["LONG_RPALETTE"]
-CAPDESIGNTOCAGEPEAKS=config["capDesignToCAGEpeaks"]
+GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
+GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
 GENOMETOPAS=config["genomeToPAS"]
 DUMMY_DIR="dummy/"
 FQPATH=config["FQPATH"]
@@ -48,7 +49,7 @@ for genome in GENOMETOCAPDESIGNS:
 	if capDperGenome > 1:
 		for capD in GENOMETOCAPDESIGNS[genome]:
 			MERGEDCAPDESIGNS[mergedCapDString].append(capD)
-			CAPDESIGNTOCAGEPEAKS[mergedCapDString]=CAPDESIGNTOCAGEPEAKS[capD]
+			#CAPDESIGNTOCAGEPEAKS[mergedCapDString]=CAPDESIGNTOCAGEPEAKS[capD]
 			CAPDESIGNTOANNOTGTF[mergedCapDString]=CAPDESIGNTOANNOTGTF[capD]
 		CAPDESIGNTOGENOME[mergedCapDString]=genome
 
@@ -634,6 +635,7 @@ rule all:
 		expand(config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.simpson.png", capDesign=CAPDESIGNS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories, endSupport=ENDSUPPORTcategories),
 		expand(config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.jaccard.png", capDesign=CAPDESIGNS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories, endSupport=ENDSUPPORTcategories),
 		expand(config["PLOTSDIR"] + "gencode.detected.length.stats/{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.{ext}", capDesign=CAPDESIGNS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories, endSupport=ENDSUPPORTcategories, ext=config["PLOTFORMATS"]),
+		expand(config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 
 		#################
 		### Track hub ###
