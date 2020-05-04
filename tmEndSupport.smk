@@ -58,7 +58,7 @@ venn.plot <- draw.pairwise.venn(
 area1=$area1,
 area2=$area2,
 cross.area=$oneItwo,
-fill = c('#ff8000', '#00cc00'),
+fill = c('#ff8000', '#0086b3'),
 cat.pos=c(-20,20),
 col='black',
 alpha=0.6,
@@ -70,6 +70,7 @@ scaled=TRUE,
 cex=3,
 cat.cex=2,
 cat.dist = c(0.05, 0.05),
+cat.col= c('#ff8000', '#0086b3'),
 lty = rep('blank', 2),
 category=c('CAGE-supported', 'DHS-supported')
 )

@@ -34,7 +34,6 @@
           "mm10": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Mv1_allFracs_allTissues.tmerge.min2reads.all.gff"
         },
         "PLOTFORMATS" : ["png", "pdf"],
-        "STRANDS" : ["+", "-"],
         "MINIMUM_TMERGE_READ_SUPPORT": ["1", "2"],
     "DEMULTIPLEX": false,
     "USE_MATCHED_ILLUMINA": true,
