@@ -6,7 +6,7 @@
        "SPLICE_SITE_SCORES_DIR": "/users/rg/jlagarde/projects/splice_sites/geneid/",
        "SIZEFRACTION_RPALETTE": "c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')",
        "LONG_RPALETTE":"c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')",
-       "SAMPLE_ANNOT_RPALETTE":"list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3'), tissue = c(Brain = '#b3de69', Heart = '#fccde5', K562 ='#00bfff'))",
+       "SAMPLE_ANNOT_RPALETTE":"list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3'), tissue = c(Brain = '#b3de69', Heart = '#fccde5', K562 ='#00bfff', A549 ='#009933'))",
        "STATSDATADIR" : "Rinput/",
        "capDesignToGenome" : {
            "HpreCap": "hg38",

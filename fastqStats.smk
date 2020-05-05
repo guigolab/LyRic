@@ -13,7 +13,31 @@ count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
 		'''
 
+rule checkSampleAnnotations:
+	input: 
+		fq=FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
+		sampleAnnot=config["SAMPLE_ANNOT"]
+	output: FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.sampleAnnot.txt"
+	shell:
+		'''
+echo "
+library(tidyverse)
 
+annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\\t')
+annot %>% filter(sample_name == '{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}') -> annotSub
+
+annotSub %>% count() -> countInstances
+sink('{output}')
+print (countInstances)
+sink()
+if(countInstances != 1) {{
+print('Non-unique or absent sample_name')
+quit(status=11, save='no')
+}}
+"> {output}.r
+cat {output}.r | R --slave
+
+		'''
 
 #get read lengths for all FASTQ files:
 rule getReadLength:
