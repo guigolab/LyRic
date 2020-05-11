@@ -222,7 +222,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule plotMetaTmEndsStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.meta.stats"),
 
 	params:
@@ -248,9 +248,11 @@ dat <- fread('{input}', header=T, sep='\\t')
 {params.filterDat[8]}
 {params.filterDat[11]}
 
+dat\$end <- factor(dat\$end)
+
 plotBase <- \\"ggplot(dat, aes(x=normDistance, color=end)) +
 stat_density(geom='line', adjust=3) +
-scale_color_manual(values=c('5p' = '#009900', '3p' = '#800000')) +
+scale_color_manual(values=c('5' = '#009900', '3' = '#800000')) +
 xlab('Normalized distance of read ends to TM\\'s TSS') +
 {GGPLOT_PUB_QUALITY}+ \\"
 
@@ -280,10 +282,76 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 		'''
 
 
-rule plotAbsTmEndsStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+rule plotAbsFiveTmEndsStats:
+	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
 	output:
 		five=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.5p.abs.stats"),
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
+	shell:
+		'''
+
+echo "
+library(cowplot)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(data.table)
+library(dplyr)
+
+dat <- fread('{input}', header=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+{params.filterDat[11]}
+
+dat <- subset(dat, end==5)
+
+dat\$end <- factor(dat\$end)
+summaryStatsFive = transform(summarise(group_by(dat,seqTech, sizeFrac, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
+
+
+plotBase <- \\"ggplot(dat, aes(x=distance)) +
+geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
+scale_fill_manual(values=c('5' = '#009900'), name='End', labels =c('5' = '5´')) +
+xlab('Distance of read ends\\nto TM´s TSS (mature RNA nts)') +
+geom_text(data = summaryStatsFive, aes(label = Label, x = 0, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
+coord_cartesian(xlim=c(0, 2000)) +
+{GGPLOT_PUB_QUALITY}+ \\"
+
+{params.filterDat[12]}
+
+save_plot('{output.five[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.five[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output.five[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.five[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output.five[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.five[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output.five[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.five[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output.five[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.five[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+" > $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r
+cat $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r | R --slave
+
+
+		'''
+
+
+rule plotAbsThreeTmEndsStats:
+	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+	output:
 		three=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.3p.abs.stats"),
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
@@ -310,46 +378,15 @@ dat <- fread('{input}', header=T, sep='\\t')
 {params.filterDat[8]}
 {params.filterDat[11]}
 
-datFive <- subset(dat, end=='5p')
-summaryStatsFive = transform(summarise(group_by(datFive,seqTech, sizeFrac, capDesign, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
+dat <- subset(dat, end==3)
+dat\$end <- factor(dat\$end)
 
-datThree <- subset(dat, end=='3p')
-summaryStatsThree = transform(summarise(group_by(datThree,seqTech, sizeFrac, capDesign, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
-
+summaryStatsThree = transform(summarise(group_by(dat,seqTech, sizeFrac, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
 
 
-plotBase <- \\"ggplot(datFive, aes(x=distance)) +
+plotBase <- \\"ggplot(dat, aes(x=distance)) +
 geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
-scale_fill_manual(values=c('5p' = '#009900'), name='End', labels =c('5p' = '5´')) +
-xlab('Distance of read ends\\nto TM´s TSS (mature RNA nts)') +
-geom_text(data = summaryStatsFive, aes(label = Label, x = 0, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
-coord_cartesian(xlim=c(0, 2000)) +
-{GGPLOT_PUB_QUALITY}+ \\"
-
-{params.filterDat[12]}
-
-save_plot('{output.five[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output.five[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-
-save_plot('{output.five[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output.five[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-
-save_plot('{output.five[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.five[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output.five[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output.five[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output.five[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output.five[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-
-
-
-
-
-plotBase <- \\"ggplot(datThree, aes(x=distance)) +
-geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
-scale_fill_manual(values=c('3p' = '#800000'), name='End', labels =c('3p' = '3´')) +
+scale_fill_manual(values=c('3' = '#800000'), name='End', labels =c('3' = '3´')) +
 xlab('Distance of read ends\\n to TM´s 3´ end (mature RNA nts)') +
 geom_text(data = summaryStatsThree, aes(label = Label, x = -Inf, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
 coord_cartesian(xlim=c(-2000, 0)) +
@@ -372,8 +409,10 @@ save_plot('{output.three[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
 save_plot('{output.three[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 save_plot('{output.three[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
-" > $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r
-cat $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r | R --slave
+" > $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r
+cat $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r | R --slave
 
 
 		'''
+
+

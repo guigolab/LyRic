@@ -20,23 +20,30 @@
     },
 "plotReadLength":
 {
-"virtual_free" : "30G",
+"virtual_free" : "40G",
 "h_rt": "03:00:00",
 },
     "aggTmStats":
     {
       "h_rt" : "04:00:00",
     },
+    "removeIntraPriming":{
+  "virtual_free": "25G"
+    },
     "plotMetaTmEndsStats":
     {
       "h_rt" : "02:00:00",
       "virtual_free" : "30G"
     },
-    "plotAbsTmEndsStats":
+    "plotAbsFiveTmEndsStats":
     {
-      "h_rt" : "03:00:00",
-      "virtual_free" : "40G"
+      "h_rt" : "01:00:00",
+      "virtual_free" : "30G"
     },
+    "plotAbsThreeTmEndsStats": {
+      "h_rt": "01:00:00",
+      "virtual_free": "30G"
+    },    
     "mergeCurrentPreviousPhaseTmsWithGencodeBiotypes":
     {
       "virtual_free" : "15G"
@@ -49,8 +56,9 @@
     "readMapping" :
     {
         "virtual_free" : "40G",
-        "h_rt" : "6:00:00",
-        "threads" : "-pe smp 12"
+        "h_rt" : "10:00:00",
+        "threads" : "-pe smp 12",
+        "queue": "rg-el7,long-sl7"
     },
     "hiSeqReadMapping" :
     {
@@ -278,7 +286,8 @@
     },
     "tmergeAll":
     {
-      "disk": "50G"
+      "disk": "50G",
+      "h_rt": "6:00:00"
     },
 
 }
