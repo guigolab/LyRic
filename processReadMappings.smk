@@ -671,3 +671,111 @@ save_plot('{output.hist[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_heig
 cat $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r | R --slave
 
 		'''
+
+
+rule getGeneReadCoverageStats:
+	input: 
+		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		bam = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		tmerge = "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min1reads.splicing_status:all.endSupport:all.gff",
+		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+	output: 
+		gencode="mappings/geneReadCoverage/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gencode.coverage.tsv",
+		tmerge="mappings/geneReadCoverage/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.coverage.tsv"
+	wildcard_constraints:
+		barcodes='(?!allTissues).+',
+		sizeFrac='[0-9-+\.]+',
+		techname='(?!allSeqTechs).+'
+	shell:
+		'''
+uuid=$(uuidgen)
+cut -f1 {input.genome} |sort|uniq > {config[TMPDIR]}/$uuid.chr
+
+#gencode
+cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| fgrep -w -f {config[TMPDIR]}/$uuid.chr |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.1
+
+bedtools coverage -sorted -g {input.genome} -bed -split -nonamecheck -counts -a {config[TMPDIR]}/$uuid.1 -b {input.bam} |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}'> {config[TMPDIR]}/$uuid.2
+
+mv {config[TMPDIR]}/$uuid.2 {output.gencode}
+
+#tmerge
+bedtools intersect -s -wao -a {input.tmerge} -b  {input.tmerge} | buildLoci.pl - | extract_locus_coords.pl -| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.3
+
+bedtools coverage -sorted -g {input.genome}  -bed -split -nonamecheck -counts -a {config[TMPDIR]}/$uuid.3 -b {input.bam}  |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}' > {config[TMPDIR]}/$uuid.4
+mv {config[TMPDIR]}/$uuid.4 {output.tmerge}
+
+		'''
+
+rule aggGeneReadCoverageStats:
+	input: lambda wildcards: expand("mappings/geneReadCoverage/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.coverage.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED)
+	output: 
+		config["STATSDATADIR"] + "all.tmerge.GeneReadCoverage.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\tgene_id\\treadCount" > {config[TMPDIR]}/$uuid
+cat {input} | cut -f1-4,8,9| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/'   >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+
+		'''
+
+rule plotGeneReadCoverageStats:
+	input: config["STATSDATADIR"] + "all.tmerge.GeneReadCoverage.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "geneReadCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats")
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	shell:
+		'''
+echo "
+library(cowplot)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(dplyr)
+library(data.table)
+
+dat<-fread('{input}', header=T, sep='\\t')
+
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+dat <- arrange(dat, desc(readCount))
+group_by(dat, seqTech, correctionLevel, capDesign, sizeFrac, tissue) %>% mutate(rank=row_number()) -> dat
+mutate(dat, rank=row_number()) -> dat
+dat <- mutate(dat, cumSum=cumsum(readCount))
+dat <- mutate(dat, cumProp=cumSum/sum(readCount))
+filter(dat, rank==10)  -> cumPropTop10Genes
+
+
+plotBase <- \\"ggplot(dat, aes(x = rank, y = cumProp)) + geom_line() + scale_x_log10() + ylim(0,1)+ geom_segment(data = cumPropTop10Genes, aes(x=10,xend=10,y=0,yend=cumProp), color='firebrick3') + geom_segment(data = cumPropTop10Genes, aes(x=0,xend=10,y=cumProp,yend=cumProp,color='Contribution\\nof top 10 genes')) + labs(y='Proportion of total mapped reads', x='# genes (ranked by expression)', color='') + scale_color_manual(values = c('Contribution\nof top 10 genes' = 'firebrick3')) + facet_grid( seqTech ~ capDesign + tissue) + geom_rect(data = cumPropTop10Genes, aes(xmin=0,xmax=10,ymin=0,ymax=cumProp),fill='firebrick3', alpha=0.3, size=0) +
+{GGPLOT_PUB_QUALITY} + \\"
+
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+		'''

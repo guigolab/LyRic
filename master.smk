@@ -638,6 +638,7 @@ rule all:
 		expand(config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.jaccard.png", capDesign=CAPDESIGNS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories, endSupport=ENDSUPPORTcategories),
 		expand(config["PLOTSDIR"] + "gencode.detected.length.stats/{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.{ext}", capDesign=CAPDESIGNS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories, endSupport=ENDSUPPORTcategories, ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "geneReadCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL, capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUEnoALL), # facetted histograms of read length
 
 		#################
 		### Track hub ###
