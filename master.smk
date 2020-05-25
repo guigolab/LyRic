@@ -543,7 +543,7 @@ def trackHubSubGroupString(tn, cd, sf, bc, cl, m):
 	returnSubGroup4StringData=set(returnSubGroup4StringData)
 	#print ("returnSubGroup2StringData set")
 	#print (returnSubGroup2StringData)
-	return(returnSubGroup1String + " " + " ".join(returnSubGroup1StringData) + "\n" + returnSubGroup2String + " " + " ".join(returnSubGroup2StringData) + "\n" + returnSubGroup3String + " " + " ".join(returnSubGroup3StringData)+ "\n" + returnSubGroup4String + " " + " ".join(returnSubGroup4StringData))
+	return(returnSubGroup1String + " " + " ".join(sorted(returnSubGroup1StringData)) + "\n" + returnSubGroup2String + " " + " ".join(sorted(returnSubGroup2StringData)) + "\n" + returnSubGroup3String + " " + " ".join(sorted(returnSubGroup3StringData))+ "\n" + returnSubGroup4String + " " + " ".join(sorted(returnSubGroup4StringData)))
 
 def trackChecked(t,c,cd,s,b,m):
 	checked=''

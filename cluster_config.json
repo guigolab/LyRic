@@ -10,7 +10,7 @@
         "out" : "{workflow.basedir}/qsub_logs/",
         "project": "prj006070",
         "threads" : "",
-        "node": "*",
+        "node": "!node-hp0104rg.linux.crg.es",
         "disk" :"2G"
     },
     "makeReadsBlastDB":
@@ -80,7 +80,7 @@
     {
         "queue" : "rg-el7,long-sl7",
         "h_rt" : "10:00:00",
-        "virtual_free" : "1G"
+        "virtual_free" : "5G"
         },
 
 "polyAmapping" :
