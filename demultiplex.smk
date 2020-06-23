@@ -103,6 +103,9 @@ ylab('% reads with UP') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=3)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 		'''
 
@@ -125,6 +128,9 @@ ylab('% reads with any barcode') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=3)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''
@@ -149,6 +155,9 @@ ylab('% reads with foreign barcode') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=3)
 " > {output}.r
+  set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''
@@ -207,7 +216,11 @@ ylab('% reads with multiple\ndistinct barcodes') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=3)
 " > {output}.r
-cat {output}.r | R --slave
+  set +eu
+conda activate R_env
+set -eu
+
+ cat {output}.r | R --slave
 		'''
 
 rule getAdaptersLocationOverReads:
@@ -248,6 +261,9 @@ theme_bw(base_size=17) +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=9, height=3)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''
@@ -302,6 +318,10 @@ ylab('% chimeric reads') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=3)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
+
 cat {output}.r | R --slave
 
 		'''
@@ -361,6 +381,9 @@ ylab('% unambiguously demultiplexed,\nnon-chimeric reads') +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', width=7, height=3)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''
@@ -455,6 +478,9 @@ theme_bw(base_size=17) +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ggsave('{output}', width=13, height=9)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''

@@ -140,6 +140,7 @@ rule plotGeneidScores:
 		'''
 echo "
 library(data.table)
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -163,7 +164,7 @@ fun_length <- function(x){{
 return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
 }}
 
-plotBase <- \\"ggplot(dat, aes(x=ssCategory, y=ssScore, color=ssCategory)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=ssCategory, y=ssScore, color=ssCategory)) +
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(-9, 4.5)) +
 scale_color_manual(values=palette, name='Category', labels = c(random = 'Random', GENCODE_protein_coding = 'GENCODE\nprotein-coding', CLS_TMs='CLS TMs', CLS_reads='CLS raw reads')) +
@@ -195,6 +196,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -263,6 +267,8 @@ rule plotCompareClsGencodeSJsStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -283,7 +289,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('common', 'novel')))
 
-plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual (values=c(annOnly='#7D96A2',common='#83A458', novel='#B8CF7E'), labels=c(annOnly='Only in GENCODE', common='In CLS+GENCODE', novel='Only in CLS')) +
 ylab('# Splice Junctions')+
@@ -312,6 +318,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 

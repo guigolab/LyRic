@@ -45,6 +45,7 @@ rule plotTargetCoverageStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -66,7 +67,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 plotWidth = plotWidth + 2
 plotHeight = plotHeight + 2
 
-plotBase <- \\"ggplot(dat, aes(x=factor(correctionLevel), y=percentDetectedTargets, fill=targetType)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=factor(correctionLevel), y=percentDetectedTargets, fill=targetType)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={long_Rpalette}) +
 geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7) +
@@ -96,6 +97,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -216,6 +220,7 @@ rule plotGffCompareSirvStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -237,7 +242,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 plotHeight = plotHeight +1
 plotWidth = plotWidth +1
-plotBase <- \\"ggplot(dat, aes(x=level, y=value)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=level, y=value)) +
 geom_mark_rect(aes(filter = level == 'Transcript' & metric == 'Pr'), size=2, expand = unit(7, 'mm'), radius = unit(4, 'mm'), color='#4d4d4d', fill='#ffff00') +
 geom_point(aes(color=metric), shape=18, size=10, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
@@ -267,6 +272,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 		'''
 
@@ -307,6 +315,8 @@ rule plotSirvDetectionStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -327,7 +337,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 
-plotBase <- \\"ggplot(dat, aes(x=concentration, y=length, color=detectionStatus)) + geom_point(alpha=0.8, shape=18) +
+plotBase <- \\"p <- ggplot(dat, aes(x=concentration, y=length, color=detectionStatus)) + geom_point(alpha=0.8, shape=18) +
 coord_trans(x='log2') +
 scale_color_manual(values=palette) +
 xlab('SIRV molarity (fmol/uL)') +
@@ -353,6 +363,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -430,6 +443,8 @@ rule plotGffCompareGencodeSnPrStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -451,7 +466,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 plotHeight = plotHeight +1
 plotWidth = plotWidth +1
 
-plotBase <- \\"ggplot(dat, aes(x=level, y=value)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=level, y=value)) +
 geom_point(aes(color=metric), shape=18, size=10, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 ylab('Sn | Pr (%)') +
@@ -480,6 +495,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -505,6 +523,8 @@ rule plotGffCompareStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -526,7 +546,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('Intergenic', 'Extends', 'Intronic', 'Overlaps', 'Antisense', 'Equal', 'Included')))
 palette <- c('Intergenic' = '#0099cc', 'Extends' ='#00bfff', 'Intronic' = '#4dd2ff', 'Overlaps' = '#80dfff', 'Antisense' = '#ccf2ff', 'Equal' = '#c65353', 'Included' ='#d98c8c')
 
-plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual(values=palette) +
 ylab('# TMs') +
@@ -555,6 +575,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -599,6 +622,8 @@ rule plotTmVsGencodeLengthStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(dplyr)
 library(scales)
@@ -629,7 +654,7 @@ dat %>%
 
 summaryStats = transform(datSumm, Label = paste0('N= ', comma(n)) )
 
-plotBase <- \\"ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
+plotBase <- \\"p <- ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
 geom_abline(intercept=0, alpha=0.09, size=1) +
 geom_point(alpha=0.1,size=0.5, stroke = 0) + 
 #geom_density_2d(size=0.1, alpha=0.3) +
@@ -694,7 +719,7 @@ save_plot('{output.bySS[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_h
 
 
 
-plotBase <- \\"ggplot(datAll, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
+plotBase <- \\"p <- ggplot(datAll, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
 geom_abline(intercept=0, alpha=0.09, size=1) +
 geom_point(alpha=0.1,size=0.5, stroke = 0) + 
 #geom_density_2d(size=0.1, alpha=0.3) +
@@ -753,6 +778,9 @@ save_plot('{output.all[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_he
 
 
 " > $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -816,6 +844,9 @@ scale_x_discrete('Sample', labels=labeller) +
 {GGPLOT_PUB_QUALITY}
 ggsave('{output}', p, width=9, height=7)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 		'''
 
@@ -930,6 +961,8 @@ rule plotNovelIntergenicLociStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -948,7 +981,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('intronic', 'intergenic')))
-plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 ylab('# Novel CLS loci') +
 scale_y_continuous(labels=comma)+
@@ -978,6 +1011,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -1042,7 +1078,6 @@ rule plotSampleComparisonStats:
 	shell:
 		'''
 echo "
-library(cluster)
 library(pheatmap)
 library(tidyverse)
 library(RColorBrewer)
@@ -1053,16 +1088,17 @@ annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
 annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-#pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=4,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
 
 " > {output.simpson}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output.simpson}.r | R --slave
 
 
 
 echo "
-library(cluster)
 library(pheatmap)
 library(tidyverse)
 library(RColorBrewer)
@@ -1073,11 +1109,14 @@ annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
 annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-#pheatmap(dat,clustering_method='ward.D2', color = inferno(length(simBreaks) - 1), breaks = simBreaks, treeheight_col=0, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=4,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
 
 
 " > {output.jaccard}.r
+ set +eu
+conda activate R_env
+set -eu
+
 cat {output.jaccard}.r | R --slave
 
 		'''

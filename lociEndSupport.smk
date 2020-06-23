@@ -270,6 +270,7 @@ rule plotFlLocusGencodeOnlyStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -296,7 +297,7 @@ dat\$annotbiotype <- paste(sep='', dat\$biotype, '\\n(', dat\$annotation_set, ')
 plotHeight = plotHeight +1
 plotWidth = plotWidth +0.5
 
-plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(annotbiotype), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(annotbiotype), y=count, fill=category)) +
 geom_bar(stat='identity') +
 ylab('# gene loci') +
 scale_y_continuous(labels=comma)+
@@ -326,6 +327,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -339,6 +343,7 @@ rule plotFlLocusStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -365,7 +370,7 @@ dat\$annotbiotype <- paste(sep='', dat\$biotype, '\\n(', dat\$annotation_set, ')
 plotHeight = plotHeight +1
 plotWidth = plotWidth +2.5
 
-plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(annotbiotype), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(annotbiotype), y=count, fill=category)) +
 geom_bar(stat='identity') +
 ylab('# gene loci') +
 scale_y_continuous(labels=comma)+
@@ -395,6 +400,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 

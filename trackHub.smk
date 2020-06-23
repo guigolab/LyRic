@@ -213,7 +213,7 @@ rule makeBamOutputTracks:
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 samtools view -H {input} > {config[TMPDIR]}/$uuid
-samtools view {input} | grep -P "\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
+samtools view {input} | grep -P "\\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
 samtools view -b {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuidTmpOut
 sleep 60s
 samtools index {config[TMPDIR]}/$uuidTmpOut

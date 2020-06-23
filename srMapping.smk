@@ -93,6 +93,9 @@ theme_bw(base_size=17) +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ggsave('{output}', width=7, height=9)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''
@@ -156,6 +159,9 @@ xlab ('capDesign') +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ggsave('{output}', width=7, height=9)
 " > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''

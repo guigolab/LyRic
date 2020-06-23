@@ -76,6 +76,9 @@ category=c('CAGE-supported', 'DHS-supported')
 )
 dev.off()
 " > {output}.r
+set +eu
+conda activate R_env
+set -eu
 cat {output}.r | R --slave
 
 		'''
@@ -167,6 +170,8 @@ rule plotCagePolyAStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -185,7 +190,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('cageOnly', 'cageAndPolyA', 'polyAOnly', 'noCageNoPolyA')))
-plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 ylab('# TMs') +
 scale_y_continuous(labels=comma)+
@@ -215,6 +220,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -230,6 +238,8 @@ rule plotMetaTmEndsStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -250,7 +260,7 @@ dat <- fread('{input}', header=T, sep='\\t')
 
 dat\$end <- factor(dat\$end)
 
-plotBase <- \\"ggplot(dat, aes(x=normDistance, color=end)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=normDistance, color=end)) +
 stat_density(geom='line', adjust=3) +
 scale_color_manual(values=c('5' = '#009900', '3' = '#800000')) +
 xlab('Normalized distance of read ends to TM\\'s TSS') +
@@ -275,6 +285,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -292,6 +305,8 @@ rule plotAbsFiveTmEndsStats:
 		'''
 
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(scales)
 library(gridExtra)
@@ -317,7 +332,7 @@ dat\$end <- factor(dat\$end)
 summaryStatsFive = transform(summarise(group_by(dat,seqTech, sizeFrac, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
 
 
-plotBase <- \\"ggplot(dat, aes(x=distance)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=distance)) +
 geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
 scale_fill_manual(values=c('5' = '#009900'), name='End', labels =c('5' = '5´')) +
 xlab('Distance of read ends\\nto TM´s TSS (mature RNA nts)') +
@@ -343,6 +358,9 @@ save_plot('{output.five[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_heig
 save_plot('{output.five[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r
+set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r | R --slave
 
 
@@ -359,6 +377,8 @@ rule plotAbsThreeTmEndsStats:
 		'''
 
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(scales)
 library(gridExtra)
@@ -384,7 +404,7 @@ dat\$end <- factor(dat\$end)
 summaryStatsThree = transform(summarise(group_by(dat,seqTech, sizeFrac, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
 
 
-plotBase <- \\"ggplot(dat, aes(x=distance)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=distance)) +
 geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
 scale_fill_manual(values=c('3' = '#800000'), name='End', labels =c('3' = '3´')) +
 xlab('Distance of read ends\\n to TM´s 3´ end (mature RNA nts)') +
@@ -410,6 +430,9 @@ save_plot('{output.three[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_hei
 save_plot('{output.three[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r
+set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r | R --slave
 
 

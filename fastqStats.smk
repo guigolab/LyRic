@@ -35,6 +35,10 @@ print('Non-unique or absent sample_name')
 quit(status=11, save='no')
 }}
 "> {output}.r
+ set +eu
+conda activate R_env
+set -eu
+
 cat {output}.r | R --slave
 
 		'''
@@ -78,6 +82,7 @@ rule plotReadLength:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(scales)
 library(gridExtra)
@@ -104,7 +109,7 @@ dat %>%
 summaryStats = transform(datSumm, LabelN = paste0('N= ', comma(n)), LabelM = paste0( 'Median= ', comma(med))) 
 
 geom_textSize = geom_textSize + 1
-plotBase <- \\"ggplot(dat, aes(x=length)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=length)) +
 geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=100) +
 geom_vline(data = summaryStats, aes(xintercept=med), color='#ff0055', linetype='solid', size=1.2) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
@@ -134,6 +139,10 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 

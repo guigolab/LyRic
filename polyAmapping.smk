@@ -106,6 +106,9 @@ scale_color_manual(values=palette) +
 geom_line() + facet_grid( techname + capDesign ~ correction) + ylab('Pr/Sn') + xlab('minimum required A(n) length') + ylim(0, 1)
 ggsave('{output}', width=7, height=8)
 "  > {output}.r
+ set +eu
+conda activate R_env
+set -eu
 cat {output}.r| R --slave
 
 		'''
@@ -181,6 +184,7 @@ rule plotAllPolyAreadsStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -199,7 +203,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-plotBase <- \\"ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') + 
 scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) +
 ylab('# mapped reads') +
@@ -228,6 +232,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''

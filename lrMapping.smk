@@ -75,6 +75,8 @@ rule plotMappingStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -91,7 +93,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-plotBase <- \\"ggplot(data=dat, aes(x=tissue, y=percentMappedReads, fill=sizeFrac)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=tissue, y=percentMappedReads, fill=sizeFrac)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
 geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
@@ -120,6 +122,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -144,6 +149,7 @@ rule plotSpikeInsMappingStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -162,7 +168,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 maxY <- max(dat\$percent)
-plotBase <- \\"ggplot(data=dat, aes(x=factor(correctionLevel), y=percent, fill=category)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=percent, fill=category)) +
 geom_bar(stat='identity', position=position_dodge()) +
 geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 0, label = paste(sep='',percent(percent),'\\n','(',comma(count),')')), hjust = 0, vjust = 0.5, angle=90) +
 scale_fill_manual(values=c('ERCCs' = '#e4b5ff', 'SIRVs' = '#5edba9')) +
@@ -194,6 +200,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''

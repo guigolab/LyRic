@@ -18,9 +18,13 @@
       "h_rt" : "00:20:00",
       "virtual_free" : "2G"
     },
+    "getHiSeqSupportedHCGMs":
+    {
+      "virtual_free": "15G"
+    },
 "plotReadLength":
 {
-"virtual_free" : "40G",
+"virtual_free" : "60G",
 "h_rt": "03:00:00",
 },
     "aggTmStats":
@@ -292,7 +296,8 @@
     "tmergeAll":
     {
       "disk": "50G",
-      "h_rt": "6:00:00"
+      "h_rt": "6:00:00",
+      "virtual_free": "20G"
     },
 
 }

@@ -205,6 +205,7 @@ rule plotAllHiSSStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(plyr)
 library(scales)
@@ -222,7 +223,7 @@ dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('HCGM-mono', 'HC
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-plotBase <- \\"ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
 scale_fill_manual(values=c('HCGM-mono' = '#9ce2bb', 'HCGM-spliced' = '#39c678', 'nonHCGM-mono' = '#fda59b', 'nonHCGM-spliced' = '#fa341e')) +
 ylab('# mapped reads') +
@@ -252,6 +253,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -451,6 +455,8 @@ rule plotMergingStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -468,7 +474,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 
-plotBase <- \\"ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity', position=position_dodge()) +
 geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 1, label = comma(count), hjust = 0, vjust = 0.5), angle=90) +
 scale_fill_manual(values=c('HCGMreads' = '#d98cb3', 'mergedTMs' = '#cc9966')) +
@@ -498,6 +504,9 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -529,6 +538,8 @@ rule plotBoxTmLengthStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(plyr)
 library(scales)
@@ -556,7 +567,7 @@ return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
 fun_median <- function(x){{
 return(data.frame(y=-8.5,label= paste0('Median=', comma(median(x)))))
 }}
-plotBase <- \\"ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, color=category)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, color=category)) +
 geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
 coord_cartesian(ylim=c(100, 3000)) +
 scale_y_continuous(labels=comma)+
@@ -590,6 +601,9 @@ save_plot('{output.box[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_heigh
 
 
 " > $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -605,6 +619,7 @@ rule plotHistTmLengthStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
 library(cowplot)
 library(dplyr)
 library(scales)
@@ -635,7 +650,7 @@ summaryStats = transform(datSumm, LabelM = comma(round(med, digits = 0)))
 geom_textSize = geom_textSize + 1
 
 
-plotBase <- \\"ggplot(dat, aes(x=mature_RNA_length, fill=category)) +
+plotBase <- \\"p <- ggplot(dat, aes(x=mature_RNA_length, fill=category)) +
 geom_histogram(binwidth=100, alpha=0.35, position='identity') +
 geom_vline(data=summaryStats, aes(xintercept=med, color=category), size=1, show.legend=FALSE) +
 geom_text(data = summaryStats[summaryStats\$category=='CLS_TMs',], aes(label = LabelM, x = Inf, y = Inf, color=category), hjust=1.2, vjust=1,  size=geom_textSize, show.legend=FALSE) +
@@ -668,6 +683,9 @@ save_plot('{output.hist[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_heig
 save_plot('{output.hist[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -727,6 +745,8 @@ rule plotGeneReadCoverageStats:
 	shell:
 		'''
 echo "
+library(ggplot2)
+
 library(cowplot)
 library(scales)
 library(gridExtra)
@@ -754,7 +774,7 @@ dat <- mutate(dat, cumProp=cumSum/sum(readCount))
 filter(dat, rank==10)  -> cumPropTop10Genes
 
 
-plotBase <- \\"ggplot(dat, aes(x = rank, y = cumProp)) + geom_line() + scale_x_log10() + ylim(0,1)+ geom_segment(data = cumPropTop10Genes, aes(x=10,xend=10,y=0,yend=cumProp), color='firebrick3') + geom_segment(data = cumPropTop10Genes, aes(x=0,xend=10,y=cumProp,yend=cumProp,color='Contribution\\nof top 10 genes')) + labs(y='Proportion of total mapped reads', x='# genes (ranked by expression)', color='') + scale_color_manual(values = c('Contribution\nof top 10 genes' = 'firebrick3')) + facet_grid( seqTech ~ capDesign + tissue) + geom_rect(data = cumPropTop10Genes, aes(xmin=0,xmax=10,ymin=0,ymax=cumProp),fill='firebrick3', alpha=0.3, size=0) +
+plotBase <- \\"p <- ggplot(dat, aes(x = rank, y = cumProp)) + geom_line() + scale_x_log10() + ylim(0,1)+ geom_segment(data = cumPropTop10Genes, aes(x=10,xend=10,y=0,yend=cumProp), color='firebrick3') + geom_segment(data = cumPropTop10Genes, aes(x=0,xend=10,y=cumProp,yend=cumProp,color='Contribution\\nof top 10 genes')) + labs(y='Proportion of total mapped reads', x='# genes (ranked by expression)', color='') + scale_color_manual(values = c('Contribution\nof top 10 genes' = 'firebrick3')) + facet_grid( seqTech ~ capDesign + tissue) + geom_rect(data = cumPropTop10Genes, aes(xmin=0,xmax=10,ymin=0,ymax=cumProp),fill='firebrick3', alpha=0.3, size=0) +
 {GGPLOT_PUB_QUALITY} + \\"
 
 
@@ -776,6 +796,9 @@ save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
