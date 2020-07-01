@@ -51,7 +51,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule removeIntraPriming:
 	input: 
 		strandedGff="mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	output: "mappings/intraPriming/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.list"
 	shell:
 		'''
@@ -290,7 +290,7 @@ rule nonAnchoredMergeUnfilteredSirvReads:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-zcat {input} | awk '$1=="SIRVome_isoforms" || $1=="chrIS"' > {config[TMPDIR]}/$uuid
+zcat {input} | awk '$1 ~ /SIRV/ || $1=="chrIS"' > {config[TMPDIR]}/$uuid
 
 cat {config[TMPDIR]}/$uuid| tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -696,7 +696,7 @@ rule getGeneReadCoverageStats:
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		bam = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		tmerge = "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min1reads.splicing_status:all.endSupport:all.gff",
-		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: 
 		gencode="mappings/geneReadCoverage/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gencode.coverage.tsv",
 		tmerge="mappings/geneReadCoverage/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.coverage.tsv"

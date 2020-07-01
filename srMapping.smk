@@ -1,9 +1,22 @@
+rule makeStarIndex:
+	input: genome = config["GENOMESDIR"] +"{genome}.sorted.fa"
+	output: config["GENOMESDIR"] + "STARshort_indices/" + "{genome}/SA"
+	shell:
+		'''
+uuid=$(uuidgen)
+mkdir -p {config[TMPDIR]}/$uuid ; 
+mkdir -p $(dirname {output}); 
+STAR --runMode genomeGenerate --runThreadN 3 --genomeDir {config[TMPDIR]}/$uuid --genomeFastaFiles {input}
+mv -f {config[TMPDIR]}/$uuid/* $(dirname {output})
+		'''
+
+
 rule hiSeqReadMapping:
 	input:
 		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz",
 		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz",
-		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/",
-		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/SA",
+#		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
 	output:
 		"mappings/hiSeq_{capDesign}.bam"
@@ -17,10 +30,9 @@ mkdir -p mappings/STAR/`basename {output}`/
 STAR \
 --runThreadN {threads} \
 --readFilesIn {input.reads1} {input.reads2} \
---genomeDir {input.genome} \
+--genomeDir $(dirname {input.genome}) \
 --readFilesCommand zcat \
 --sjdbOverhang 124 \
---sjdbGTFfile {input.referenceAnnot} \
 --outFileNamePrefix "mappings/STAR/`basename {output}`/" \
 --outStd SAM \
 --genomeLoad NoSharedMemory \
@@ -38,7 +50,7 @@ STAR \
 --outSAMstrandField intronMotif \
 --outSAMattributes NH HI NM MD AS nM XS \
 | samtools view -b -u -S - | samtools sort -T {config[TMPDIR]}  -@ 2   -m 15000000000 - > {config[TMPDIR]}/$uuidTmpOut
-sleep 120s
+sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
 echoerr "Mapping done"
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -104,7 +116,7 @@ cat {output}.r | R --slave
 rule getHiSeqCanonicalIntronsList:
 	input:
 		bam="mappings/hiSeq_{capDesign}.bam",
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	threads: 6
 	output:
 		list="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list",

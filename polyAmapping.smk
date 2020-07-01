@@ -2,14 +2,14 @@
 rule getPolyAsitesTestPolyAmapping:
 	input:
 		reads="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_0+_allTissues.bam",
-		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	params:
 		minAcontent=0.8
 	output: temp("mappings/polyAmapping/calibration/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.bed")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRVome_isoforms |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuidTmpOut
+samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRV |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
@@ -32,11 +32,11 @@ uuidTmpOutP=$(uuidgen)
 cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort -T {config[TMPDIR]}  | uniq > {config[TMPDIR]}/$uuid.list
 
 #non polyA:
-cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -v -w -f {config[TMPDIR]}/$uuid.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {config[TMPDIR]}/$uuidTmpOutN
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRV| fgrep -v -w -f {config[TMPDIR]}/$uuid.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {config[TMPDIR]}/$uuidTmpOutN
 mv {config[TMPDIR]}/$uuidTmpOutN {output.outNonPolyA}
 
 #polyA:
-cat {input.reads}| fgrep -v ERCC | fgrep -v SIRVome_isoforms| fgrep -w -f {config[TMPDIR]}/$uuid.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {config[TMPDIR]}/$uuidTmpOutP
+cat {input.reads}| fgrep -v ERCC | fgrep -v SIRV| fgrep -w -f {config[TMPDIR]}/$uuid.list | gff2bed_full.pl - | extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);' > {config[TMPDIR]}/$uuidTmpOutP
 mv {config[TMPDIR]}/$uuidTmpOutP {output.outPolyA}
 
 
@@ -46,7 +46,7 @@ rule compareToPASTestPolyAmapping:
 	input:
 		tpend="mappings/polyAmapping/calibration/3pends/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bed",
 		PAS=lambda wildcards: CAPDESIGNTOPAS[wildcards.capDesign],
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: temp("mappings/polyAmapping/calibration/3pends/vsPAS/{techname}Corr{corrLevel}_{capDesign}.polyA.minClipped.{minA}.{tpend}.3pEnds.bedtsv")
 
 	shell:
@@ -118,7 +118,7 @@ cat {output}.r| R --slave
 rule polyAmapping:
 	input:
 		reads = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	params:
 		minAcontent=0.8
 	output: "mappings/polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
@@ -252,7 +252,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule makePolyABigWigs:
 	input:
 		sites = "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: "mappings/makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	shell:
 		'''

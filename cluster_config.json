@@ -13,6 +13,11 @@
         "node": "!node-hp0104rg.linux.crg.es",
         "disk" :"2G"
     },
+    "makeStarIndex":
+    {
+      "virtual_free": "40G",
+      "h_rt":"06:00:00"
+    },
     "makeReadsBlastDB":
     {
       "h_rt" : "00:20:00",
@@ -24,8 +29,8 @@
     },
 "plotReadLength":
 {
-"virtual_free" : "30G",
-"h_rt": "03:00:00",
+"virtual_free" : "40G",
+"h_rt": "03:30:00",
 },
     "aggTmStats":
     {

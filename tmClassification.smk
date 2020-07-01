@@ -1,15 +1,16 @@
-rule compareTargetsToTms:
-	input:
-		tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
-		targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
-	output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
-	shell:
-		'''
+if config["CAPTURE"]:
+	rule compareTargetsToTms:
+		input:
+			tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
+			targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
+		output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
+		shell:
+			'''
 uuidTmpOut=$(uuidgen)
 bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
-		'''
+			'''
 
 rule getTargetCoverageStats:
 	input: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
@@ -149,7 +150,7 @@ mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
 if SIRVpresent:
 	rule gffcompareToSirvAnnotation:
 		input:
-			annot=config["SIRVgff"],
+			annot="annotations/{capDesign}.SIRVs.gff",
 			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
 		output: "mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
 		shell:
@@ -158,7 +159,7 @@ pref=$(basename {output} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
 uuid=$(uuidgen)
 outdir="$PWD/$(dirname {output})"
-cat {input.tm} | awk '$1=="SIRVome_isoforms" ' > {config[TMPDIR]}/$uuid
+cat {input.tm} | awk '$1 ~ /SIRV/ ' > {config[TMPDIR]}/$uuid
 cd {config[TMPDIR]}
 gffcompare -o ${{uuid}}PREF -r $annotFullPath $uuid
 cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
@@ -850,7 +851,14 @@ set -eu
 cat {output}.r | R --slave
 		'''
 
+rule makeSirvGff:
+	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	output: "annotations/{capDesign}.SIRVs.gff"
+	shell:
+		'''
+cat {input} | awk '$1 ~ /SIRV/' | sortgff > {output}
 
+		'''
 
 rule simplifyGencode:
 	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
@@ -884,7 +892,7 @@ rule makeClsGencodeLoci:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 zcat {input} > {config[TMPDIR]}/$uuid
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |fgrep -v ERCC| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
+bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
@@ -921,7 +929,7 @@ cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sort -T {conf
 zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid4
 cat {config[TMPDIR]}/$uuid4 | extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2
 bedtools intersect -v -a {config[TMPDIR]}/$uuid2 -b {config[TMPDIR]}/$uuid1 > {config[TMPDIR]}/$uuid5
-cat {config[TMPDIR]}/$uuid5 |tgrep -F -v ERCC |cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid3
+cat {config[TMPDIR]}/$uuid5 |awk '$1 !~ /ERCC/' |cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid3
 zcat {input.tmergeGencode}| tgrep -F -w -f {config[TMPDIR]}/$uuid3 - |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''

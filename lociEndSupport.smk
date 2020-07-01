@@ -14,28 +14,29 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
-rule mergePreviousPhaseTmsWithGencode:
-	input:
-		previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
-		annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	threads:1
-	output: "mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.all.gff.gz"
+if GENOMETOPREVIOUS is not None:
+	rule mergePreviousPhaseTmsWithGencode:
+		input:
+			previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
+			annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
+		threads:1
+		output: "mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.all.gff.gz"
 	# wildcard_constraints:
 	# 	barcodes='allTissues',
 	# 	sizeFrac='allFracs',
 	# 	techname='allSeqTechs'
-	shell:
-		'''
+		shell:
+			'''
 uuid=$(uuidgen)
 uuidM=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
 cat {input.previous} {input.annot} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
 
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM |fgrep -v ERCC| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
+bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM |awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
-		'''
+			'''
 rule mergePreviousPhaseTmsWithGencodeBiotypes:
 	input:
 		clsGencode="mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.all.gff.gz",
@@ -53,29 +54,30 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 
-rule mergeCurrentPreviousPhaseTmsWithGencode:
-	input:
-		current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
-		previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
-		annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	threads:1
-	output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz"
+if GENOMETOPREVIOUS is not None: 
+	rule mergeCurrentPreviousPhaseTmsWithGencode:
+		input:
+			current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
+			previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
+			annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
+		threads:1
+		output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz"
 	# wildcard_constraints:
 	# 	barcodes='allTissues',
 	# 	sizeFrac='allFracs',
 	# 	techname='allSeqTechs'
-	shell:
-		'''
+		shell:
+			'''
 uuid=$(uuidgen)
 uuidM=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
 cat {input.previous} {input.annot} {input.current} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
 
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM |fgrep -v ERCC| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
+bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM | awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
-		'''
+			'''
 
 rule mergeCurrentPreviousPhaseTmsWithGencodeBiotypes:
 	input:
@@ -97,7 +99,7 @@ rule getGencodeSupportedEnds:
 	input:
 		tm="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf",
 		cagePeaks=lambda wildcards: GENOMETOCAGEPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome",
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome",
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 
 	output:"mappings/nonAnchoredMergeReads/mergeWithPrevious/gencode/{capDesign}.gencode.cage+PASsupported.gff.gz"
@@ -130,7 +132,7 @@ rule getCurrentPreviousPhaseTmsWithGencodeSupportedEnds:
 	input:
 		tm="mappings/nonAnchoredMergeReads/mergeWithPrevious+biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz",
 		cagePeaks=lambda wildcards: GENOMETOCAGEPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome",
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome",
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 
 	output:"mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.cage+PASsupported.gff.gz"
@@ -164,7 +166,7 @@ rule getPreviousPhaseTmsWithGencodeSupportedEnds:
 	input:
 		tm="mappings/nonAnchoredMergeReads/previous+biotypes/{capDesign}.previous.tmerge.all.gff.gz",
 		cagePeaks=lambda wildcards: GENOMETOCAGEPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome",
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome",
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 
 	output:"mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.cage+PASsupported.gff.gz"

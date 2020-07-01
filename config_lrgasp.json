@@ -4,21 +4,20 @@
        "PLOTSDIR" : "plots/",
        "SIZEFRACTION_RPALETTE": "c('0+'='#b3b3b3')",
        "LONG_RPALETTE":"c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')",
-       "SAMPLE_ANNOT_RPALETTE":"list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = ' #5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SmartSeq2 = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3'), tissue = c(GM12878 = '#b3de69', Heart = '#fccde5', K562 ='#00bfff', A549 ='#009933', EmbryoBrain ='#77a725',  EmbryoHeart ='#f76eb5', EmbryoLiver ='#4d94ff', EmbryoSC='#ff9900', WBlood='#e6e600', Liver='#005ce6', iPSC='#995c00'))",
+       "SAMPLE_ANNOT_RPALETTE":"list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = '#5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SmartSeq2 = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3', cDNA='#3385ff'), tissue = c(GM12878 = '#b3de69', Heart = '#fccde5', K562 ='#00bfff', A549 ='#009933', EmbryoBrain ='#77a725',  EmbryoHeart ='#f76eb5', EmbryoLiver ='#4d94ff', EmbryoSC='#ff9900', WBlood='#e6e600', Liver='#005ce6', iPSC='#995c00'))",
        "STATSDATADIR" : "Rinput/",
        "capDesignToGenome" : {
            "HpreCap": "hg38",
-           "MpreCap": "mm10",
          },
-         "SAMPLE_ANNOT": "annotations/samples/sample_annotations.tsv",
+         "SAMPLE_ANNOT": "/users/rg/jlagarde/projects/encode/scaling/whole_genome/202006_lrgasp/annotations/samples/sample_annotations.tsv",
          "TMPDIR": "$TMPDIR",
          "minPhredQualAroundSJ": "10",
          "exonOverhangTolerance": "8",
 
        "capDesignToAnnotGtf" : {
-           "HpreCap": "annotations/gencode.v29.SIRV.ERCC.annotation.gtf",
+           "HpreCap": "annotations/gencode.v29.SIRV.ERCC.annotation.fixed.gtf",
           },
-
+    "CAPTURE" : false,
         "PLOTFORMATS" : ["png", "pdf"],
         "MINIMUM_TMERGE_READ_SUPPORT": ["1", "2"],
     "DEMULTIPLEX": false,
@@ -44,7 +43,6 @@
       "hg38": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
       "mm10": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed"
     },
-    "SIRVgff": "/users/rg/jlagarde/genomes/lexogen_SIRVs/SIRV_Set1_Lot00141_Sequences_181206a/SIRVome_isoforms_Lot00141_C_181206a.gtf.unix.corrected.gene_types.gtf",
     "SIRVinfo":"annotations/SIRV_Set1_Lot00141_info-170612a.tsv"
 
 }

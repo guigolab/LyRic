@@ -4,12 +4,16 @@
 rule readMapping:
 	input:
 		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".fa"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa",
+		qc = FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt",
 	threads: 12
 	params:
 		minimap_preset = lambda wildcards: "splice" if wildcards.techname.find('ont') == 0 else "splice:hq" if wildcards.techname.find('pacBio') == 0 else None
 	output:
-		"mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
+		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
+
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+',
@@ -26,11 +30,16 @@ samtools view -H {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuid.2
 samtools view -F 256 -F4 -F 2048 {config[TMPDIR]}/$uuid >> {config[TMPDIR]}/$uuid.2
 cat {config[TMPDIR]}/$uuid.2 | samtools sort -T {config[TMPDIR]}  --threads {threads}  -m 5G - > {config[TMPDIR]}/$uuidTmpOut
 echoerr "Done creating/sorting BAM"
-sleep 70s
+sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
 
+echoerr "Making BigWigs"
+bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+
+echoerr "Done making BigWigs"
+mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
+mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 		'''
 
 rule getMappingStats:
@@ -47,7 +56,7 @@ uuidTmpOutS=$(uuidgen)
 totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
 mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
 erccMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep ERCC- | wc -l)
-sirvMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep SIRVome_isoforms | wc -l)
+sirvMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep SIRV | wc -l)
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOutB
 mv {config[TMPDIR]}/$uuidTmpOutB {output.basic}
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$erccMappedReads\t$sirvMappedReads" | awk '{{print $0"\t"$6/$5"\t"$7/$5}}' > {config[TMPDIR]}/$uuidTmpOutS
@@ -210,7 +219,10 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule mergeBarcodeBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
-	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam"
+	output: 
+		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam",
+		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam.bai",
+		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bw"
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
 		techname='(?!allSeqTechs).+' #to avoid ambiguity with downstream merging rules
@@ -218,17 +230,23 @@ rule mergeBarcodeBams:
 		'''
 uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
-sleep 120s
+sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
+bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+
+mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
+mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 
 		'''
 
 
 rule mergeAllSeqTechsFracsAndTissuesBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes)
-	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: 
+		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
+		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
 	wildcard_constraints:
 #		techname='allSeqTechs',
 #		sizeFrac='allFracs',
@@ -238,17 +256,23 @@ rule mergeAllSeqTechsFracsAndTissuesBams:
 		'''
 uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
-sleep 120s
+sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
+bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+
+mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
+mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 
 		'''
 
 
 rule mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams:
 	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_capDesign_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes)
-	output: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: 
+		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
+		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
 	wildcard_constraints:
 #		techname='allSeqTechs',
 #		sizeFrac='allFracs',
@@ -258,10 +282,13 @@ rule mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams:
 		'''
 uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
-sleep 120s
+sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
+bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+
+mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
+mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
+mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 
 		'''
 

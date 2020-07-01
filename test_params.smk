@@ -72,7 +72,7 @@ rule all:
 rule getHiSeqCanonicalIntronsList:
 	input:
 		bam="fastqs/hiSeq/mappings/{barcodes}_{libProt}.bam",
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME["HpreCap"] + ".fa"
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME["HpreCap"] + ".sorted.fa"
 	threads: 6
 	output:
 		list="test/sirvMappings/hiSeqIntrons/hiSeq_{barcodes}_lib{libProt}.canonicalIntrons.list",

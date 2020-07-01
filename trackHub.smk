@@ -72,15 +72,16 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 
-rule makeTrackDbInputTracks:
-	input:
-		gff=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf",
-		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
-	output:
-		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{capDesign}_primary_targets.bb",
-		trackDb=temp(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt")
-	shell:
-		'''
+if config["CAPTURE"]:
+	rule makeTrackDbInputTracks:
+		input:
+			gff=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf",
+			genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
+		output:
+			bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{capDesign}_primary_targets.bb",
+			trackDb=temp(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt")
+		shell:
+			'''
 uuid=$(uuidgen)
 uuid2=$(uuidgen)
 uuid3=$(uuidgen)
@@ -107,7 +108,7 @@ echo -e "
 " > {config[TMPDIR]}/$uuidTmpOutT
 mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 
-		'''
+			'''
 
 if config["USE_MATCHED_ILLUMINA"]:
 	rule makeTrackDbHiSeqOutputHeader:
@@ -140,7 +141,7 @@ uuid=$(uuidgen)
 samtools view -H {input} > {config[TMPDIR]}/$uuid
 samtools view {input} | grep -P "\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
 samtools view -b {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuidTmpOut
-sleep 60s
+sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
@@ -215,7 +216,7 @@ uuid=$(uuidgen)
 samtools view -H {input} > {config[TMPDIR]}/$uuid
 samtools view {input} | grep -P "\\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
 samtools view -b {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuidTmpOut
-sleep 60s
+sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
 mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
@@ -259,7 +260,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
 rule makeTmergeOutputTracks:
 	input:
 		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
-		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
 		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.bb",
 		trackDb=temp(config["TRACK_HUB_DIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_TmergeOutput.min{minReadSupport}reads.trackDb.txt")
@@ -294,7 +295,7 @@ mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 rule makeFLTmergeOutputTracks:
 	input:
 		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.bed",
-		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".genome"
+		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
 		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FL.tmerge.min{minReadSupport}reads.bb",
 		trackDb=temp(config["TRACK_HUB_DIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt")
@@ -334,7 +335,7 @@ rule catTrackDb:
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_SupertrackHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
+		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["CAPTURE"] else '/dev/null',
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}_{capDesign}_trackDbOutputHeader.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),

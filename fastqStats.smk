@@ -108,7 +108,6 @@ dat %>%
 
 summaryStats = transform(datSumm, LabelN = paste0('N= ', comma(n)), LabelM = paste0( 'Median= ', comma(med))) 
 
-geom_textSize = geom_textSize + 1
 plotBase <- \\"p <- ggplot(dat, aes(x=length)) +
 geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=100) +
 geom_vline(data = summaryStats, aes(xintercept=med), color='#ff0055', linetype='solid', size=1.2) +
