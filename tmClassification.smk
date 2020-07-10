@@ -851,24 +851,6 @@ set -eu
 cat {output}.r | R --slave
 		'''
 
-rule makeSirvGff:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
-	output: "annotations/{capDesign}.SIRVs.gff"
-	shell:
-		'''
-cat {input} | awk '$1 ~ /SIRV/' | sortgff > {output}
-
-		'''
-
-rule simplifyGencode:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
-	output: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-		'''
 
 rule mergeTmsWithGencode:
 	input:

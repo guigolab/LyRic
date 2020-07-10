@@ -42,6 +42,74 @@ mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
 mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 		'''
 
+rule getReadProfileMatrix:
+	input:
+		annot="annotations/{capDesign}.bed",
+		bw=lambda wildcards: expand("mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		sampleAnnot=config["SAMPLE_ANNOT"],
+
+	output: 
+		matrix=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+		colorList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.colors.txt",
+		libraryPrepList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
+	threads: 6
+	shell:
+		'''
+# extract libraryPrep names and matching colors, in the same order as input files
+
+echo "
+library(tidyverse); 
+sampleAnnot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\\t') 
+filesList <- read.table(file('stdin'), header=FALSE, sep=' '); 
+colnames(filesList) <- c('sample_name');  
+sampleAnnotation_colors = {config[SAMPLE_ANNOT_RPALETTE]}
+
+#convert to dataframe
+sampleAnnotation_colors_df <- setNames(stack(sampleAnnotation_colors\$libraryPrep)[2:1], c('libraryPrep','color'))
+print(sampleAnnotation_colors_df)
+
+join1 <- inner_join(filesList, sampleAnnot, by = 'sample_name')
+join2 <- inner_join(join1, sampleAnnotation_colors_df, by='libraryPrep')
+
+print(join1)
+print(join2)
+
+outTable <- select(join2, sample_name, libraryPrep, color)
+write(outTable\$libraryPrep, '{output.libraryPrepList}', ncolumns=nrow(outTable))
+write(outTable\$color, '{output.colorList}', ncolumns=nrow(outTable))
+
+
+" > {output.matrix}.r
+
+set +eu
+conda activate R_env
+set -eu
+
+echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscript {output.matrix}.r
+
+computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {output.matrix} --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {output.libraryPrepList} | perl -ne 'chomp; print')
+
+		'''
+
+rule plotReadProfileMatrix:
+	input: 
+		matrix=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+		colorList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.colors.txt"
+	output: 
+		profile=config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png",
+		heatmap=config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png"
+	shell:
+		'''
+  plotProfile -m {input.matrix} -o {output.profile} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --colors $(cat {input.colorList} | perl -ne 'chomp; print')
+
+  plotHeatmap -m {input.matrix} -o {output.heatmap} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --whatToShow 'heatmap and colorbar'
+
+		'''
+
+
+
+
+
 rule getMappingStats:
 	input:
 		bams = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
