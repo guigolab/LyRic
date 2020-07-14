@@ -55,6 +55,8 @@ rule getReadProfileMatrix:
 	threads: 6
 	shell:
 		'''
+uuid=$(uuidgen)
+
 # extract libraryPrep names and matching colors, in the same order as input files
 
 echo "
@@ -87,8 +89,9 @@ set -eu
 
 echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscript {output.matrix}.r
 
-computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {output.matrix} --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {output.libraryPrepList} | perl -ne 'chomp; print')
+computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {config[TMPDIR]}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {output.libraryPrepList} | perl -ne 'chomp; print')
 
+mv {config[TMPDIR]}/$uuid.gz {output.matrix}
 		'''
 
 rule plotReadProfileMatrix:

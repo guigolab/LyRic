@@ -52,7 +52,9 @@ rule removeIntraPriming:
 	input: 
 		strandedGff="mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
-	output: "mappings/intraPriming/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.list"
+	output: 
+		list="mappings/intraPriming/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.list",
+		stats=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -60,13 +62,91 @@ zcat {input.strandedGff} | awk '$3=="exon"'>  {config[TMPDIR]}/$uuid.gff
 gtfToGenePred {config[TMPDIR]}/$uuid.gff {config[TMPDIR]}/$uuid.gp
 genePredToBed {config[TMPDIR]}/$uuid.gp {config[TMPDIR]}/$uuid.bed
 rm {config[TMPDIR]}/$uuid.gp
-cat {config[TMPDIR]}/$uuid.bed | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output})/$(basename {output} .list).bed.gz
+totalReads=$(cat {config[TMPDIR]}/$uuid.bed | wc -l)
+cat {config[TMPDIR]}/$uuid.bed | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
 rm {config[TMPDIR]}/$uuid.bed
-zcat $(dirname {output})/$(basename {output} .list).bed.gz | awk '$5>0.6'|cut -f4 | sort|uniq > {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+zcat $(dirname {output.list})/$(basename {output.list} .list).bed.gz | awk '$5>0.6'|cut -f4 | sort|uniq > {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output.list}
+intraPrimed=$(cat {output.list} | wc -l)
+let nonIntraPrimed=$totalReads-$intraPrimed || true
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$nonIntraPrimed" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuid.2
+mv {config[TMPDIR]}/$uuid.2 {output.stats}
 rm {config[TMPDIR]}/$uuid*
 		'''
 
+rule aggIntraPrimingStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: config["STATSDATADIR"] + "all.intraPriming.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalReads\tnonIntraPrimed\tpercentNonIntraPrimed" > {config[TMPDIR]}/$uuid
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+		'''
+
+rule plotIntraPrimingStats:
+	input: config["STATSDATADIR"] + "all.intraPriming.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "intraPriming.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats")
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	shell:
+		'''
+echo "
+library(ggplot2)
+
+library(cowplot)
+library(plyr)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+plotBase <- \\"p <- ggplot(data=dat, aes(x=tissue, y=percentNonIntraPrimed, fill=sizeFrac)) +
+geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
+scale_fill_manual(values={sizeFrac_Rpalette}) +
+geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
+geom_text(aes(group=sizeFrac, y=0.01, label = paste(sep='',percent(percentNonIntraPrimed),'\\n','(',comma(nonIntraPrimed),')')), angle=90, size=geom_textSize, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
+scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
+xlab ('Sample') +
+ylab ('% non-intra-primed reads') +
+{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
+
+{params.filterDat[12]}
+
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+		'''
 
 rule highConfidenceReads:
 	input:
