@@ -111,14 +111,16 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-plotBase <- \\"p <- ggplot(data=dat, aes(x=tissue, y=percentNonIntraPrimed, fill=sizeFrac)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percentNonIntraPrimed, fill=sizeFrac)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
 geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
 geom_text(aes(group=sizeFrac, y=0.01, label = paste(sep='',percent(percentNonIntraPrimed),'\\n','(',comma(nonIntraPrimed),')')), angle=90, size=geom_textSize, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
 scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
-xlab ('Sample') +
+xlab ('') +
 ylab ('% non-intra-primed reads') +
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
 {params.filterDat[12]}
@@ -307,11 +309,11 @@ plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionL
 geom_bar(stat='identity') +
 scale_fill_manual(values=c('HCGM-mono' = '#9ce2bb', 'HCGM-spliced' = '#39c678', 'nonHCGM-mono' = '#fda59b', 'nonHCGM-spliced' = '#fa341e')) +
 ylab('# mapped reads') +
-xlab('{params.filterDat[6]}') +
+xlab('') +
 guides(fill = guide_legend(title='Category'))+
 #geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = comma(count), hjust = 0.5, vjust = 1))+
 scale_y_continuous(labels=scientific)+
-{params.filterDat[7]}
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 {GGPLOT_PUB_QUALITY} + \\"
 
 {params.filterDat[12]}
