@@ -411,7 +411,7 @@ rule demultiplexFastqs:
 	input:
 		tsvFastq = DEMULTIPLEX_DIR + "convertFastqToTsv/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.tsv",
 		noAmbigNoChim= DEMULTIPLEX_DIR + "selectNonAmbiguousNonChimericReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demultiplex.noAmbig.noChim.tsv"
-	output: DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	output: DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
 	shell:
 		'''
 tmpUuid=$(uuidgen)
@@ -423,7 +423,7 @@ cat {config[TMPDIR]}/$tmpUuid.fastq | tsv2fastq.pl | gzip> {output}
 
 rule checkTotalsDemultiplexed:
 	input:
-		demul= lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES),
+		demul= lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES),
 		totals=config["STATSDATADIR"] + "{techname}Corr{corrLevel}.fastq.readCounts.tsv"
 	output: DEMULTIPLEX_DIR + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demul.QC2.txt"
 	shell:
@@ -440,7 +440,7 @@ cat {output}| while read diff; do if [ $diff -lt 1 ]; then echo "Number of demul
 
 
 rule getDemultiplexingStatsPerSample:
-	input: DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz"
+	input: DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
 	output: config["STATSDATADIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.demultiplexing.perSample.stats.tsv"
 	shell:
 		'''

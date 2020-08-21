@@ -101,7 +101,7 @@ cat {config[TMPDIR]}/$uuid.hiSeq.bed.split*.introns.gff | perl -lane '$start=$F[
 
 rule readMapping:
 	input:
-		reads="fastqs/{techname}_{capDesign}_{sizeFrac}.{barcodes}.fastq.gz",
+		reads="fastqs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz",
 		genome="/users/rg/jlagarde/genomes/lexogen_SIRVs/SIRV_Set1_Lot00141_Sequences_181206a/SIRVome_isoforms_170612a.unix.fasta"
 	output: "test/sirvMappings/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	params:
