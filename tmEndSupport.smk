@@ -230,7 +230,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule plotMetaTmEndsStats:
-	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.meta.stats"),
 
 	params:
@@ -296,7 +296,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule plotAbsFiveTmEndsStats:
-	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	output:
 		five=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.5p.abs.stats"),
 	params:
@@ -368,7 +368,7 @@ cat $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legend
 
 
 rule plotAbsThreeTmEndsStats:
-	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	output:
 		three=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.3p.abs.stats"),
 	params:

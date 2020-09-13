@@ -17,36 +17,34 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 #get read lengths for all FASTQ files:
 rule getReadLength:
 	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv.gz" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
 	params:
 		bc=lambda wildcards: 'allTissues' if config["DEMULTIPLEX"] else wildcards.barcodes
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | fastq2tsv.pl | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} | fastq2tsv.pl | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 #aggregate read length data over all fractions of a given capDesign:
 rule aggReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
-	output: config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv"
+	output: config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} |sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
-#rule addAllReadLength:
-#	input: lambda wildcards:
 
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv"
+	input: config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv.gz"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readLength.stats")  if config["DEMULTIPLEX"] else returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, 'allTissues', wildcards.corrLevel, wildcards.techname) if config["DEMULTIPLEX"] else merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)

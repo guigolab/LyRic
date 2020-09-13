@@ -789,32 +789,32 @@ cat $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r | R --s
 
 rule getDetectedAnnTranscriptLength:
 	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
 file="$(dirname {input})/$(basename {input} .simple.tsv).tmap"
 tail -n+2 $file | awk '$2!="-"' | cut -f1,2,12 > {config[TMPDIR]}/$uuid
-cat {config[TMPDIR]}/$uuid | awk -v sid={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes} -v co=Corr{wildcards.corrLevel} -v sp={wildcards.splicedStatus} -v rs={wildcards.minReadSupport} -v es={wildcards.endSupport} '{{print sid"\\t"co"\\t"sp"\\t"rs"\\t"es"\\t"$0}}' | sed 's/Corr0/No/' | sed 's/Corr{lastK}/Yes/' > {config[TMPDIR]}/$uuid.TmpOut
+cat {config[TMPDIR]}/$uuid | awk -v sid={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes} -v co=Corr{wildcards.corrLevel} -v sp={wildcards.splicedStatus} -v rs={wildcards.minReadSupport} -v es={wildcards.endSupport} '{{print sid"\\t"co"\\t"sp"\\t"rs"\\t"es"\\t"$0}}' | sed 's/Corr0/No/' | sed 's/Corr{lastK}/Yes/' | gzip > {config[TMPDIR]}/$uuid.TmpOut
 mv {config[TMPDIR]}/$uuid.TmpOut {output}
 
 		'''
 
 rule aggDetectedAnnTranscriptLength:
-	input: lambda wildcards:expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
-	output: config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv"
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv.gz", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	output: config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "sample_name\tcorrectionLevel\tsplicingStatus\tminReadSupport\tendSupport\tref_gene_id\tref_id\tref_match_len" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} >> {config[TMPDIR]}/$uuidTmpOut
+echo -e "sample_name\tcorrectionLevel\tsplicingStatus\tminReadSupport\tendSupport\tref_gene_id\tref_id\tref_match_len" | gzip > {config[TMPDIR]}/$uuidTmpOut
+cat {input} | gzip >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
 rule plotDetectedAnnTranscriptLength:
 	input: 
-		stats=config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv",
+		stats=config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv.gz",
 		sampleAnnot=config["SAMPLE_ANNOT"]
 	output: config["PLOTSDIR"] + "gencode.detected.length.stats/{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.{ext}"
 	shell:

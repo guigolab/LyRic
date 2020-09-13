@@ -49,10 +49,11 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
-rule makeTrackDbInputHeader:
-	output: temp(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt")
-	shell:
-		'''
+if config["CAPTURE"]:
+	rule makeTrackDbInputHeader:
+		output: temp(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt")
+		shell:
+			'''
 uuidTmpOut=$(uuidgen)
 echo "track {wildcards.capDesign}_input
 compositeTrack on
@@ -65,7 +66,7 @@ visibility dense
 color 110,30,0
 " > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
-		'''
+			'''
 
 
 
@@ -333,7 +334,7 @@ mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 rule catTrackDb:
 	input:
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_SupertrackHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
+		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["CAPTURE"] else '/dev/null',
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["CAPTURE"] else '/dev/null',
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}_{capDesign}_trackDbOutputHeader.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),

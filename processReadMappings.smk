@@ -473,7 +473,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getTmStats:
 	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	# wildcard_constraints:
 	# 	barcodes='(?!allTissues).+',
 	# 	sizeFrac='[0-9-+\.]+',
@@ -481,20 +481,19 @@ rule getTmStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | extractGffAttributeValue.pl transcript_id spliced mature_RNA_length contains_count 3p_dists_to_3p 5p_dists_to_5p meta_3p_dists_to_5p meta_5p_dists_to_5p |sort|uniq | awk -v t={wildcards.techname} -v c={wildcards.corrLevel} -v ca={wildcards.capDesign} -v s={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"Corr"c"\\t"ca"\\t"s"\\t"b"\t"$0}}'> {config[TMPDIR]}/$uuidTmpOut
+cat {input} | extractGffAttributeValue.pl transcript_id spliced mature_RNA_length contains_count 3p_dists_to_3p 5p_dists_to_5p meta_3p_dists_to_5p meta_5p_dists_to_5p |sort|uniq | awk -v t={wildcards.techname} -v c={wildcards.corrLevel} -v ca={wildcards.capDesign} -v s={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"Corr"c"\\t"ca"\\t"s"\\t"b"\t"$0}}' | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggTmStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport)
-	output: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv"
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport)
+	output: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tspliced\tcontains_count\tend\tdistance\tnormDistance" > {config[TMPDIR]}/$uuidTmpOut
-#echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttranscript_id\tspliced\tcontains_count\tend\tdistance\tnormDistance" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tspliced\tcontains_count\tend\tdistance\tnormDistance" | gzip > {config[TMPDIR]}/$uuidTmpOut
 
-cat {input} | perl -F"\\t" -slane '@ara=split(",", $F[8]); @arb=split(",", $F[9]); @arc=split(",", $F[10]), @ard=split(",", $F[11]); for ($i=0; $i<=$#ara; $i++){{$threepMinusDist=-$ara[$i];print  "$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t3\\t$threepMinusDist\\t$arc[$i]\\n$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t5\\t$arb[$i]\\t$ard[$i]"}}'| sed 's/Corr0/\\tNo/' | sed 's/Corr{lastK}/\\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+zcat {input} | perl -F"\\t" -slane '@ara=split(",", $F[8]); @arb=split(",", $F[9]); @arc=split(",", $F[10]), @ard=split(",", $F[11]); for ($i=0; $i<=$#ara; $i++){{$threepMinusDist=-$ara[$i];print  "$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t3\\t$threepMinusDist\\t$arc[$i]\\n$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t5\\t$arb[$i]\\t$ard[$i]"}}'| sed 's/Corr0/\\tNo/' | sed 's/Corr{lastK}/\\tYes/' | sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
@@ -597,103 +596,103 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule aggTmLengthStats:
 	input:
-		all=lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:all.TmStats.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport),
-		fl=lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.TmStats.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
-	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv"
+		all=lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:all.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport),
+		fl=lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttranscript_id\tspliced\tmature_RNA_length\tcategory" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttranscript_id\tspliced\tmature_RNA_length\tcategory" |gzip> {config[TMPDIR]}/$uuidTmpOut
 
-cat {input.all} |cut -f1-7| awk '{{print $0"\\tCLS_TMs"}}' | sed 's/Corr0/\\tNo/' | sed 's/Corr{lastK}/\\tYes/' |sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-cat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' | sed 's/Corr0/\\tNo/' | sed 's/Corr{lastK}/\\tYes/' |sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+zcat {input.all} |cut -f1-7| awk '{{print $0"\\tCLS_TMs"}}' | sed 's/Corr0/\\tNo/' | sed 's/Corr{lastK}/\\tYes/' |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
+zcat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' | sed 's/Corr0/\\tNo/' | sed 's/Corr{lastK}/\\tYes/' |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 
-rule plotBoxTmLengthStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv"
-	output: 
-		box=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.box.stats"),
-	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
-	shell:
-		'''
-echo "
-library(ggplot2)
+# rule plotBoxTmLengthStats:
+# 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv"
+# 	output: 
+# 		box=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.box.stats"),
+# 	params:
+# 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
+# 	shell:
+# 		'''
+# echo "
+# library(ggplot2)
 
-library(cowplot)
-library(plyr)
-library(scales)
-library(gridExtra)
-library(grid)
-library(ggplotify)
-library(data.table)
+# library(cowplot)
+# library(plyr)
+# library(scales)
+# library(gridExtra)
+# library(grid)
+# library(ggplotify)
+# library(data.table)
 
-palette <- c('GENCODE_protein_coding' = '#009900', 'CLS_TMs' = '#cc9966', 'CLS_FL_TMs' = '#cc00cc')
-dat<-fread('{input}', header=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
-{params.filterDat[11]}
-
-
-fun_length <- function(x){{
-return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
-}}
-fun_median <- function(x){{
-return(data.frame(y=-8.5,label= paste0('Median=', comma(median(x)))))
-}}
-plotBase <- \\"p <- ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, color=category)) +
-geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
-coord_cartesian(ylim=c(100, 3000)) +
-scale_y_continuous(labels=comma)+
-scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='TMs', 'CLS_FL_TMs'='FL TMs')) +
-
-stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +
-stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +
-ylab('Mature RNA length') +
-xlab('{params.filterDat[6]}') +
-coord_flip(ylim=c(100, 3000)) +
-{params.filterDat[9]}
-{GGPLOT_PUB_QUALITY} +
-theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
-
-{params.filterDat[12]}
-
-save_plot('{output.box[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output.box[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-
-save_plot('{output.box[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output.box[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-
-save_plot('{output.box[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.box[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output.box[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output.box[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output.box[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output.box[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+# palette <- c('GENCODE_protein_coding' = '#009900', 'CLS_TMs' = '#cc9966', 'CLS_FL_TMs' = '#cc00cc')
+# dat<-fread('{input}', header=T, sep='\\t')
+# {params.filterDat[10]}
+# {params.filterDat[0]}
+# {params.filterDat[1]}
+# {params.filterDat[2]}
+# {params.filterDat[3]}
+# {params.filterDat[4]}
+# {params.filterDat[5]}
+# {params.filterDat[8]}
+# {params.filterDat[11]}
 
 
-" > $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
-cat $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r | R --slave
+# fun_length <- function(x){{
+# return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
+# }}
+# fun_median <- function(x){{
+# return(data.frame(y=-8.5,label= paste0('Median=', comma(median(x)))))
+# }}
+# plotBase <- \\"p <- ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, color=category)) +
+# geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
+# coord_cartesian(ylim=c(100, 3000)) +
+# scale_y_continuous(labels=comma)+
+# scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='TMs', 'CLS_FL_TMs'='FL TMs')) +
 
-		'''
+# stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +
+# stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +
+# ylab('Mature RNA length') +
+# xlab('{params.filterDat[6]}') +
+# coord_flip(ylim=c(100, 3000)) +
+# {params.filterDat[9]}
+# {GGPLOT_PUB_QUALITY} +
+# theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
+
+# {params.filterDat[12]}
+
+# save_plot('{output.box[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+# save_plot('{output.box[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+# save_plot('{output.box[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+# save_plot('{output.box[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+# save_plot('{output.box[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+# save_plot('{output.box[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+# save_plot('{output.box[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+# save_plot('{output.box[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+# save_plot('{output.box[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+# save_plot('{output.box[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+# " > $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r
+#  set +eu
+# conda activate R_env
+# set -eu
+# cat $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r | R --slave
+
+# 		'''
 
 
 
 rule plotHistTmLengthStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv"
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
 	output: 
 		hist=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats")
 	params:
