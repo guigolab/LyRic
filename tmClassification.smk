@@ -807,7 +807,7 @@ rule aggDetectedAnnTranscriptLength:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "sample_name\tcorrectionLevel\tsplicingStatus\tminReadSupport\tendSupport\tref_gene_id\tref_id\tref_match_len" | gzip > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | gzip >> {config[TMPDIR]}/$uuidTmpOut
+zcat {input} | gzip >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''

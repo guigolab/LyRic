@@ -23,6 +23,10 @@
   "getHiSeqSupportedHCGMs": {
     "virtual_free": "15G"
   },
+  "aggReadLength": {
+    "virtual_free": "40G",
+    "h_rt": "03:30:00",
+  },
   "plotReadLength": {
     "virtual_free": "40G",
     "h_rt": "03:30:00",

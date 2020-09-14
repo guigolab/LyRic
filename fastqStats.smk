@@ -31,13 +31,33 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule aggReadLength:
 	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
-	output: config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv.gz"
+	output: 
+		all=config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv.gz",
+		summary=config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut
 zcat {input} |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+mv {config[TMPDIR]}/$uuidTmpOut {output.all}
+
+
+ set +eu
+conda activate R_env
+set -eu
+
+echo "
+library(data.table)
+library(tidyverse)
+dat<-fread('{output.all}', header=T, sep='\\t')
+dat %>%
+  group_by(seqTech, sizeFrac, capDesign, tissue) %>%
+  summarise(n=n(), median=median(length), mean=mean(length), max=max(length)) -> datSumm
+
+write_tsv(datSumm, '{output.summary}')
+
+" | R --slave
+
 
 		'''
 
