@@ -23,8 +23,13 @@ rule readMapping:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
+set +eu
+conda activate julenv
+set -eu
+
 echoerr "Mapping"
-minimap2 -x {params.minimap_preset} -t {threads} --secondary=no -L -a {input.genome} {input.reads} > {config[TMPDIR]}/$uuid
+
+minimap2 --MD -x {params.minimap_preset} -t {threads} --secondary=no -L -a {input.genome} {input.reads} > {config[TMPDIR]}/$uuid
 echoerr "Mapping done"
 echoerr "Creating/sorting BAM"
 samtools view -H {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuid.2
@@ -42,6 +47,20 @@ mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
 mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
 mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 		'''
+
+rule bamqc:
+	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/readMapping/bamqc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/qualimapReport.html"
+	shell:
+		'''
+ unset DISPLAY
+ ~/bin/qualimap_v2.2.1/qualimap bamqc -bam  {input} -outdir $(dirname {output}) --java-mem-size=25G 
+
+		'''
+
+
+
+
 
 rule getReadProfileMatrix:
 	input:
@@ -90,6 +109,10 @@ set -eu
 
 echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscript {output.matrix}.r
 
+set +eu
+conda activate julenv
+set -eu
+
 computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {config[TMPDIR]}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {output.libraryPrepList} | perl -ne 'chomp; print')
 
 mv {config[TMPDIR]}/$uuid.gz {output.matrix}
@@ -104,6 +127,11 @@ rule plotReadProfileMatrix:
 		heatmap=config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png"
 	shell:
 		'''
+	
+set +eu
+conda activate julenv
+set -eu
+	
   plotProfile -m {input.matrix} -o {output.profile} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --colors $(cat {input.colorList} | perl -ne 'chomp; print')
 
   plotHeatmap -m {input.matrix} -o {output.heatmap} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --whatToShow 'heatmap and colorbar'
@@ -386,6 +414,9 @@ rule readBamToBed:
 		'''
 uuidTmpOut=$(uuidgen)
 #remove mappings with ultra-short exons after bamtobed
+set +eu
+conda activate julenv
+set -eu
 bedtools bamtobed -i {input} -bed12 | perl -ne '$line=$_; @line=split ("\\t", $line); @blockSizes=split(",", $line[10]); $allExonsOK=1; foreach $block (@blockSizes){{if ($block<2){{$allExonsOK=0; last;}}}}; if ($allExonsOK==1){{print $line}}'| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 

@@ -7,6 +7,10 @@ if config["CAPTURE"]:
 		shell:
 			'''
 uuidTmpOut=$(uuidgen)
+set +eu
+conda activate julenv
+set -eu
+
 bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -874,6 +878,10 @@ rule makeClsGencodeLoci:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 zcat {input} > {config[TMPDIR]}/$uuid
+set +eu
+conda activate julenv
+set -eu
+
 bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -910,6 +918,11 @@ uuidTmpOut=$(uuidgen)
 cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid1
 zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid4
 cat {config[TMPDIR]}/$uuid4 | extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2
+
+set +eu
+conda activate julenv
+set -eu
+
 bedtools intersect -v -a {config[TMPDIR]}/$uuid2 -b {config[TMPDIR]}/$uuid1 > {config[TMPDIR]}/$uuid5
 cat {config[TMPDIR]}/$uuid5 |awk '$1 !~ /ERCC/' |cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid3
 zcat {input.tmergeGencode}| tgrep -F -w -f {config[TMPDIR]}/$uuid3 - |gzip > {config[TMPDIR]}/$uuidTmpOut
@@ -1110,3 +1123,26 @@ set -eu
 cat {output.jaccard}.r | R --slave
 
 		'''
+
+
+rule sqantiStrandedReads:
+	input: 
+		mappedReads="mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
+		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa",
+
+	output: "mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_sqanti_report.pdf"
+	shell:
+		'''
+uuid=$(uuidgen)
+zcat {input.mappedReads} > {config[TMPDIR]}/$uuid
+set +eu
+conda activate SQANTI3.env
+export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/sequence/
+export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/
+set -eu
+python ~/bin/SQANTI3/sqanti3_qc.py --gtf --skipORF  -o {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded -d mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded {config[TMPDIR]}/$uuid {input.gencode} {input.genome}
+
+		'''
+
+

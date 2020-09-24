@@ -18,6 +18,10 @@ rule cageSupportedfivepEnds:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
+set +eu
+conda activate julenv
+set -eu
+
 cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
@@ -31,6 +35,10 @@ rule dhsSupportedfivepEnds:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
+set +eu
+conda activate julenv
+set -eu
+
 cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools intersect -u -a stdin -b {input.dhsPeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
@@ -107,6 +115,10 @@ rule polyASupportedthreepEnds:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 cat {input.polyAsites} |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.polyAsites.bed
+set +eu
+conda activate julenv
+set -eu
+
 cat {input.threePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 5 -r 5 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {config[TMPDIR]}/$uuid.polyAsites.bed | cut -f4 | tgrep -F -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''

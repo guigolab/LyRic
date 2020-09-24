@@ -244,7 +244,15 @@
     "queue": "rg-el7,long-sl7",
     "virtual_free": "15G"
   },
-  "plotReadProfileMatrix":{
+  "plotReadProfileMatrix": {
     "virtual_free": "20G"
+  },
+  "sqantiStrandedReads": {
+    "h_rt": "20:00:00",
+    "queue": "rg-el7,long-sl7",
+    "virtual_free": "60G"
+  },
+  "bamqc": {
+    "virtual_free": "25G"
   }
 }

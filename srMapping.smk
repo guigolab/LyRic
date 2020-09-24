@@ -127,7 +127,16 @@ uuid=$(uuidgen)
 uuidTmpOutL=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
 echoerr "making bed"
+set +eu
+conda activate julenv
+set -eu
+
 samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
+set +eu
+conda deactivate
+conda deactivate
+set -eu
+
 echoerr "splitting"
 split -a 3 -d -e -n l/24 {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split
 rm {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
