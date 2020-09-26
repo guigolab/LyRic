@@ -50,7 +50,7 @@ mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 
 rule bamqc:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/bamqc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/qualimapReport.html"
+	output: "mappings/readMapping/bamqc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
 	shell:
 		'''
  unset DISPLAY
@@ -58,8 +58,90 @@ rule bamqc:
 
 		'''
 
+rule getBamqcStats:
+	input: "mappings/readMapping/bamqc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+qualimapReportToTsv.pl {input}  | cut -f2,3 |grep -v globalErrorRate| sed 's/PerMappedBase//' |awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {config[TMPDIR]}/$uuid
+
+mv {config[TMPDIR]}/$uuid {output}
+		'''
+
+rule aggBamqcStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: config["STATSDATADIR"] + "all.sequencingError.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\terrorCategory\terrorRate" > {config[TMPDIR]}/$uuid
+cat {input} | sort >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+
+		'''
+
+rule plotBamqcStats:
+	input: config["STATSDATADIR"] + "all.sequencingError.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats")
+	params: 
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	shell:
+		'''
+echo "
+library(ggplot2)
+library(cowplot)
+library(plyr)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(data.table)
+
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
 
 
+plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=errorRate, fill=errorCategory)) +
+geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#999999', insertions = '#E69F00', mismatches = '#cc0099')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
+{params.filterDat[7]}
+{GGPLOT_PUB_QUALITY} + \\"
+
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+
+
+		'''
 
 
 rule getReadProfileMatrix:

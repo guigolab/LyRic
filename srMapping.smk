@@ -133,7 +133,7 @@ set -eu
 
 samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
 set +eu
-conda deactivate
+conda activate
 conda deactivate
 set -eu
 

@@ -1131,7 +1131,9 @@ rule sqantiStrandedReads:
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa",
 
-	output: "mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_sqanti_report.pdf"
+	output: 
+		"mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_junctions.txt",
+		"mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_classification.txt"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -1141,7 +1143,7 @@ conda activate SQANTI3.env
 export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/sequence/
 export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/
 set -eu
-python ~/bin/SQANTI3/sqanti3_qc.py --gtf --skipORF  -o {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded -d mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded {config[TMPDIR]}/$uuid {input.gencode} {input.genome}
+python ~/bin/SQANTI3/sqanti3_qc.py --gtf --skipORF --skip_report -o {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded -d mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded {config[TMPDIR]}/$uuid {input.gencode} {input.genome}
 
 		'''
 
