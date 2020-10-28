@@ -6,6 +6,7 @@ rule makeStarIndex:
 uuid=$(uuidgen)
 mkdir -p {config[TMPDIR]}/$uuid ; 
 mkdir -p $(dirname {output}); 
+conda activate star
 STAR --runMode genomeGenerate --runThreadN 3 --genomeDir {config[TMPDIR]}/$uuid --genomeFastaFiles {input}
 mv -f {config[TMPDIR]}/$uuid/* $(dirname {output})
 		'''
@@ -25,6 +26,8 @@ rule hiSeqReadMapping:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
+ conda activate star
+
 echoerr "Mapping"
 mkdir -p mappings/STAR/`basename {output}`/
 STAR \
@@ -129,12 +132,13 @@ uuidTmpOutS=$(uuidgen)
 echoerr "making bed"
 set +eu
 conda activate julenv
+conda env list
 set -eu
 
 samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
 set +eu
-conda activate
 conda deactivate
+conda env list
 set -eu
 
 echoerr "splitting"

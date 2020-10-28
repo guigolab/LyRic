@@ -110,7 +110,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 
 plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=errorRate, fill=errorCategory)) +
-geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#999999', insertions = '#E69F00', mismatches = '#cc0099')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
+geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#bfbfbf', insertions = '#ffa64d', mismatches = '#66c2ff')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
+scale_y_continuous(labels = label_scientific(digits = 1)) +
+
 {params.filterDat[7]}
 {GGPLOT_PUB_QUALITY} + \\"
 
@@ -515,12 +517,3 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 
-# rule qualimap:
-# 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-# 	output: "mappings/qualimap_reports/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
-# 	shell:
-# 		'''
-# unset DISPLAY
-# ~/bin/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir mappings/qualimap_reports/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2/ --java-mem-size=10G -outfile {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}.merged2
-# touch {output}
-# 		'''
