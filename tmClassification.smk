@@ -1,7 +1,7 @@
 if config["CAPTURE"]:
 	rule compareTargetsToTms:
 		input:
-			tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
+			tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
 			targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
 		output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
 		shell:
@@ -10,8 +10,8 @@ uuidTmpOut=$(uuidgen)
 set +eu
 conda activate julenv
 set -eu
-
-bedtools intersect -wao -a {input.targetedSegments} -b {input.tms} |gzip > {config[TMPDIR]}/$uuidTmpOut
+zcat {input.tms} > {config[TMPDIR]}/$uuidTmpOut.1
+bedtools intersect -wao -a {input.targetedSegments} -b {config[TMPDIR]}/$uuidTmpOut.1 |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 			'''
@@ -69,13 +69,13 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[8]}
 
 
-plotWidth = plotWidth + 2
-plotHeight = plotHeight + 2
+wXyPlot = wXyPlot * 1.2
+hXyPlot = hXyPlot * 1.2
 
 plotBase <- \\"p <- ggplot(dat, aes(x=factor(correctionLevel), y=percentDetectedTargets, fill=targetType)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={long_Rpalette}) +
-geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7) +
+geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7, size=lineSize) +
 geom_text(size=geom_textSize, aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=2.5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
 ylab('% targeted regions detected') +
 xlab('{params.filterDat[6]}') +
@@ -114,7 +114,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff.gz"
 	output: 
 		standard="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv",
 		adjustedSn="mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.adj.simple.tsv"
@@ -125,7 +125,7 @@ pref=$(basename {output.standard} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
 uuid=$(uuidgen)
 outdir="$PWD/$(dirname {output.standard})"
-cp {input.tm} {config[TMPDIR]}/$uuid
+zcat {input.tm} > {config[TMPDIR]}/$uuid
 cd {config[TMPDIR]}
 gffcompare -o ${{uuid}}PREF -r $annotFullPath $uuid
 cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
@@ -155,7 +155,7 @@ if SIRVpresent:
 	rule gffcompareToSirvAnnotation:
 		input:
 			annot="annotations/{capDesign}.SIRVs.gff",
-			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
 		output: "mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
 		shell:
 			'''
@@ -163,7 +163,7 @@ pref=$(basename {output} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
 uuid=$(uuidgen)
 outdir="$PWD/$(dirname {output})"
-cat {input.tm} | awk '$1 ~ /SIRV/ ' > {config[TMPDIR]}/$uuid
+zcat {input.tm} | awk '$1 ~ /SIRV/ ' > {config[TMPDIR]}/$uuid
 cd {config[TMPDIR]}
 gffcompare -o ${{uuid}}PREF -r $annotFullPath $uuid
 cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
@@ -247,7 +247,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 plotBase <- \\"p <- ggplot(dat, aes(x=level, y=value)) +
 #geom_mark_rect(aes(filter = level == 'Transcript' & metric == 'Pr'), size=2, expand = unit(7, 'mm'), radius = unit(4, 'mm'), color='#4d4d4d', fill='#ffff00') +
-geom_point(aes(color=metric), shape=18, size=10, alpha=0.7) +
+geom_point(aes(color=metric), shape=18, size=lineSize*2, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
@@ -285,7 +285,6 @@ if SIRVpresent:
 	rule getSirvDetectionStats:
 		input:
 			gffC="mappings/nonAnchoredMergeReads/gffcompare/SIRVs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv",
-#			tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
 			sirvInfo=config["SIRVinfo"]
 		output:config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
 		shell:
@@ -466,11 +465,11 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-plotHeight = plotHeight +1
-plotWidth = plotWidth +1
+hXyPlot = hXyPlot +1
+wXyPlot = wXyPlot +1
 
 plotBase <- \\"p <- ggplot(dat, aes(x=level, y=value)) +
-geom_point(aes(color=metric), shape=18, size=10, alpha=0.7) +
+geom_point(aes(color=metric), shape=18, size=lineSize, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
@@ -650,7 +649,10 @@ dat\$ref_match_len <- as.numeric(dat\$ref_match_len)
 
 datAll <- subset(dat, splicingStatus=='all')
 
-geom_textSize=geom_textSize-1
+wXyPlot = horizCats * 2.5
+hXyPlot = vertCats * 2.5
+
+# geom_textSize=geom_textSize-1
 dat %>%
   group_by(splicingStatus) %>%
   summarise(n=n()) -> datSumm
@@ -658,7 +660,7 @@ dat %>%
 summaryStats = transform(datSumm, Label = paste0('N= ', comma(n)) )
 
 plotBase <- \\"p <- ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
-geom_abline(intercept=0, alpha=0.09, size=1) +
+geom_abline(intercept=0, alpha=0.09, size=lineSize) +
 geom_point(alpha=0.1,size=0.5, stroke = 0) + 
 #geom_density_2d(size=0.1, alpha=0.3) +
 scale_y_log10(limits=c(100,10000)) +  
@@ -693,8 +695,8 @@ pXyNoLegendGrob <- as.grob(pXyMarNoLegend)
 hLegendOnly <- convertUnit(sum(legend\$heights), 'in', valueOnly=TRUE)
 wLegendOnly <- convertUnit(sum(legend\$widths), 'in', valueOnly=TRUE)
 
-hXyPlot <- plotHeight
-wXyPlot <- plotWidth +2
+hXyPlot <- hXyPlot
+wXyPlot <- wXyPlot +2
 
 
 hXyNoLegendPlot<- hXyPlot 
@@ -723,7 +725,7 @@ save_plot('{output.bySS[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_h
 
 
 plotBase <- \\"p <- ggplot(datAll, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
-geom_abline(intercept=0, alpha=0.09, size=1) +
+geom_abline(intercept=0, alpha=0.09, size=lineSize) +
 geom_point(alpha=0.1,size=0.5, stroke = 0) + 
 #geom_density_2d(size=0.1, alpha=0.3) +
 scale_y_log10(limits=c(100,10000)) +  
@@ -754,8 +756,6 @@ pXyNoLegendGrob <- as.grob(pXyMarNoLegend)
 hLegendOnly <- convertUnit(sum(legend\$heights), 'in', valueOnly=TRUE)
 wLegendOnly <- convertUnit(sum(legend\$widths), 'in', valueOnly=TRUE)
 
-hXyPlot <- plotHeight
-wXyPlot <- plotWidth +2
 
 
 hXyNoLegendPlot<- hXyPlot 
@@ -830,6 +830,9 @@ dat<-fread('{input.stats}', header=T, sep='\\t')
 dat <- inner_join(dat,annot,by='sample_name')
 annot <- mutate(annot, label=paste(sep=':', seqPlatform, tissue))
 paletteList={config[SAMPLE_ANNOT_RPALETTE]}
+themeSize = 6
+lineSize=0.175
+minorLineSize=lineSize/2
 
 libraryPrepPalette=paletteList\$libraryPrep
 labeller <- deframe(select(annot, sample_name, label))
@@ -857,13 +860,13 @@ cat {output}.r | R --slave
 rule mergeTmsWithGencode:
 	input:
 		annot="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff"
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff.gz"
 	output: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.gff.gz"
 	threads:1
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input.annot} {input.tm}  | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
+zcat -f {input.annot} {input.tm}  | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
@@ -1025,10 +1028,10 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule tmergeAll:
 	input:
-		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, endSupport=wildcards.endSupport,  minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+		tm=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff.gz", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACSnoSIZESELECTONLY, barcodes=BARCODES, endSupport=wildcards.endSupport,  minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
 		#gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 	output: 
-		tm="mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.gff",
+		tm="mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.gff.gz",
 		quant="mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.expQuant.tsv"
 	shell:
 		'''
@@ -1036,22 +1039,22 @@ uuid=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 uuidTmpOutQ=$(uuidgen)
 for file in `ls {input.tm} | grep -v AlzhBrain`; do
-bn=$(basename $file .HiSS.tmerge.min{wildcards.minReadSupport}reads.splicing_status:{wildcards.splicedStatus}.endSupport:{wildcards.endSupport}.gff | sed 's/Corr0_/_/g')
+bn=$(basename $file .HiSS.tmerge.min{wildcards.minReadSupport}reads.splicing_status:{wildcards.splicedStatus}.endSupport:{wildcards.endSupport}.gff.gz | sed 's/Corr0_/_/g')
 
-cat $file | perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
+zcat $file | perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
 done > {config[TMPDIR]}/$uuid
 echo -e "transcript_id\tspliced\tflrpm\trpm" > {config[TMPDIR]}/$uuidTmpOutQ
 cat {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl transcript_id spliced flrpm rpm | sort|uniq >> {config[TMPDIR]}/$uuidTmpOutQ
 countDups=$(cat {config[TMPDIR]}/$uuidTmpOutQ |cut -f1 |sort|uniq -d |wc -l)
 if [ $countDups -gt 0 ]; then echoerr "$countDups duplicates found"; exit 1; fi;
 cat {config[TMPDIR]}/$uuid  | skipcomments | sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOutT
-mv {config[TMPDIR]}/$uuidTmpOutT {output.tm}
+cat {config[TMPDIR]}/$uuidTmpOutT | gzip > {output.tm}
 mv {config[TMPDIR]}/$uuidTmpOutQ {output.quant}
 
 		'''
 
 rule getSampleComparisonStats:
-	input: "mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.gff"
+	input: "mappings/nonAnchoredMergeReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.tmerge.gff.gz"
 	output: 
 		fullMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.stats.tsv",
 		simpsonMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.overlap_coeff.tsv",
@@ -1060,7 +1063,7 @@ rule getSampleComparisonStats:
 		OneMinusJaccardMatrix=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.oneMinusJaccard_coeff.tsv"
 	shell:
 		'''
-cat {input} | tmergeToBinaryMatrix.pl - $(dirname {output.simpsonMatrix})/$(basename {output.simpsonMatrix} .overlap_coeff.tsv) |perl -ne '$_=~s/(\S+):Corr\d+_(\S+)/$1 $2/g; print' > {output.fullMatrix}
+zcat {input} | tmergeToBinaryMatrix.pl - $(dirname {output.simpsonMatrix})/$(basename {output.simpsonMatrix} .overlap_coeff.tsv) |perl -ne '$_=~s/(\S+):Corr\d+_(\S+)/$1 $2/g; print' > {output.fullMatrix}
 
 #convert simpson matrix to dissimilarity matrix (1-simpson)
  cat {output.simpsonMatrix} |perl -ne 'chomp; @line=split "\\t"; for($i=0; $i<=$#line;$i++){{$t=$line[$i];if ($t=~/^-?(?:\d+\.?|\.\d)\d*\z/ ){{$line[$i]=1-$line[$i]}}}}; print join("\\t", @line)."\\n"' > {output.OneMinusSimpsonMatrix}
@@ -1143,6 +1146,10 @@ export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/
 set -eu
 python ~/bin/SQANTI3/sqanti3_qc.py --gtf --skipORF --skip_report -o {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded -d mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded {config[TMPDIR]}/$uuid {input.gencode} {input.genome}
 
+# erase useless output files:
+cd mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded/
+
+rm *_corrected.fasta *corrected.genePred *_corrected.gtf*
 		'''
 
 rule getSqantiSJStats:

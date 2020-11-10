@@ -50,7 +50,7 @@
   "TRACK_HUB_BASE_URL": "https://public-docs.crg.es/rguigo/Data/jlagarde/gencode/trackHubs/CLS3/",
   "BED12_AUTOSQL": "/users/rg/jlagarde/bed12.as",
   "MATCHED_HISEQ_PATH": "fastqs/hiSeq/",
-  "GGPLOT_PUB_QUALITY": "theme(axis.line.x = element_line(colour = '#595959'), axis.line.y = element_line(colour = '#595959'),panel.grid.major = element_line(colour='#d9d9d9'),panel.grid.minor = element_line(colour='#e6e6e6'),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'))",
+  "GGPLOT_PUB_QUALITY": "theme(axis.text= element_text(size=themeSize), axis.ticks = element_line(size=lineSize), axis.line = element_line(colour = '#595959', size=lineSize), axis.title=element_text(size = themeSize), panel.grid.major = element_line(colour='#d9d9d9', size=lineSize),panel.grid.minor = element_line(colour='#e6e6e6', size=minorLineSize),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'), legend.key.size=unit(0.5,'line'), legend.title=element_text(size=themeSize*1.2), legend.text=element_text(size=themeSize), strip.text = element_text(size = themeSize))",
   "genomeToCAGEpeaks": {
     "hg38": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
     "mm10": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"

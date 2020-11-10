@@ -261,9 +261,11 @@ mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
 rule makeTmergeOutputTracks:
 	input:
 		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		gff="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
 		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.bb",
+		gff=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.gff.gz",
 		trackDb=temp(config["TRACK_HUB_DIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_TmergeOutput.min{minReadSupport}reads.trackDb.txt")
 	params:
 		trackOnOff=lambda wildcards: trackChecked(wildcards.techname, wildcards.corrLevel, wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.minReadSupport)
@@ -276,7 +278,7 @@ uuidTmpOutT=$(uuidgen)
 cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {config[TMPDIR]}/$uuid
 bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
 mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
-
+cp -f {input.gff} {output.gff}
 echo -e "
 \ttrack {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_{wildcards.minReadSupport}_TMs
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {output.bigBed})
@@ -296,9 +298,11 @@ mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 rule makeFLTmergeOutputTracks:
 	input:
 		bed="mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.bed",
+		gff="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
 		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FL.tmerge.min{minReadSupport}reads.bb",
+		gff=config["TRACK_HUB_DIR"] + "dataFiles/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FL.tmerge.min{minReadSupport}reads.gff.gz",
 		trackDb=temp(config["TRACK_HUB_DIR"] + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt")
 	params:
 		trackOnOff=lambda wildcards: trackChecked(wildcards.techname, wildcards.corrLevel, wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.minReadSupport)
@@ -311,6 +315,7 @@ uuidTmpOutT=$(uuidgen)
 cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {config[TMPDIR]}/$uuid
 bedToBigBed -as={config[BED12_AUTOSQL]} -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
 mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
+cp -f {input.gff} {output.gff}
 
 echo -e "
 \ttrack {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_{wildcards.minReadSupport}_FL_TMs

@@ -1,7 +1,7 @@
 rule integratePolyaAndSjInfo:
 	input:
 		polyA = "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		SJs = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv"
+		SJs = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz"
 	output:
 		strandInfo="mappings/integratePolyaAndSjInfo/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv",
 		wrongPolyAs="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
@@ -10,7 +10,7 @@ rule integratePolyaAndSjInfo:
 uuid=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
 uuidTmpOutW=$(uuidgen)
-cat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort -T {config[TMPDIR]} > {config[TMPDIR]}/$uuid.reads.SJ.strandInfo.tsv
+zcat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort -T {config[TMPDIR]} > {config[TMPDIR]}/$uuid.reads.SJ.strandInfo.tsv
 cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort -T {config[TMPDIR]}  > {config[TMPDIR]}/$uuid.reads.polyA.strandInfo.tsv
 join -a1 -a2 -e '.' -o '0,1.2,2.2' {config[TMPDIR]}/$uuid.reads.SJ.strandInfo.tsv  {config[TMPDIR]}/$uuid.reads.polyA.strandInfo.tsv > {config[TMPDIR]}/$uuid.reads.SJ.polyA.strandInfo.tsv
 
@@ -58,6 +58,26 @@ rule removeIntraPriming:
 	shell:
 		'''
 uuid=$(uuidgen)
+echo $PATH
+
+echo 
+
+which perl
+set +eu
+# conda activate julenv
+conda env list
+
+conda deactivate
+
+conda env list
+set -eu
+
+echo $PATH
+
+echo 
+
+which perl
+
 zcat {input.strandedGff} | awk '$3=="exon"'>  {config[TMPDIR]}/$uuid.gff
 gtfToGenePred {config[TMPDIR]}/$uuid.gff {config[TMPDIR]}/$uuid.gp
 genePredToBed {config[TMPDIR]}/$uuid.gp {config[TMPDIR]}/$uuid.bed
@@ -69,7 +89,7 @@ zcat $(dirname {output.list})/$(basename {output.list} .list).bed.gz | awk '$5>0
 mv {config[TMPDIR]}/$uuid {output.list}
 intraPrimed=$(cat {output.list} | wc -l)
 let nonIntraPrimed=$totalReads-$intraPrimed || true
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$nonIntraPrimed" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuid.2
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$intraPrimed" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuid.2
 mv {config[TMPDIR]}/$uuid.2 {output.stats}
 rm {config[TMPDIR]}/$uuid*
 		'''
@@ -80,7 +100,7 @@ rule aggIntraPrimingStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalReads\tnonIntraPrimed\tpercentNonIntraPrimed" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalReads\tintraPrimed\tpercentIntraPrimed" > {config[TMPDIR]}/$uuid
 cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 		'''
@@ -111,17 +131,16 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
-plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percentNonIntraPrimed, fill=sizeFrac)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percentIntraPrimed, fill=sizeFrac)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
-geom_text(aes(group=sizeFrac, y=0.01, label = paste(sep='',percent(percentNonIntraPrimed),'\\n','(',comma(nonIntraPrimed),')')), angle=90, size=geom_textSize, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
-scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
+#geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7, size=lineSize)+
+geom_text(aes(group=sizeFrac, y=0, label = paste(sep='',percent(percentIntraPrimed),'\\n','(',comma(intraPrimed),')')), angle=90, size=geom_textSize, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
+scale_y_continuous(labels = scales::percent) +
 xlab ('') +
-ylab ('% non-intra-primed reads') +
-theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+ylab ('% intra-primed reads') +
 
-{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
+{GGPLOT_PUB_QUALITY} + theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) + \\"
 
 {params.filterDat[12]}
 
@@ -152,7 +171,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule highConfidenceReads:
 	input:
-		transcriptStrandInfo = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv",
+		transcriptStrandInfo = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz",
 		strandedReads = "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
 		bam = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		intraPriming="mappings/intraPriming/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.list"
@@ -164,20 +183,20 @@ rule highConfidenceReads:
 uuidTmpOutG=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
 #### reads QC stats
-totalSplicedReads=$(cat {input.transcriptStrandInfo} | tgrep -v -P "^#" | wc -l)
+totalSplicedReads=$(zcat {input.transcriptStrandInfo} | tgrep -v -P "^#" | wc -l)
 # reads with 100% canonical SJs
-canonSjReads=$(cat {input.transcriptStrandInfo} | awk '$6==1'| wc -l)
+canonSjReads=$(zcat {input.transcriptStrandInfo} | awk '$6==1'| wc -l)
 # reads with no fishy SJs (i.e. not surrounded by direct repeats)
-noFishySjReads=$(cat {input.transcriptStrandInfo} | awk '$7==1'| wc -l)
+noFishySjReads=$(zcat {input.transcriptStrandInfo} | awk '$7==1'| wc -l)
 # reads with no fishy SJs and canonical SJs
-noFishyCanonSjReads=$(cat {input.transcriptStrandInfo} | awk '$6==1 && $7==1'| wc -l)
+noFishyCanonSjReads=$(zcat {input.transcriptStrandInfo} | awk '$6==1 && $7==1'| wc -l)
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalSplicedReads\t$canonSjReads\t$noFishySjReads\t$noFishyCanonSjReads" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5"\\t"$8/$5}}' > {config[TMPDIR]}/$uuidTmpOutS
 mv {config[TMPDIR]}/$uuidTmpOutS {output.stats}
 
 
 #select read IDs with canonical GT|GC/AG
 uuid=$(uuidgen)
-cat {input.transcriptStrandInfo} | tgrep -v -P "^#" | awk '$6==1' | cut -f1 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
+zcat {input.transcriptStrandInfo} | tgrep -v -P "^#" | awk '$6==1' | cut -f1 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
 wc -l {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
 zcat {input.strandedReads} > {config[TMPDIR]}/$uuid.str.gff
 
@@ -317,8 +336,9 @@ xlab('') +
 guides(fill = guide_legend(title='Category'))+
 #geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = comma(count), hjust = 0.5, vjust = 1))+
 scale_y_continuous(labels=scientific)+
+{GGPLOT_PUB_QUALITY} + 
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
-{GGPLOT_PUB_QUALITY} + \\"
+\\"
 
 {params.filterDat[12]}
 
@@ -366,7 +386,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule nonAnchoredMergeUnfilteredSirvReads:
 	input: "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
-	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.noFilt.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff",
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.noFilt.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
 	threads:1
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
@@ -378,7 +398,7 @@ uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 zcat {input} | awk '$1 ~ /SIRV/ || $1=="chrIS"' > {config[TMPDIR]}/$uuid
 
-cat {config[TMPDIR]}/$uuid| tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
+cat {config[TMPDIR]}/$uuid| tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
@@ -386,19 +406,19 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule splitTmsBySplicedStatus:
 	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"
-	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff"
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
 	params:
 		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} {params.grepSpliced} > {config[TMPDIR]}/$uuidTmpOut
+cat {input} {params.grepSpliced} | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule mergeTissuesNonAnchoredMergeReads:
-	input: lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
-	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+	input: lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
 	threads:1
 	wildcard_constraints:
 		barcodes='allTissues',
@@ -408,8 +428,8 @@ rule mergeTissuesNonAnchoredMergeReads:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-cat {input} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
-cat {config[TMPDIR]}/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
+cat {config[TMPDIR]}/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
@@ -418,9 +438,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 	input:
-		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
+		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 
-	output: "mappings/nonAnchoredMergeReads/allSeqTechsCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"
+	output: "mappings/nonAnchoredMergeReads/allSeqTechsCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz"
 	threads:1
 	wildcard_constraints:
 #		techname='allSeqTechs',
@@ -431,8 +451,8 @@ rule mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-cat {input} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
-cat {config[TMPDIR]}/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_allTissues.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
+cat {config[TMPDIR]}/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_allTissues.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
@@ -441,9 +461,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 	input:
-		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff", filtered_capDesign_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
+		lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz", filtered_capDesign_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 
-	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
 	threads:1
 	wildcard_constraints:
 #		sizeFrac='0+',
@@ -453,8 +473,8 @@ rule mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-cat {input} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
-cat {config[TMPDIR]}/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_allTissues.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
+cat {config[TMPDIR]}/$uuid | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --tmPrefix allSeqTechsCorr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_allTissues.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
@@ -464,19 +484,19 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule nonAnchoredMergeReadsToBed:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
 	output: temp("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | gff2bed_full.pl - > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} | gff2bed_full.pl - > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 
 
 rule getTmStats:
-	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff"
+	input: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff.gz"
 	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	# wildcard_constraints:
 	# 	barcodes='(?!allTissues).+',
@@ -485,7 +505,7 @@ rule getTmStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | extractGffAttributeValue.pl transcript_id spliced mature_RNA_length contains_count 3p_dists_to_3p 5p_dists_to_5p meta_3p_dists_to_5p meta_5p_dists_to_5p |sort|uniq | awk -v t={wildcards.techname} -v c={wildcards.corrLevel} -v ca={wildcards.capDesign} -v s={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"Corr"c"\\t"ca"\\t"s"\\t"b"\t"$0}}' | gzip > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} | extractGffAttributeValue.pl transcript_id spliced mature_RNA_length contains_count 3p_dists_to_3p 5p_dists_to_5p meta_3p_dists_to_5p meta_5p_dists_to_5p |sort|uniq | awk -v t={wildcards.techname} -v c={wildcards.corrLevel} -v ca={wildcards.capDesign} -v s={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"Corr"c"\\t"ca"\\t"s"\\t"b"\t"$0}}' | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
@@ -507,13 +527,13 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule getMergingStats:
 	input:
 		hcgms = "mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz",
-		pooledMerged = "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+		pooledMerged = "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
 	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 hcgms=$(zcat {input.hcgms} | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
-merged=$(cat {input.pooledMerged} | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
+merged=$(zcat {input.pooledMerged} | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$hcgms\t$merged" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -614,86 +634,6 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 
-# rule plotBoxTmLengthStats:
-# 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv"
-# 	output: 
-# 		box=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.box.stats"),
-# 	params:
-# 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
-# 	shell:
-# 		'''
-# echo "
-# library(ggplot2)
-
-# library(cowplot)
-# library(plyr)
-# library(scales)
-# library(gridExtra)
-# library(grid)
-# library(ggplotify)
-# library(data.table)
-
-# palette <- c('GENCODE_protein_coding' = '#009900', 'CLS_TMs' = '#cc9966', 'CLS_FL_TMs' = '#cc00cc')
-# dat<-fread('{input}', header=T, sep='\\t')
-# {params.filterDat[10]}
-# {params.filterDat[0]}
-# {params.filterDat[1]}
-# {params.filterDat[2]}
-# {params.filterDat[3]}
-# {params.filterDat[4]}
-# {params.filterDat[5]}
-# {params.filterDat[8]}
-# {params.filterDat[11]}
-
-
-# fun_length <- function(x){{
-# return(data.frame(y=-8.5,label= paste0('N=', comma(length(x)))))
-# }}
-# fun_median <- function(x){{
-# return(data.frame(y=-8.5,label= paste0('Median=', comma(median(x)))))
-# }}
-# plotBase <- \\"p <- ggplot(dat, aes(x=factor(correctionLevel), y=mature_RNA_length, color=category)) +
-# geom_boxplot(position=position_dodge(0.9), outlier.shape=NA) +
-# coord_cartesian(ylim=c(100, 3000)) +
-# scale_y_continuous(labels=comma)+
-# scale_color_manual(values=palette, name='Category', labels = c('GENCODE_protein_coding' = 'GENCODE\nprotein-coding', 'CLS_TMs'='TMs', 'CLS_FL_TMs'='FL TMs')) +
-
-# stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_length, geom = 'text', vjust = +1, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +
-# stat_summary(aes(x=factor(correctionLevel), group=category), position=position_dodge(0.9), fun.data = fun_median, geom = 'text', vjust = 0, hjust=0, show.legend=FALSE, size=geom_textSize, colour='black') +
-# ylab('Mature RNA length') +
-# xlab('{params.filterDat[6]}') +
-# coord_flip(ylim=c(100, 3000)) +
-# {params.filterDat[9]}
-# {GGPLOT_PUB_QUALITY} +
-# theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
-
-# {params.filterDat[12]}
-
-# save_plot('{output.box[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-# save_plot('{output.box[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-
-# save_plot('{output.box[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-# save_plot('{output.box[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-
-# save_plot('{output.box[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-# save_plot('{output.box[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-# save_plot('{output.box[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-# save_plot('{output.box[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-# save_plot('{output.box[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-# save_plot('{output.box[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-
-
-# " > $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r
-#  set +eu
-# conda activate R_env
-# set -eu
-# cat $(dirname {output.box[0]})/$(basename {output.box[0]} .legendOnly.png).r | R --slave
-
-# 		'''
-
-
 
 rule plotHistTmLengthStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
@@ -725,6 +665,7 @@ dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat[8]}
 {params.filterDat[11]}
 
+wXyPlot = wXyPlot * 1.2
 
 dat %>%
   group_by(seqTech, correctionLevel, sizeFrac, capDesign, tissue, category) %>%
@@ -737,7 +678,7 @@ geom_textSize = geom_textSize + 1
 
 plotBase <- \\"p <- ggplot(dat, aes(x=mature_RNA_length, fill=category)) +
 geom_histogram(binwidth=100, alpha=0.35, position='identity') +
-geom_vline(data=summaryStats, aes(xintercept=med, color=category), size=1, show.legend=FALSE) +
+geom_vline(data=summaryStats, aes(xintercept=med, color=category), size=lineSize, show.legend=FALSE) +
 geom_text(data = summaryStats[summaryStats\$category=='CLS_TMs',], aes(label = LabelM, x = Inf, y = Inf, color=category), hjust=1.2, vjust=1,  size=geom_textSize, show.legend=FALSE) +
 geom_text(data = summaryStats[summaryStats\$category=='CLS_FL_TMs',], aes(label = LabelM, x = Inf, y = Inf, color=category), hjust=1.2, vjust=2.1,  size=geom_textSize, show.legend=FALSE) +
 
@@ -751,6 +692,9 @@ xlab('Mature RNA length') +
 theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
 {params.filterDat[12]}
+
+wYxPlot = wYxPlot * 1.2
+wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 save_plot('{output.hist[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 save_plot('{output.hist[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
@@ -780,7 +724,7 @@ rule getGeneReadCoverageStats:
 	input: 
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		bam = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		tmerge = "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min1reads.splicing_status:all.endSupport:all.gff",
+		tmerge = "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min1reads.splicing_status:all.endSupport:all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: 
 		gencode="mappings/geneReadCoverage/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gencode.coverage.tsv",
@@ -806,7 +750,8 @@ bedtools coverage -sorted -g {input.genome} -bed -split -nonamecheck -counts -a 
 mv {config[TMPDIR]}/$uuid.2 {output.gencode}
 
 #tmerge
-bedtools intersect -s -wao -a {input.tmerge} -b  {input.tmerge} | buildLoci.pl - | extract_locus_coords.pl -| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.3
+zcat {input.tmerge} > {config[TMPDIR]}/$uuid.a
+bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid.a -b {config[TMPDIR]}/$uuid.a | buildLoci.pl - | extract_locus_coords.pl -| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.3
 
 bedtools coverage -sorted -g {input.genome}  -bed -split -nonamecheck -counts -a {config[TMPDIR]}/$uuid.3 -b {input.bam}  |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}' > {config[TMPDIR]}/$uuid.4
 mv {config[TMPDIR]}/$uuid.4 {output.tmerge}
@@ -863,8 +808,9 @@ dat <- mutate(dat, cumProp=cumSum/sum(readCount))
 filter(dat, rank==10)  -> cumPropTop10Genes
 
 
-plotBase <- \\"p <- ggplot(dat, aes(x = rank, y = cumProp)) + geom_line() + scale_x_log10() + ylim(0,1)+ geom_segment(data = cumPropTop10Genes, aes(x=10,xend=10,y=0,yend=cumProp), color='firebrick3') + geom_segment(data = cumPropTop10Genes, aes(x=0,xend=10,y=cumProp,yend=cumProp,color='Contribution\\nof top 10 genes')) + labs(y='Proportion of total mapped reads', x='# genes (ranked by expression)', color='') + scale_color_manual(values = c('Contribution\nof top 10 genes' = 'firebrick3')) + facet_grid( seqTech ~ capDesign + tissue) + geom_rect(data = cumPropTop10Genes, aes(xmin=0,xmax=10,ymin=0,ymax=cumProp),fill='firebrick3', alpha=0.3, size=0) +
-{GGPLOT_PUB_QUALITY} + \\"
+plotBase <- \\"p <- ggplot(dat, aes(x = rank, y = cumProp)) + geom_line(size=lineSize) + scale_x_log10() + ylim(0,1)+ geom_segment(data = cumPropTop10Genes, aes(x=10,xend=10,y=0,yend=cumProp), color='firebrick3',size=lineSize) + geom_segment(data = cumPropTop10Genes, aes(x=0,xend=10,y=cumProp,yend=cumProp,color='Contribution\\nof top 10 genes'),size=lineSize) + labs(y='Proportion of total mapped reads', x='# genes (ranked by expression)', color='') + scale_color_manual(values = c('Contribution\nof top 10 genes' = 'firebrick3')) + facet_grid( seqTech ~ capDesign + tissue) + geom_rect(data = cumPropTop10Genes, aes(xmin=0,xmax=10,ymin=0,ymax=cumProp),fill='firebrick3', alpha=0.3, size=0) +
+{GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
+
 
 
 {params.filterDat[12]}

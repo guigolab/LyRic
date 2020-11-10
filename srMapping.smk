@@ -96,9 +96,13 @@ rule plotHiSeqMappingStats:
 echo "library(ggplot2)
 library(plyr)
 library(scales)
+themeSize = 9
+lineSize=0.175
+minorLineSize=lineSize/2
+
 dat <- read.table('{input}', header=F, as.is=T, sep='\\t')
 colnames(dat)<-c('capDesign', 'totalReads', 'mappedReads', 'percentMappedReads')
-ggplot(dat, aes(x=capDesign, y=percentMappedReads), color='#b0a19d') +
+ggplot(dat, aes(x=capDesign, y=percentMappedReads), fill='#b0a19d') +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
 geom_text(aes(group=capDesign, y=0.01, label = paste(sep='',percent(percentMappedReads),' / ','(',comma(mappedReads),')')), angle=90, size=5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
@@ -129,17 +133,35 @@ rule getHiSeqCanonicalIntronsList:
 uuid=$(uuidgen)
 uuidTmpOutL=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
+
+echo $PATH
+
+echo 
+
+which perl
+
 echoerr "making bed"
 set +eu
-conda activate julenv
+# conda activate julenv
 conda env list
 set -eu
 
 samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
 set +eu
+
 conda deactivate
+
 conda env list
 set -eu
+
+echo $PATH
+
+echo 
+
+which perl
+
+
+
 
 echoerr "splitting"
 split -a 3 -d -e -n l/24 {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split
@@ -176,9 +198,13 @@ rule plotHiSeqSjStats:
 echo "library(ggplot2)
 library(plyr)
 library(scales)
+themeSize=9
+lineSize=0.175
+minorLineSize=lineSize/2
+
 dat <- read.table('{input}', header=F, as.is=T, sep='\\t')
 colnames(dat)<-c('capDesign', 'totalSJs')
-ggplot(dat, aes(x=capDesign, y=totalSJs), color='#BCB5B5') +
+ggplot(dat, aes(x=capDesign, y=totalSJs), fill='#BCB5B5') +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 xlab ('capDesign') +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))

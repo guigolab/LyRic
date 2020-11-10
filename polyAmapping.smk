@@ -139,6 +139,27 @@ rule polyAmapping:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
+
+echo $PATH
+
+echo 
+
+which perl
+set +eu
+# conda activate julenv
+conda env list
+
+conda deactivate
+
+conda env list
+set -eu
+
+echo $PATH
+
+echo 
+
+which perl
+
 samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
@@ -223,7 +244,7 @@ scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) +
 ylab('# mapped reads') +
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
-geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),'\\n','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {params.filterDat[7]}
 {GGPLOT_PUB_QUALITY} + \\"
 

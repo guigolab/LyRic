@@ -89,6 +89,8 @@ dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat[5]}
 {params.filterDat[8]}
 
+wXyPlot = wXyPlot * 1.2
+
 dat\$sizeFrac_f=factor(dat\$sizeFrac, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
 dat %>%
   group_by(seqTech, sizeFrac_f, capDesign, tissue) %>%
@@ -99,7 +101,7 @@ summaryStats = transform(datSumm, LabelN = paste0('N= ', comma(n)), LabelM = pas
 
 plotBase <- \\"p <- ggplot(dat, aes(x=length)) +
 geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=100) +
-geom_vline(data = summaryStats, aes(xintercept=med), color='#ff0055', linetype='solid', size=1.2) +
+geom_vline(data = summaryStats, aes(xintercept=med), color='#ff0055', linetype='solid', size=lineSize) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
 geom_text(data = summaryStats, aes(label = LabelN, x = Inf, y = Inf), hjust=1, vjust=1,  size=geom_textSize, fontface = 'bold') +
 geom_text(data = summaryStats, aes(label = LabelM, x = med, y = Inf), hjust=-0.1, vjust=2.5,  size=geom_textSize, fontface = 'bold', color='#ff0055') +
@@ -109,6 +111,9 @@ scale_x_continuous(labels=comma, name='Read length (nts)')+
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
 {params.filterDat[12]}
+
+wYxPlot = wYxPlot * 1.2
+wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)

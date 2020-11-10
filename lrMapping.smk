@@ -289,7 +289,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percentMappedReads, fill=sizeFrac)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7)+
+geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7, size=lineSize)+
 geom_text(aes(group=sizeFrac, y=0.01, label = paste(sep='',percent(percentMappedReads),'\\n','(',comma(mappedReads),')')), angle=90, size=geom_textSize, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
 scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
 xlab ('') +

@@ -34,6 +34,10 @@
   "aggTmStats": {
     "h_rt": "04:00:00",
   },
+  "compareTargetsToTms":{
+    "disk": "30G",
+     "virtual_free": "15G"
+  },
   "removeIntraPriming": {
     "virtual_free": "25G"
   },
@@ -156,7 +160,7 @@
     "virtual_free": "30G"
   },
   "gffcompareToAnnotation": {
-    "virtual_free": "5G",
+    "virtual_free": "10G",
   },
   "gffcompareToSirvAnnotation": {
     "virtual_free": "1G",
@@ -234,9 +238,11 @@
     "virtual_free": "30G"
   },
   "tmergeAll": {
-    "disk": "50G",
-    "h_rt": "6:00:00",
-    "virtual_free": "20G"
+    "disk": "60G",
+    "h_rt": "12:00:00",
+    "virtual_free": "20G",
+    "queue": "rg-el7,long-sl7",
+        
   },
   "getReadProfileMatrix": {
     "h_rt": "12:00:00",
@@ -248,7 +254,7 @@
     "virtual_free": "20G"
   },
   "sqantiStrandedReads": {
-    "h_rt": "20:00:00",
+    "h_rt": "30:00:00",
     "queue": "rg-el7,long-sl7",
     "virtual_free": "80G"
   },

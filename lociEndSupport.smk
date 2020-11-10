@@ -62,7 +62,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 if GENOMETOPREVIOUS is not None: 
 	rule mergeCurrentPreviousPhaseTmsWithGencode:
 		input:
-			current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
+			current=lambda wildcards: expand("mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz", filtered_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes, minReadSupport=wildcards.minReadSupport),
 			previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 			annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 		threads:1
@@ -77,7 +77,7 @@ uuid=$(uuidgen)
 uuidM=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
-cat {input.previous} {input.annot} {input.current} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
+zcat -f {input.previous} {input.annot} {input.current} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
 set +eu
 conda activate julenv
 set -eu
@@ -313,8 +313,8 @@ dat <- subset(dat, annotation_set=='GENCODE')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('FL', 'non-FL')))
 
 dat\$annotbiotype <- paste(sep='', dat\$biotype, '\\n(', dat\$annotation_set, ')')
-plotHeight = plotHeight +1
-plotWidth = plotWidth +0.5
+hXyPlot = hXyPlot +1
+wXyPlot = wXyPlot +0.5
 
 plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(annotbiotype), y=count, fill=category)) +
 geom_bar(stat='identity') +
@@ -386,8 +386,8 @@ dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('FL', 'non-FL'))
 
 dat\$annotbiotype <- paste(sep='', dat\$biotype, '\\n(', dat\$annotation_set, ')')
 
-plotHeight = plotHeight +1
-plotWidth = plotWidth +2.5
+hXyPlot = hXyPlot +1
+wXyPlot = wXyPlot +2.5
 
 plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(annotbiotype), y=count, fill=category)) +
 geom_bar(stat='identity') +
