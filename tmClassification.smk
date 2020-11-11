@@ -1133,8 +1133,8 @@ rule sqantiStrandedReads:
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa",
 
 	output: 
-		"mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_junctions.txt",
-		"mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_classification.txt"
+		"mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_junctions.txt.gz",
+		"mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_classification.txt.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -1149,11 +1149,14 @@ python ~/bin/SQANTI3/sqanti3_qc.py --gtf --skipORF --skip_report -o {wildcards.t
 # erase useless output files:
 cd mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded/
 
-rm *_corrected.fasta *corrected.genePred *_corrected.gtf*
+rm *_corrected.fasta *.genePred *_corrected.gtf*
+gzip *.txt
+
+
 		'''
 
 rule getSqantiSJStats:
-	input: "mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_junctions.txt"
+	input: "mappings/strandGffs/sqanti/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded_junctions.txt.gz"
 	output: 
 		can=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiCanJunctions.stats.tsv",
 		rts=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiRtsJunctions.stats.tsv",
@@ -1162,7 +1165,7 @@ rule getSqantiSJStats:
 		'''
 uuid=$(uuidgen)
 
-tail -n+2 {input} | cut -f2,3,5,6,15,16|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid
+zcat {input} | tail -n+2 | cut -f2,3,5,6,15,16|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid
 totalUniqSJs=$(cat {config[TMPDIR]}/$uuid | wc -l)
 nonCanonSJs=$(cat {config[TMPDIR]}/$uuid | awk -F'\\t' '$5=="non_canonical"' |wc -l)
 RtsSJs=$(cat {config[TMPDIR]}/$uuid | awk -F'\\t' '$6=="TRUE"' |wc -l)
