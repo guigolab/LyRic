@@ -13,7 +13,7 @@ conda deactivate
 samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRV |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/uuidTmpOut.tmp
 
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 cat  {config[TMPDIR]}/uuidTmpOut.tmp| bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t0\\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuidTmpOut
@@ -38,7 +38,7 @@ uuidTmpOutP=$(uuidgen)
 
 cat {input.inPolyA} | cut -f4 | sed 's/,/\\n/g' | sort -T {config[TMPDIR]}  | uniq > {config[TMPDIR]}/$uuid.list
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 #non polyA:
@@ -63,7 +63,7 @@ rule compareToPASTestPolyAmapping:
 		'''
 uuidTmpOut=$(uuidgen)
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 cat {input.tpend} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r -10 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} > {config[TMPDIR]}/$uuidTmpOut
@@ -146,7 +146,7 @@ echo
 
 which perl
 set +eu
-# conda activate julenv
+# conda activate bedtools_env
 conda env list
 
 conda deactivate
@@ -282,7 +282,7 @@ rule clusterPolyAsites:
 		'''
 uuidTmpOut=$(uuidgen)
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuidTmpOut
@@ -299,7 +299,7 @@ tmpIn=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 cat {input.sites} | grep -P "^chr" | grep -v "chrIS" > {config[TMPDIR]}/$tmpIn
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 bedtools genomecov -strand {wildcards.strand} -split -bg -i {config[TMPDIR]}/$tmpIn -g {input.genome} > {config[TMPDIR]}/$uuidTmpOut.bedgraph

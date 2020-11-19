@@ -64,7 +64,7 @@ echo
 
 which perl
 set +eu
-# conda activate julenv
+# conda activate bedtools_env
 conda env list
 
 conda deactivate
@@ -268,7 +268,7 @@ rule getHiSSStats:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 bedtools bamtobed -i {input.reads} -bed12 > {config[TMPDIR]}/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed
@@ -740,7 +740,7 @@ cut -f1 {input.genome} |sort|uniq > {config[TMPDIR]}/$uuid.chr
 
 #gencode
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| fgrep -w -f {config[TMPDIR]}/$uuid.chr |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.1

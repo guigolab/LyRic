@@ -8,7 +8,7 @@ if config["CAPTURE"]:
 			'''
 uuidTmpOut=$(uuidgen)
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 zcat {input.tms} > {config[TMPDIR]}/$uuidTmpOut.1
 bedtools intersect -wao -a {input.targetedSegments} -b {config[TMPDIR]}/$uuidTmpOut.1 |gzip > {config[TMPDIR]}/$uuidTmpOut
@@ -247,7 +247,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 plotBase <- \\"p <- ggplot(dat, aes(x=level, y=value)) +
 #geom_mark_rect(aes(filter = level == 'Transcript' & metric == 'Pr'), size=2, expand = unit(7, 'mm'), radius = unit(4, 'mm'), color='#4d4d4d', fill='#ffff00') +
-geom_point(aes(color=metric), shape=18, size=lineSize*2, alpha=0.7) +
+geom_point(aes(color=metric), shape=18, size=lineSize*15, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
@@ -829,7 +829,7 @@ annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\\t')
 dat<-fread('{input.stats}', header=T, sep='\\t')
 dat <- inner_join(dat,annot,by='sample_name')
 annot <- mutate(annot, label=paste(sep=':', seqPlatform, tissue))
-paletteList={config[SAMPLE_ANNOT_RPALETTE]}
+paletteList={sampleAnnot_Rpalette}
 themeSize = 6
 lineSize=0.175
 minorLineSize=lineSize/2
@@ -880,7 +880,7 @@ uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 zcat {input} > {config[TMPDIR]}/$uuid
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
@@ -921,7 +921,7 @@ zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDI
 cat {config[TMPDIR]}/$uuid4 | extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2
 
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 bedtools intersect -v -a {config[TMPDIR]}/$uuid2 -b {config[TMPDIR]}/$uuid1 > {config[TMPDIR]}/$uuid5
@@ -1092,7 +1092,7 @@ annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
 annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
 
 " > {output.simpson}.r
  set +eu
@@ -1113,7 +1113,7 @@ annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
 annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
 annotSumm <- column_to_rownames(annotSumm, 'sample_name')
 #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {config[SAMPLE_ANNOT_RPALETTE]})
+pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
 
 
 " > {output.jaccard}.r
@@ -1335,3 +1335,91 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 		'''
 
 
+rule getAnnotatedGeneDetectionStats:
+	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+file="$(dirname {input})/$(basename {input} .simple.tsv).tmap"
+totalGenes=$(tail -n+2 $file |cut -f1 | awk '$1!="-"'|sort|uniq|wc -l)
+flGenes=$(tail -n+2 $file | awk '$3=="="' |cut -f1 |sort|uniq|wc -l)
+let nonFlGenes=$totalGenes-$flGenes || true
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.barcodes}\\t$totalGenes\\t$flGenes\\t$nonFlGenes" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5}}'> {config[TMPDIR]}/$uuid.TmpOut
+mv {config[TMPDIR]}/$uuid.TmpOut {output}
+
+		'''
+rule aggAnnotatedGeneDetectionStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats.tsv",filtered_product_merge,  techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuid
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tflGenes\\t"$6"\\t"$8"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonFlGenes\\t"$7"\\t"$9}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+
+		'''
+
+rule plotAnnotatedGeneDetectionStats:
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "gencode.geneDetection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats")
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	shell:
+		'''
+echo "
+library(ggplot2)
+library(cowplot)
+library(plyr)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('flGenes', 'nonFlGenes')))
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
+geom_bar(stat='identity') +
+scale_fill_manual(values=c('flGenes' = '#4da6ff', 'nonFlGenes' = '#cc9046ff'), labels = c(flGenes = 'Full-length', nonFlGenes = 'Partial')) +
+ylab('# GENCODE genes detected') +
+xlab('') +
+guides(fill = guide_legend(title='Category'))+
+scale_y_continuous(labels=scientific)+
+{GGPLOT_PUB_QUALITY} + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+\\"
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+		'''

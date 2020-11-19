@@ -24,7 +24,7 @@ rule readMapping:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 set +eu
-conda activate julenv
+conda activate minimap2_env
 set -eu
 
 echoerr "Mapping"
@@ -110,7 +110,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 
 
 plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=errorRate, fill=errorCategory)) +
-geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#bfbfbf', insertions = '#ffa64d', mismatches = '#66c2ff')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
+geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#bfbfbf', insertions = '#ffa64d', mismatches = '#1a1aff')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
 scale_y_continuous(labels = label_scientific(digits = 1)) +
 
 {params.filterDat[7]}
@@ -194,7 +194,7 @@ set -eu
 echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscript {output.matrix}.r
 
 set +eu
-conda activate julenv
+conda activate deeptools_env
 set -eu
 
 computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {config[TMPDIR]}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {output.libraryPrepList} | perl -ne 'chomp; print')
@@ -213,7 +213,7 @@ rule plotReadProfileMatrix:
 		'''
 	
 set +eu
-conda activate julenv
+conda activate deeptools_env
 set -eu
 	
   plotProfile -m {input.matrix} -o {output.profile} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --colors $(cat {input.colorList} | perl -ne 'chomp; print')
@@ -499,7 +499,7 @@ rule readBamToBed:
 uuidTmpOut=$(uuidgen)
 #remove mappings with ultra-short exons after bamtobed
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 bedtools bamtobed -i {input} -bed12 | perl -ne '$line=$_; @line=split ("\\t", $line); @blockSizes=split(",", $line[10]); $allExonsOK=1; foreach $block (@blockSizes){{if ($block<2){{$allExonsOK=0; last;}}}}; if ($allExonsOK==1){{print $line}}'| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}

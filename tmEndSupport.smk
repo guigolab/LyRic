@@ -19,7 +19,7 @@ rule cageSupportedfivepEnds:
 		'''
 uuidTmpOut=$(uuidgen)
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
@@ -36,7 +36,7 @@ rule dhsSupportedfivepEnds:
 		'''
 uuidTmpOut=$(uuidgen)
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools intersect -u -a stdin -b {input.dhsPeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
@@ -116,7 +116,7 @@ uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 cat {input.polyAsites} |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.polyAsites.bed
 set +eu
-conda activate julenv
+conda activate bedtools_env
 set -eu
 
 cat {input.threePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 5 -r 5 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {config[TMPDIR]}/$uuid.polyAsites.bed | cut -f4 | tgrep -F -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
@@ -207,7 +207,7 @@ plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionL
 geom_bar(stat='identity') +
 ylab('# TMs') +
 scale_y_continuous(labels=comma)+
-scale_fill_manual (values=c(cageOnly='#e5b3e5', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'))+
+scale_fill_manual (values=c(cageOnly='#e5b3e5', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'), labels = c(cageOnly = '5´-complete only', cageAndPolyA = '5´+3´-complete', polyAOnly = '3´-complete only', noCageNoPolyA = '5´+3´-incomplete'))+
 xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+
 #geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+

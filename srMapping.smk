@@ -142,7 +142,7 @@ which perl
 
 echoerr "making bed"
 set +eu
-# conda activate julenv
+conda activate bedtools_env
 conda env list
 set -eu
 
