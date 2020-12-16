@@ -114,7 +114,9 @@ geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#bfbfbf', in
 scale_y_continuous(labels = label_scientific(digits = 1)) +
 
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY} + \\"
+{GGPLOT_PUB_QUALITY} + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+\\"
 
 
 {params.filterDat[12]}
@@ -371,7 +373,9 @@ guides(fill = guide_legend(title='Spike-in set'))+
 scale_y_continuous(labels=percent)+
 expand_limits(y=c(0,maxY))+
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY} + \\"
+{GGPLOT_PUB_QUALITY} + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+\\"
 
 
 {params.filterDat[12]}

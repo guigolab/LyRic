@@ -16,7 +16,7 @@ GGPLOT_PUB_QUALITY="theme(axis.text= element_text(size=themeSize*1.8), axis.tick
 
 sizeFrac_Rpalette="c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')"
 long_Rpalette="c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')"
-sampleAnnot_Rpalette="list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = '#5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3'), tissue = c(Brain = '#b3de69', Heart = '#fccde5', K562 ='#00bfff', A549 ='#009933', EmbryoBrain ='#77a725',  EmbryoHeart ='#f76eb5', EmbryoLiver ='#4d94ff', EmbryoSC='#ff9900', WBlood='#e6e600', Liver='#005ce6', iPSC='#995c00'))"
+sampleAnnot_Rpalette="list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = '#5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3'), tissue = c(Brain = '#b3de69', Heart = '#fccde5', K562 ='#00bfff', A549 ='#009933', EmbryoBrain ='#77a725',  EmbryoHeart ='#f76eb5', EmbryoLiver ='#4d94ff', EmbryoSC='#ff9900', WBlood='#e6e600', Liver='#005ce6', iPSC='#995c00', HEK293T='#cc4400'))"
 
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
 CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]

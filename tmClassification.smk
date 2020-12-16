@@ -556,7 +556,10 @@ xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category'))+
 scale_y_continuous(labels=scientific)+
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY} + \\"
+{GGPLOT_PUB_QUALITY} + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+
+\\"
 
 {params.filterDat[12]}
 
@@ -994,7 +997,9 @@ xlab('{params.filterDat[6]}') +
 guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {params.filterDat[7]}
-{GGPLOT_PUB_QUALITY}  + \\"
+{GGPLOT_PUB_QUALITY}  + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+\\"
 
 {params.filterDat[12]}
 
