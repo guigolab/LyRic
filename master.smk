@@ -16,7 +16,7 @@ GGPLOT_PUB_QUALITY="theme(axis.text= element_text(size=themeSize*1.8), axis.tick
 
 sizeFrac_Rpalette="c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')"
 long_Rpalette="c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')"
-sampleAnnot_Rpalette="list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = '#5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3'), tissue = c(Brain = '#b3de69', Heart = '#fccde5', K562 ='#00bfff', A549 ='#009933', EmbryoBrain ='#77a725',  EmbryoHeart ='#f76eb5', EmbryoLiver ='#4d94ff', EmbryoSC='#ff9900', WBlood='#e6e600', Liver='#005ce6', iPSC='#995c00', HEK293T='#cc4400'))"
+sampleAnnot_Rpalette="list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = '#5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', Teloprime = '#fb8072', directRNA = '#80b1d3', 'Rt' = '#8c8c8c'), tissue = c(Brain = '#b3de69', Heart = '#fccde5', K562 ='#00bfff', A549 ='#009933', EmbryoBrain ='#77a725',  EmbryoHeart ='#f76eb5', EmbryoLiver ='#4d94ff', EmbryoSC='#ff9900', WBlood='#e6e600', Liver='#005ce6', iPSC='#995c00', HEK293T='#cc4400'))"
 
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
 CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
@@ -315,7 +315,7 @@ def filtered_product(*args):
 			yield(wc_comb)
 		else:
 			if len(wc_comb) > 4:
-				if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[3] in (('sizeFrac', '0+'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
+				if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
 					found=True
 					yield(wc_comb)
 	if not found:
@@ -335,7 +335,7 @@ def filtered_product_merge(*args):
 			#print (wc_comb)
 		#	print ("AUTH")
 			if wc_comb[0] in (('techname', 'allSeqTechs'),):
-				if wc_comb[3] in (('sizeFrac', '0+'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
+				if wc_comb[4] in (('barcodes', 'allTissues'),):
 					found=True
 					#print("YIELD 1")
 					yield(wc_comb)
@@ -345,7 +345,7 @@ def filtered_product_merge(*args):
 				#print("YIELD 2")
 				yield(wc_comb)
 		else:
-			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[3] in (('sizeFrac', '0+'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
+			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
 				found=True
 				#print("YIELD 3")
 				yield(wc_comb)
@@ -364,7 +364,7 @@ def filtered_capDesign_product_merge(*args):
 			#print (wc_comb)
 		#	print ("AUTH")
 			if wc_comb[0] in (('techname', 'allSeqTechs'),):
-				if wc_comb[3] in (('sizeFrac', '0+'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
+				if wc_comb[4] in (('barcodes', 'allTissues'),):
 					found=True
 					yield(wc_comb)
 
@@ -372,7 +372,7 @@ def filtered_capDesign_product_merge(*args):
 				found=True
 				yield(wc_comb)
 		else:
-			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[3] in (('sizeFrac', '0+'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
+			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
 				#print ("OKcapDesign_product_merge")
 				for capD in MERGEDCAPDESIGNS[wc_comb[2][1]]:
 					wc_comb2=list(wc_comb)
@@ -413,7 +413,7 @@ def filtered_merge_figures(*args):
 		#		print ("AUTH 1")
 					yieldWC=True
 		else:
-			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[3] in (('sizeFrac', '0+'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
+			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
 				yieldWC=True
 		if yieldWC == True:
 			#print("AUTH")

@@ -40,6 +40,10 @@ sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
 
 echoerr "Making BigWigs"
+set +eu
+conda activate deeptools_env
+set -eu
+
 bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
 
 echoerr "Done making BigWigs"
@@ -170,7 +174,7 @@ library(tidyverse);
 sampleAnnot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\\t') 
 filesList <- read.table(file('stdin'), header=FALSE, sep=' '); 
 colnames(filesList) <- c('sample_name');  
-sampleAnnotation_colors = {config[SAMPLE_ANNOT_RPALETTE]}
+sampleAnnotation_colors = {sampleAnnot_Rpalette}
 
 #convert to dataframe
 sampleAnnotation_colors_df <- setNames(stack(sampleAnnotation_colors\$libraryPrep)[2:1], c('libraryPrep','color'))
@@ -420,6 +424,10 @@ uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
+set +eu
+conda activate deeptools_env
+set -eu
+
 bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
@@ -446,6 +454,11 @@ uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
+
+set +eu
+conda activate deeptools_env
+set -eu
+
 bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
@@ -472,6 +485,10 @@ uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
+set +eu
+conda activate deeptools_env
+set -eu
+
 bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}

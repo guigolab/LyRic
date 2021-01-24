@@ -34,9 +34,9 @@
   "aggTmStats": {
     "h_rt": "04:00:00",
   },
-  "compareTargetsToTms":{
+  "compareTargetsToTms": {
     "disk": "30G",
-     "virtual_free": "15G"
+    "virtual_free": "15G"
   },
   "removeIntraPriming": {
     "virtual_free": "25G"
@@ -64,7 +64,7 @@
   },
   "readMapping": {
     "virtual_free": "40G",
-    "h_rt": "12:00:00",
+    "h_rt": "20:00:00",
     "threads": "-pe smp 12",
     "queue": "rg-el7,long-sl7"
   },
@@ -76,7 +76,7 @@
   },
   "highConfidenceReads": {
     "h_rt": "6:00:00",
-    "virtual_free": "25G"
+    "virtual_free": "35G"
   },
   "readBedToGff": {
     "queue": "rg-el7,long-sl7",
@@ -123,7 +123,7 @@
     "virtual_free": "2G",
   },
   "getHiSSStats": {
-    "virtual_free": "35G",
+    "virtual_free": "45G",
     "h_rt": "06:00:00"
   },
   "mergeWithRef": {
@@ -132,6 +132,9 @@
   },
   "nonAnchoredMergeReads": {
     "virtual_free": "30G",
+  },
+  "nonAnchoredMergeReadsToBed": {
+    "virtual_free": "10G",
   },
   "mergeTissuesNonAnchoredMergeReads": {
     "virtual_free": "10G",
@@ -242,7 +245,6 @@
     "h_rt": "12:00:00",
     "virtual_free": "20G",
     "queue": "rg-el7,long-sl7",
-        
   },
   "getReadProfileMatrix": {
     "h_rt": "12:00:00",
