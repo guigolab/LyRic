@@ -172,7 +172,8 @@
     "virtual_free": "10G",
   },
   "getClsSpliceJunctions": {
-    "h_rt": "04:30:00"
+    "h_rt": "04:30:00",
+    "virtual_free": "10G"
   },
   "getTmSpliceSites": {
     "h_rt": "04:30:00"

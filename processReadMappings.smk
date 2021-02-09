@@ -409,6 +409,8 @@ rule splitTmsBySplicedStatus:
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
 	params:
 		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
+	wildcard_constraints:
+		techname='(?!allSeqTechs).+'
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -466,7 +468,7 @@ rule mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads:
 	output: "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
 	threads:1
 	wildcard_constraints:
-#		sizeFrac='0+',
+		sizeFrac='0+',
 		barcodes='allTissues',
 		capDesign='|'.join(MERGEDCAPDESIGNS)
 	shell:
