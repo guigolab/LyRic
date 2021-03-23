@@ -87,7 +87,9 @@ mv {config[TMPDIR]}/$uuid {output}
 
 rule plotBamqcStats:
 	input: config["STATSDATADIR"] + "all.sequencingError.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats")
+	output: 
+		allErrors=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"),
+		deletionsOnly=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats")
 	params: 
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -125,31 +127,67 @@ theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 
 {params.filterDat[12]}
 
-save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.allErrors[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.allErrors[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 
-save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.allErrors[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.allErrors[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.allErrors[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.allErrors[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
 
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.allErrors[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.allErrors[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
 
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.allErrors[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.allErrors[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
-" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+
+datDeletionsOnly <- subset(dat, errorCategory=='deletions')
+
+
+plotBase <- \\"p <- ggplot(data=datDeletionsOnly, aes(x=factor(correctionLevel), y=errorRate, fill=errorCategory)) +
+geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#bfbfbf')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
+scale_y_continuous(labels = label_scientific(digits = 1)) +
+
+{params.filterDat[7]}
+{GGPLOT_PUB_QUALITY} + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+\\"
+
+
+{params.filterDat[12]}
+
+save_plot('{output.deletionsOnly[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output.deletionsOnly[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output.deletionsOnly[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output.deletionsOnly[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output.deletionsOnly[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output.deletionsOnly[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output.deletionsOnly[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output.deletionsOnly[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output.deletionsOnly[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output.deletionsOnly[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+
+" > $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnly.png).r
  set +eu
 conda activate R_env
 set -eu
-cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+cat $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnly.png).r | R --slave
 
 
 
 		'''
+
+
+
 
 
 rule getReadProfileMatrix:
@@ -325,6 +363,48 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 conda activate R_env
 set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+		'''
+
+rule getMappedReadLength:
+	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mappedReadlength.stats.tsv.gz"
+	shell:
+		'''
+uuid=$(uuidgen)
+samtools view -F 4 {input} | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($10)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |gzip > {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+
+		'''
+
+rule aggMappedReadLength:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mappedReadlength.stats.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output:
+		all=config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.stats.tsv.gz",
+		summary=config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv"
+	shell:
+		'''
+uuidTmpOut=$(uuidgen)
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output.all}
+
+
+ set +eu
+conda activate R_env
+set -eu
+
+echo "
+library(data.table)
+library(tidyverse)
+dat<-fread('{output.all}', header=T, sep='\\t')
+dat %>%
+  group_by(seqTech, sizeFrac, capDesign, tissue) %>%
+  summarise(n=n(), median=median(length), mean=mean(length), max=max(length)) -> datSumm
+
+write_tsv(datSumm, '{output.summary}')
+
+" | R --slave
 
 		'''
 
@@ -536,5 +616,113 @@ uuidTmpOut=$(uuidgen)
 zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
+
+rule getReadBiotypeClassification:
+	input: 
+		reads="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		ann="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
+	output: "mappings/readMapping/reads2biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
+	shell:
+		'''
+uuidTmpOut=$(uuidgen)
+
+set +eu
+conda activate bedtools_env
+set -eu
+bedtools intersect -split -wao -bed -a {input.reads} -b {input.ann} |perl -lane '$line=$_; $gid="NA"; $gt="nonExonic"; if($line=~/gene_id \"(\S+)\";/){{$gid=$1}}; if ($line=~/gene_type \"(\S+)\";/){{$gt=$1}}; print "$F[3]\\t$gid\\t$gt\\t$F[-1]"'|cut -f1,3|sort -T {config[TMPDIR]} |uniq | gzip > {config[TMPDIR]}/$uuidTmpOut.2
+mv  {config[TMPDIR]}/$uuidTmpOut.2 {output}
+		'''
+
+rule getReadToBiotypeBreakdownStats:
+	input: "mappings/readMapping/reads2biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv"
+	shell:
+		'''
+totalPairs=$(zcat {input} | wc -l)
+zcat {input} | cut -f2| sort -T {config[TMPDIR]} |uniq -c |ssv2tsv | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} -v tp=$totalPairs '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"$2"\\t"$1"\\t"$1/tp}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
+
+		'''
+
+
+rule aggReadToBiotypeBreakdownStats:
+	input: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: config["STATSDATADIR"] + "all.readToBiotypeBreakdown.stats.tsv"
+	shell:
+		'''
+uuidTmpOut=$(uuidgen)
+echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {config[TMPDIR]}/$uuidTmpOut
+cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+mv  {config[TMPDIR]}/$uuidTmpOut {output}
+
+		'''
+
+rule plotReadToBiotypeBreakdownStats:
+	input: config["STATSDATADIR"] + "all.readToBiotypeBreakdown.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats")
+	params: 
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	shell:
+		'''
+echo "
+library(ggplot2)
+library(cowplot)
+library(plyr)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+library(data.table)
+
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+dat\$biotype=factor(dat\$biotype, levels=names({simpleBiotypes_Rpalette}), ordered=TRUE)  #otherwise the manual scale is not ordered correctly and "drop=FALSE" (include categories in scale that are absent from data frame) is ignored 
+
+plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=readOverlapsPercent, fill=biotype)) +
+geom_bar(stat='identity') + scale_fill_manual(values={simpleBiotypes_Rpalette}, drop = FALSE) + ylab('% read overlaps') + xlab('') + guides(fill = guide_legend(title='Region/biotype')) +
+scale_y_continuous(labels = scales::percent) + coord_cartesian(ylim=c(0,1)) +
+
+{params.filterDat[7]}
+{GGPLOT_PUB_QUALITY} + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+\\"
+
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+
+
+		'''
+
+
+
 
 

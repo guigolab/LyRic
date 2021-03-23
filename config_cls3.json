@@ -25,13 +25,9 @@
     "MpreCap": "annotations/mm.gencodeM7+SIRVS.gff",
     "Mv2": "annotations/mm.gencodeM7+SIRVS.gff"
   },
-  "genomeToPreviousPhaseTMs": {
-    "hg38": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Hv1Hv2_allFracs_allTissues.tmerge.min2reads.all.gff",
-    "mm10": "/nfs/users2/project/gencode_006070/jlagarde/lncRNACapture_phase2/mappings/nonAnchoredMergeReads/allSeqTechsCorr0_Mv1_allFracs_allTissues.tmerge.min2reads.all.gff"
-  },
   "PLOTFORMATS": [
-    "png",
-    "pdf"
+    "pdf",
+    "png"
   ],
   "MINIMUM_TMERGE_READ_SUPPORT": [
     "1",
@@ -47,7 +43,7 @@
   "TRACK_HUB_BASE_URL": "https://public-docs.crg.es/rguigo/Data/jlagarde/gencode/trackHubs/CLS3/",
   "BED12_AUTOSQL": "/users/rg/jlagarde/bed12.as",
   "MATCHED_HISEQ_PATH": "fastqs/hiSeq/",
-    "genomeToCAGEpeaks": {
+  "genomeToCAGEpeaks": {
     "hg38": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
     "mm10": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
   },

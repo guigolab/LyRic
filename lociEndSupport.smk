@@ -1,21 +1,3 @@
-rule collapseGencode:
-	input: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
-	output: "annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	threads:1
-	shell:
-		'''
-uuid=$(uuidgen)
-uuidTmpOut=$(uuidgen)
-cat {input} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
-uuidL=$(uuidgen)
-set +eu
-conda activate bedtools_env
-set -eu
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid | buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidL
-mergeToRef.pl {input} {config[TMPDIR]}/$uuidL | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-
-		'''
 
 if GENOMETOPREVIOUS is not None:
 	rule mergePreviousPhaseTmsWithGencode:

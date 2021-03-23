@@ -27,6 +27,10 @@
     "virtual_free": "40G",
     "h_rt": "03:30:00",
   },
+  "aggMappedReadLength": {
+    "virtual_free": "40G",
+    "h_rt": "03:30:00",
+  },
   "plotReadLength": {
     "virtual_free": "40G",
     "h_rt": "03:30:00",
@@ -159,6 +163,9 @@
     "h_rt": "6:00:00",
     "threads": "-pe smp 6"
   },
+  "plotHistTmLengthStats": {
+    "virtual_free": "10G"
+  },
   "compareToPASTestPolyAmapping": {
     "virtual_free": "30G"
   },
@@ -192,6 +199,10 @@
     "queue": "rg-el7,long-sl7",
     "h_rt": "24:00:00",
     "disk": "20G"
+  },
+  "getReadBiotypeClassification": {
+    "disk": "30G",
+    "h_rt": "16:00:00",
   },
   "aggGeneidScores": {
     "threads": "-pe smp 8"
