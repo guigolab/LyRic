@@ -31,8 +31,11 @@
     "virtual_free": "40G",
     "h_rt": "03:30:00",
   },
+  "nonAnchoredMergeUnfilteredSirvReads": {
+    "h_rt": "05:30:00",
+  },
   "plotReadLength": {
-    "virtual_free": "40G",
+    "virtual_free": "60G",
     "h_rt": "03:30:00",
   },
   "aggTmStats": {

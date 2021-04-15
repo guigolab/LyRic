@@ -44,7 +44,7 @@ set +eu
 conda activate deeptools_env
 set -eu
 
-bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw 
 
 echoerr "Done making BigWigs"
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
