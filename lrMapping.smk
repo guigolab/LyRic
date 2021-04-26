@@ -187,13 +187,37 @@ cat $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnl
 		'''
 
 
+rule makeBigWigExonicRegions:
+	input:
+		bam= lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		annotGff=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	output:
+		"mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
+	shell:
+		'''
+uuid=$(uuidgen)
+cat {input.annotGff} | awk '$3=="exon"' > {config[TMPDIR]}/$uuid.gff
+set +eu
+conda activate bedtools_env
+set -eu
+bedtools intersect -split -u -a {input.bam} -b {config[TMPDIR]}/$uuid.gff > {config[TMPDIR]}/$uuid.bam
+samtools index {config[TMPDIR]}/$uuid.bam
 
+set +eu
+conda activate deeptools_env
+set -eu
+
+bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuid.bam -o {config[TMPDIR]}/$uuid.bw
+
+mv {config[TMPDIR]}/$uuid.bw {output}
+
+		'''
 
 
 rule getReadProfileMatrix:
 	input:
 		annot="annotations/{capDesign}.bed",
-		bw=lambda wildcards: expand("mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
 		sampleAnnot=config["SAMPLE_ANNOT"],
 
 	output: 
@@ -508,7 +532,7 @@ set +eu
 conda activate deeptools_env
 set -eu
 
-bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
 mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
@@ -539,7 +563,7 @@ set +eu
 conda activate deeptools_env
 set -eu
 
-bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
 mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
@@ -569,7 +593,7 @@ set +eu
 conda activate deeptools_env
 set -eu
 
-bamCoverage -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw --normalizeUsing CPM 
+bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
 mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}

@@ -27,6 +27,9 @@
     "virtual_free": "40G",
     "h_rt": "03:30:00",
   },
+  "makeBigWigExonicRegions": {
+    "h_rt": "06:00:00"
+  },
   "aggMappedReadLength": {
     "virtual_free": "40G",
     "h_rt": "03:30:00",
