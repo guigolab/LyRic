@@ -432,6 +432,18 @@ write_tsv(datSumm, '{output.summary}')
 
 		'''
 
+rule aggSummaryMappedReadLength:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv", capDesign=CAPDESIGNS),
+	output: config["STATSDATADIR"] + "all.mappedReadlength.summary.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+head -n1 {input[0]} > {config[TMPDIR]}/$uuid
+tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+		'''
+
+
 rule aggSpikeInsMappingStats:
 	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv",filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: config["STATSDATADIR"] + "all.spikeIns.mapping.stats.tsv"

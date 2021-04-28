@@ -203,6 +203,8 @@ for comb in itertools.product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
 	os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2]  + "_" + comb[3] + ".fastq.gz")): #allow only combinations corresponding to existing FASTQs
 		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1])))
 		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2])))
+		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes", comb[3])))
+
 		for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]),]):
 			AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
 		for corrLevel in FINALCORRECTIONLEVELS:
@@ -677,10 +679,15 @@ rule all:
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "sqantiRtsJunctions.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiRtsJunctions.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "sqantiCanJunctions.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiCanJunctions.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "gencode.geneDetection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv", capDesign=CAPDESIGNS),
-		expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
+		#expand(config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv", capDesign=CAPDESIGNS),
+		#expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
 
+## temporary/intermediate
+		config["STATSDATADIR"] + "all.fastq.timestamps.tsv",
+		config["STATSDATADIR"] + "all.readlength.summary.tsv",
+		config["STATSDATADIR"] + "all.mappedReadlength.summary.tsv",
+## temporary
 
 
 

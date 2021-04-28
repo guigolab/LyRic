@@ -13,6 +13,20 @@ count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
 		'''
 
+rule fastqTimestamps:
+	input: lambda wildcards: expand(FQPATH + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+
+	output: config["STATSDATADIR"] + "all.fastq.timestamps.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+echo -e "sample_name\\tFASTQ_modified" > {config[TMPDIR]}/$uuid
+for file in $(echo {input}); do
+echo -e "$(basename $file .fastq.gz)\t$(stat -L --printf='%y' $file  | awk '{{print $1}}')"
+done | sort >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+
+		'''
 
 #get read lengths for all FASTQ files:
 rule getReadLength:
@@ -60,7 +74,16 @@ write_tsv(datSumm, '{output.summary}')
 
 
 		'''
-
+rule aggSummaryReadLength:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
+	output: config["STATSDATADIR"] + "all.readlength.summary.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+head -n1 {input[0]} > {config[TMPDIR]}/$uuid
+tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+		'''
 
 # plot histograms with R:
 rule plotReadLength:
