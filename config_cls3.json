@@ -17,7 +17,8 @@
   "CAPTURE": true,
   "SAMPLE_ANNOT": "annotations/samples/sample_annotations.tsv",
   "TMPDIR": "$TMPDIR",
-  "minPhredQualAroundSJ": "10",
+  "minPhredQualAroundSJnoHiSeq": "30",
+  "minPhredQualAroundSJwithHiSeq": "10",
   "exonOverhangTolerance": "8",
   "capDesignToAnnotGtf": {
     "HpreCap": "annotations/hs.gencode24+SIRVS.gff",

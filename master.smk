@@ -4,12 +4,12 @@ import os
 import itertools
 import sys
 import pandas as pd
+from pprint import pprint
 
 
 #prefix all shell scripts with the following command
 shell.prefix("source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; ")
 
-print ("TODO:\n## Calculate amount of novel captured nts\n\n", file=sys.stderr)
 
 
 GGPLOT_PUB_QUALITY="theme(axis.text= element_text(size=themeSize*1.8), axis.ticks = element_line(size=lineSize), axis.line = element_line(colour = '#595959', size=lineSize), axis.title=element_text(size = themeSize*2), panel.grid.major = element_line(colour='#d9d9d9', size=lineSize),panel.grid.minor = element_line(colour='#e6e6e6', size=minorLineSize),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'), legend.key.size=unit(0.5,'line'), legend.title=element_text(size=themeSize*1.2), legend.text=element_text(size=themeSize), strip.text = element_text(size = themeSize))"
@@ -138,7 +138,7 @@ wildcard_constraints:
 	sample_name= "[^/]+",
 
 ## read sample metadata annotations into a pandas dataframe:
-sampleAnnot = pd.read_table(config['SAMPLE_ANNOT'])
+sampleAnnot = pd.read_table(config['SAMPLE_ANNOT'], header=0, sep='\t')
 
 ## check that samples are properly annotated:
 SAMPLES, = glob_wildcards(FQPATH + "{sample_name, [^/]+}.fastq.gz")
@@ -146,6 +146,12 @@ for sample_name in SAMPLES:
 	sampleRow=sampleAnnot[sampleAnnot.sample_name == sample_name]
 	assert len(sampleRow) < 2, "Duplicate found for sample " + sample_name + " in " + config['SAMPLE_ANNOT']
 	assert len(sampleRow) > 0, "Sample " + sample_name + " not found in " + config['SAMPLE_ANNOT']
+
+sampleAnnot.set_index('sample_name', inplace=True)
+sampleAnnotDict = sampleAnnot.to_dict('index')
+
+
+
 
 
 BARCODESpluSMERGED=set(BARCODES)
@@ -295,9 +301,9 @@ PLOTSbyCAPDESIGNplusMERGED=set(PLOTSbyCAPDESIGN)
 for capD in MERGEDCAPDESIGNS:
 	PLOTSbyCAPDESIGNplusMERGED.add(capD)
 
-def sampleNameToSeqPlatform(sample_namee):
-	seqPlatform=sampleAnnot.loc[sampleAnnot.sample_name == sample_name, 'seqPlatform'].values[0]
-	return seqPlatform
+#def sampleNameToSeqPlatform(sample_name):
+#	seqPlatform=sampleAnnot.loc[sampleAnnot.sample_name == sample_name, 'seqPlatform'].values[0]
+#	return seqPlatform
 
 
 def returnPlotFilenames(basename):
@@ -323,8 +329,8 @@ def filtered_product(*args):
 					found=True
 					yield(wc_comb)
 	if not found:
-		print(" Error in function filtered_product. Args were:", file=sys.stderr)
-		print((args), file=sys.stderr)
+		pprint(" Error in function filtered_product. Args were:", file=sys.stderr)
+		pprint((args), file=sys.stderr)
 		quit(" Error. Could not yield any input file.", file=sys.stderr)
 
 def filtered_product_merge(*args):
@@ -354,8 +360,8 @@ def filtered_product_merge(*args):
 				#print("YIELD 3")
 				yield(wc_comb)
 	if not found:
-		print(" Error in function filtered_product_merge. Args were:", file=sys.stderr)
-		print((args), file=sys.stderr)
+		pprint(" Error in function filtered_product_merge. Args were:", file=sys.stderr)
+		pprint((args), file=sys.stderr)
 		quit(" Error. Could not yield any input file.")
 
 
@@ -386,8 +392,8 @@ def filtered_capDesign_product_merge(*args):
 					found=True
 					yield(wc_comb2)
 	if not found:
-		print(" Error in function filtered_capDesign_product_merge. Args were:", file=sys.stderr)
-		print((args), file=sys.stderr)
+		pprint(" Error in function filtered_capDesign_product_merge. Args were:", file=sys.stderr)
+		pprint((args), file=sys.stderr)
 		quit(" Error. Could not yield any input file.")
 
 
@@ -424,8 +430,8 @@ def filtered_merge_figures(*args):
 			yield(wc_comb)
 			found=True
 	if not found:
-		print(" Error in function filtered_merge_figures. Args were:", file=sys.stderr)
-		print((args), file=sys.stderr)
+		pprint(" Error in function filtered_merge_figures. Args were:", file=sys.stderr)
+		pprint((args), file=sys.stderr)
 		quit(" Error. Could not yield any input file.")
 
 
@@ -622,6 +628,10 @@ include: "lociEndSupport.smk"
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
+		expand("mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
+		config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv",
+
 		expand(FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
 
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readLength.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES), # facetted histograms of read length
@@ -646,9 +656,10 @@ rule all:
 		expand(config["PLOTSDIR"] + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand(config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=config["PLOTFORMATS"]),
 		expand ("mappings/clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand("mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv",
+		
+		
+		
+		
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "merged.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
@@ -687,6 +698,7 @@ rule all:
 		config["STATSDATADIR"] + "all.fastq.timestamps.tsv",
 		config["STATSDATADIR"] + "all.readlength.summary.tsv",
 		config["STATSDATADIR"] + "all.mappedReadlength.summary.tsv",
+		expand("annotations/{capDesign}.partition.gff", capDesign=CAPDESIGNS),
 ## temporary
 
 
@@ -738,6 +750,28 @@ rule makeGenomeFile:
 FastaToTbl {input} | awk '{{print $1"\\t"length($2)}}' | sort -k1,1 > {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 		'''
+
+rule makeGencodePartition:
+	input:
+		gtf=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
+	output: "annotations/{capDesign}.partition.gff"
+	shell:
+		'''
+set +eu
+conda activate bedtools_env
+set -eu
+partitionAnnotation.sh {input.gtf} {input.genome} | sortgff > {output}
+
+# QC:
+genomeSize=$(cat {input.genome} | cut -f2|sum.sh)
+testSize=$(cat {output} | awk '{print ($5-$4)+1}' | sum.sh)
+if [ $testSize -ne $genomeSize ]; then
+echoerr "ERROR: sum of feature sizes in output gff is not equal to genome size. The output is probably bogus."
+exit 1
+fi
+		'''
+
 
 rule makeSirvGff:
 	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]

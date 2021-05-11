@@ -175,6 +175,9 @@ rule highConfidenceReads:
 		strandedReads = "mappings/strandGffs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
 		bam = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		intraPriming="mappings/intraPriming/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.list"
+	params: 
+		minSJsPhredScore = lambda wildcards: config['minPhredQualAroundSJwithHiSeq'] if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['use_matched_HiSeq'] else config['minPhredQualAroundSJnoHiSeq']
+
 	output:
 		gff="mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz",
 		stats=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.highConfSplicedReads.stats.tsv"
@@ -201,7 +204,7 @@ wc -l {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
 zcat {input.strandedReads} > {config[TMPDIR]}/$uuid.str.gff
 
 ##high-quality Phred SJs
-samtools view -F 256 -F4 -F 2048 {input.bam} | samHQintrons.pl --minQual {config[minPhredQualAroundSJ]} - |cut -f1|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.HQintrons.reads.list
+samtools view -F 256 -F4 -F 2048 {input.bam} | samHQintrons.pl --minQual {params.minSJsPhredScore} - |cut -f1|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.HQintrons.reads.list
 #tgrep -F -w -f {config[TMPDIR]}/$uuid.HQintrons.reads.list {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp > {config[TMPDIR]}/$uuid.reads.hcSJs.list
 comm -1 -2 {config[TMPDIR]}/$uuid.HQintrons.reads.list {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp > {config[TMPDIR]}/$uuid.reads.hcSJs.list
 
@@ -242,19 +245,28 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getHiSeqSupportedHCGMs:
 	input:
-		hiSeqIntrons="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if config["USE_MATCHED_ILLUMINA"] else config["SUPPORT_INTRONS_DB"],
-		#hiSeqIntrons="mappings/hiSeqIntrons/hiSeq_{techname}_{capDesign}.{barcodes}.canonicalIntrons.list",
+		hiSeqIntrons=lambda wildcards: "mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['use_matched_HiSeq'] else "/dev/null",
 		lrIntrons="mappings/highConfidenceReads/introns/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv",
 		hcgmGTF= "mappings/highConfidenceReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+	params:
+		useHiSeq = lambda wildcards: 'pleasedo' if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['use_matched_HiSeq'] else 'donot'
 	output:"mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	shell:
 		'''
+
+echoerr "#########################"
+echoerr "Use HiSeq SJs: {params.useHiSeq}"
+echoerr "#########################"
+if [ "{params.useHiSeq}" = "pleasedo" ]; then
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > {config[TMPDIR]}/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv
 zcat {input.hcgmGTF} > {config[TMPDIR]}/$uuid.$(basename {input.hcgmGTF} .gz)
 cut -f1 {config[TMPDIR]}/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.introns.noHiSeq.tsv | sort -T {config[TMPDIR]} |uniq | fgrep -wv -f - {config[TMPDIR]}/$uuid.$(basename {input.hcgmGTF} .gz) |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
+else
+ln -srf {input.hcgmGTF} {output}
+fi
 
 		'''
 

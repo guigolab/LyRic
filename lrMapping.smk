@@ -9,7 +9,7 @@ rule readMapping:
 
 	threads: 12
 	params:
-		minimap_preset = lambda wildcards: "splice" if (sampleNameToSeqPlatform(wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes) == "ONT") else "splice:hq" if (sampleNameToSeqPlatform(wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes) == "pacBioSI" or sampleNameToSeqPlatform(wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes) == "pacBioSII") else None
+		minimap_preset = lambda wildcards: "splice" if (sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "ONT") else "splice:hq" if ( sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "pacBioSI" or sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "pacBioSII") else None
 	output:
 		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
