@@ -78,7 +78,7 @@ scale_fill_manual(values={long_Rpalette}) +
 geom_hline(aes(yintercept=1), linetype='dashed', alpha=0.7, size=lineSize) +
 geom_text(size=geom_textSize, aes(group=targetType, y=0.01, label = paste(sep='',percent(percentDetectedTargets),' / ','(',comma(detectedTargets),')')), angle=90, size=2.5, hjust=0, vjust=0.5, position = position_dodge(width=0.9)) +
 ylab('% targeted regions detected') +
-xlab('{params.filterDat[6]}') +
+xlab('') +
 scale_y_continuous(limits = c(0, 1), labels = scales::percent)+
 {params.filterDat[7]}
 {GGPLOT_PUB_QUALITY} + \\"
@@ -552,7 +552,7 @@ plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionL
 geom_bar(stat='identity') +
 scale_fill_manual(values=palette) +
 ylab('# TMs') +
-xlab('{params.filterDat[6]}') +
+xlab('') +
 guides(fill = guide_legend(title='Category'))+
 scale_y_continuous(labels=scientific)+
 {params.filterDat[7]}
@@ -992,10 +992,10 @@ plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionL
 geom_bar(stat='identity') +
 ylab('# Novel CLS loci') +
 scale_y_continuous(labels=comma)+
-scale_fill_manual (values=c(intronic='#d98c8c', intergenic='#33ccff'))+
-xlab('{params.filterDat[6]}') +
+scale_fill_manual (values=c(intronic='#8cd9b3', intergenic='#00b386'))+
+xlab('') +
 guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
-geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = comma(count), hjust = 0.5, vjust = 1))+
 {params.filterDat[7]}
 {GGPLOT_PUB_QUALITY}  + 
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
@@ -1426,5 +1426,114 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 conda activate R_env
 set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
+		'''
+
+
+rule getNtCoverageByGenomePartition:
+	input:
+		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff.gz",
+		gencodePart="annotations/{capDesign}.partition.gff"
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.ntCoverageByGenomePartition.stats.tsv"
+	shell:
+		'''
+set +eu
+conda activate bedtools_env
+set -eu
+
+uuid=$(uuidgen)
+zcat {input.tm} | bedtools merge -i stdin > {config[TMPDIR]}/$uuid.tmp.tm.bed
+bedtools coverage -a {input.gencodePart} -b {config[TMPDIR]}/$uuid.tmp.tm.bed  > {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv
+
+totalNts=$(cat {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv | awk '{{print $(NF-2)}}' | sum.sh)
+
+for flag in `cat {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv | extractGffAttributeValue.pl region_flag|sort|uniq`; do 
+nts=$(cat {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv |fgrep "region_flag \\"$flag\\";" | awk '{{print $(NF-2)}}'|sum.sh)
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.barcodes}\\t{wildcards.splicedStatus}\\t$flag\\t$nts" | awk -v t=$totalNts '{{print $0"\\t"$7/t}}'; done | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {config[TMPDIR]}/$uuid.tmp.tm.cov.stats.tsv
+
+mv {config[TMPDIR]}/$uuid.tmp.tm.cov.stats.tsv {output}
+		'''
+
+rule aggNtCoverageByGenomePartition:
+	input: lambda wildcards:expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.ntCoverageByGenomePartition.stats.tsv", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=TMSPLICEDSTATUScategories)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.ntCoverageByGenomePartition.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\tsplicingStatus\\tpartition\\tnt_coverage_count\\tnt_coverage_percent" > {config[TMPDIR]}/$uuid
+cat {input} | sort >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+
+		'''
+
+rule plotNtCoverageByGenomePartition:
+	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.ntCoverageByGenomePartition.stats.tsv"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats")
+	params:
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	shell:
+		'''
+echo "
+library(ggplot2)
+
+library(cowplot)
+library(dplyr)
+library(scales)
+library(gridExtra)
+library(grid)
+library(ggplotify)
+
+dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
+{params.filterDat[10]}
+{params.filterDat[0]}
+{params.filterDat[1]}
+{params.filterDat[2]}
+{params.filterDat[3]}
+{params.filterDat[4]}
+{params.filterDat[5]}
+{params.filterDat[8]}
+
+dat <- filter(dat, splicingStatus=='all')
+dat <- select(dat, -splicingStatus)
+
+
+dat\$partition<-factor(dat\$partition, ordered=TRUE)
+plotBase <- \\"p <- ggplot(dat[order(dat\$partition), ], aes(x=factor(correctionLevel), y=nt_coverage_count, fill=partition)) +
+geom_bar(stat='identity') +
+ylab('# genomic nts covered') +
+xlab('') +
+#scale_y_continuous(labels=comma)+
+scale_fill_manual (values=c(intron='#d98c8c', intergenic='#33ccff', CDS='#00e64d', exonOfNCT='#6666ff', exonOfPseudo='#e066ff', UTR='#999966'))+
+guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
+#geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+{params.filterDat[7]}
+{GGPLOT_PUB_QUALITY}  + 
+theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
+\\"
+
+{params.filterDat[12]}
+
+save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+
+save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+
+save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+
+save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
+
+save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+
+
+" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
+ set +eu
+conda activate R_env
+set -eu
+cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
+
 
 		'''

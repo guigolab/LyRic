@@ -598,7 +598,7 @@ geom_bar(stat='identity', position=position_dodge()) +
 geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 1, label = comma(count), hjust = 0, vjust = 0.5), angle=90) +
 scale_fill_manual(values=c('HCGMreads' = '#d98cb3', 'mergedTMs' = '#cc9966')) +
 ylab('# objects') +
-xlab('{params.filterDat[6]}') +
+xlab('') +
 guides(fill = guide_legend(title='Category'))+
 scale_y_continuous(labels=comma)+
 {params.filterDat[7]}

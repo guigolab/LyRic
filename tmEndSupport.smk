@@ -208,7 +208,7 @@ geom_bar(stat='identity') +
 ylab('# TMs') +
 scale_y_continuous(labels=comma)+
 scale_fill_manual (values=c(cageOnly='#e5b3e5', cageAndPolyA='#C453C4', polyAOnly = '#b3e0ff', noCageNoPolyA='#a6a6a6'), labels = c(cageOnly = '5´-complete only', cageAndPolyA = '5´+3´-complete', polyAOnly = '3´-complete only', noCageNoPolyA = '5´+3´-incomplete'))+
-xlab('{params.filterDat[6]}') +
+xlab('') +
 guides(fill = guide_legend(title='Category'))+
 #geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 

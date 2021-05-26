@@ -693,6 +693,7 @@ rule all:
 		#expand(config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv", capDesign=CAPDESIGNS),
 		#expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 
 ## temporary/intermediate
 		config["STATSDATADIR"] + "all.fastq.timestamps.tsv",
@@ -761,11 +762,12 @@ rule makeGencodePartition:
 set +eu
 conda activate bedtools_env
 set -eu
+
 partitionAnnotation.sh {input.gtf} {input.genome} | sortgff > {output}
 
 # QC:
 genomeSize=$(cat {input.genome} | cut -f2|sum.sh)
-testSize=$(cat {output} | awk '{print ($5-$4)+1}' | sum.sh)
+testSize=$(cat {output} | awk '{{print ($5-$4)+1}}' | sum.sh)
 if [ $testSize -ne $genomeSize ]; then
 echoerr "ERROR: sum of feature sizes in output gff is not equal to genome size. The output is probably bogus."
 exit 1

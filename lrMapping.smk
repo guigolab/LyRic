@@ -488,7 +488,7 @@ geom_bar(stat='identity', position=position_dodge()) +
 geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 0, label = paste(sep='',percent(percent),'\\n','(',comma(count),')')), hjust = 0, vjust = 0.5, angle=90) +
 scale_fill_manual(values=c('ERCCs' = '#e4b5ff', 'SIRVs' = '#5edba9')) +
 ylab('% reads mapped on\\nspike-in sequences') +
-xlab('{params.filterDat[6]}') +
+xlab('') +
 guides(fill = guide_legend(title='Spike-in set'))+
 scale_y_continuous(labels=percent)+
 expand_limits(y=c(0,maxY))+

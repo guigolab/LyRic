@@ -242,7 +242,7 @@ plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fil
 geom_bar(stat='identity') + 
 scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) +
 ylab('# mapped reads') +
-xlab('{params.filterDat[6]}') +
+xlab('') +
 guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
 geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),'\\n','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {params.filterDat[7]}
