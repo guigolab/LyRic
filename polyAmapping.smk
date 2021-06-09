@@ -10,6 +10,10 @@ rule getPolyAsitesTestPolyAmapping:
 		'''
 uuidTmpOut=$(uuidgen)
 conda deactivate
+set +eu
+conda activate perl_env
+set -eu
+
 samtools view {input.reads} | fgrep -v ERCC | fgrep -v SIRV |samToPolyA.pl --minClipped={wildcards.minA} --minAcontent={params.minAcontent} --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/uuidTmpOut.tmp
 
 set +eu
@@ -140,25 +144,11 @@ rule polyAmapping:
 		'''
 uuidTmpOut=$(uuidgen)
 
-echo $PATH
 
-echo 
-
-which perl
 set +eu
-# conda activate bedtools_env
-conda env list
-
-conda deactivate
-
-conda env list
+conda activate perl_env
 set -eu
 
-echo $PATH
-
-echo 
-
-which perl
 
 samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}

@@ -1076,59 +1076,59 @@ zcat {input} | tmergeToBinaryMatrix.pl - $(dirname {output.simpsonMatrix})/$(bas
 
 		'''
 
-rule plotSampleComparisonStats:
-	input: 
-		simpson=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.overlap_coeff.tsv",
-		jaccard=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.jaccard_ind.tsv",
-		sampleAnnot=config["SAMPLE_ANNOT"]
-	output: 
-		simpson=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.simpson.png",
-		jaccard=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.jaccard.png"
-	shell:
-		'''
-echo "
-library(pheatmap)
-library(tidyverse)
-library(RColorBrewer)
-library(viridis)
+# rule plotSampleComparisonStats:
+# 	input: 
+# 		simpson=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.overlap_coeff.tsv",
+# 		jaccard=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.jaccard_ind.tsv",
+# 		sampleAnnot=config["SAMPLE_ANNOT"]
+# 	output: 
+# 		simpson=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.simpson.png",
+# 		jaccard=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.jaccard.png"
+# 	shell:
+# 		'''
+# echo "
+# library(pheatmap)
+# library(tidyverse)
+# library(RColorBrewer)
+# library(viridis)
 
-dat <- read.table('{input.simpson}', header=T, as.is=T, sep='\t', row.names=1)
-annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
-annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
-annotSumm <- column_to_rownames(annotSumm, 'sample_name')
-#simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
+# dat <- read.table('{input.simpson}', header=T, as.is=T, sep='\t', row.names=1)
+# annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
+# annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
+# annotSumm <- column_to_rownames(annotSumm, 'sample_name')
+# #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
+# pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
 
-" > {output.simpson}.r
- set +eu
-conda activate R_env
-set -eu
-cat {output.simpson}.r | R --slave
-
-
-
-echo "
-library(pheatmap)
-library(tidyverse)
-library(RColorBrewer)
-library(viridis)
-
-dat <- read.table('{input.jaccard}', header=T, as.is=T, sep='\t', row.names=1)
-annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
-annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
-annotSumm <- column_to_rownames(annotSumm, 'sample_name')
-#simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
+# " > {output.simpson}.r
+#  set +eu
+# conda activate R_env
+# set -eu
+# cat {output.simpson}.r | R --slave
 
 
-" > {output.jaccard}.r
- set +eu
-conda activate R_env
-set -eu
 
-cat {output.jaccard}.r | R --slave
+# echo "
+# library(pheatmap)
+# library(tidyverse)
+# library(RColorBrewer)
+# library(viridis)
 
-		'''
+# dat <- read.table('{input.jaccard}', header=T, as.is=T, sep='\t', row.names=1)
+# annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
+# annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
+# annotSumm <- column_to_rownames(annotSumm, 'sample_name')
+# #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
+# pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
+
+
+# " > {output.jaccard}.r
+#  set +eu
+# conda activate R_env
+# set -eu
+
+# cat {output.jaccard}.r | R --slave
+
+# 		'''
 
 
 rule sqantiStrandedReads:

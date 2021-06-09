@@ -83,6 +83,10 @@ gtfToGenePred {config[TMPDIR]}/$uuid.gff {config[TMPDIR]}/$uuid.gp
 genePredToBed {config[TMPDIR]}/$uuid.gp {config[TMPDIR]}/$uuid.bed
 rm {config[TMPDIR]}/$uuid.gp
 totalReads=$(cat {config[TMPDIR]}/$uuid.bed | wc -l)
+set +eu
+conda activate perl_env
+set -eu
+
 cat {config[TMPDIR]}/$uuid.bed | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
 rm {config[TMPDIR]}/$uuid.bed
 zcat $(dirname {output.list})/$(basename {output.list} .list).bed.gz | awk '$5>0.6'|cut -f4 | sort|uniq > {config[TMPDIR]}/$uuid

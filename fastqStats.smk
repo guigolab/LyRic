@@ -5,16 +5,16 @@ rule basicFASTQqc:
 		'''
 
 # check that read IDs don't contain spaces (frequent with ONT)
-zcat {input} | perl -lane 'if ($F[3]) {{die}}' 
+#zcat {input} | perl -lane 'if ($F[3]) {{die}}' 
 
 # check that there are no read ID duplicates
-zcat {input} | fastq2tsv.pl | cut -f1 | sort -T {config[TMPDIR]} | uniq -dc > {output}
+zcat {input} | fastq2tsv.pl | awk '{{print $1}}' | sort -T {config[TMPDIR]} | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
 		'''
 
 rule fastqTimestamps:
-	input: lambda wildcards: expand(FQPATH + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: expand(FQPATH + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 
 	output: config["STATSDATADIR"] + "all.fastq.timestamps.tsv"
 	shell:
@@ -29,68 +29,69 @@ mv {config[TMPDIR]}/$uuid {output}
 		'''
 
 #get read lengths for all FASTQ files:
-rule getReadLength:
+rule getReadLengthSummary:
 	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv.gz" if config["DEMULTIPLEX"] else config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
+	output: 
+		reads=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
+		summ=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
 	params:
 		bc=lambda wildcards: 'allTissues' if config["DEMULTIPLEX"] else wildcards.barcodes
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | fastq2tsv.pl | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-		'''
+echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
 
-#aggregate read length data over all fractions of a given capDesign:
-rule aggReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readlength.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	#input: glob.glob(os.path.join("{capDesign}_*.readlength.tsv"))
-	output: 
-		all=config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv.gz",
-		summary=config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut
-zcat {input} |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output.all}
+zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | gzip >> {config[TMPDIR]}/$uuidTmpOut.gz
 
-
- set +eu
+set +eu
 conda activate R_env
 set -eu
 
 echo "
 library(data.table)
 library(tidyverse)
-dat<-fread('{output.all}', header=T, sep='\\t')
+dat<-fread('{config[TMPDIR]}/$uuidTmpOut.gz', header=T, sep='\\t')
 dat %>%
   group_by(seqTech, sizeFrac, capDesign, tissue) %>%
   summarise(n=n(), median=median(length), mean=mean(length), max=max(length)) -> datSumm
 
-write_tsv(datSumm, '{output.summary}')
+write_tsv(datSumm, '{config[TMPDIR]}/$uuidTmpOut.1')
 
 " | R --slave
 
-
+mv {config[TMPDIR]}/$uuidTmpOut.gz {output.reads}
+mv {config[TMPDIR]}/$uuidTmpOut.1 {output.summ}
 		'''
-rule aggSummaryReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
-	output: config["STATSDATADIR"] + "all.readlength.summary.tsv"
+
+rule aggReadLengthSummary:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: 
+		summary=config["STATSDATADIR"] + "all.readlength.summary.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
 head -n1 {input[0]} > {config[TMPDIR]}/$uuid
 tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
+
 		'''
+# rule aggSummaryReadLength:
+# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
+# 	output: config["STATSDATADIR"] + "all.readlength.summary.tsv"
+# 	shell:
+# 		'''
+# uuid=$(uuidgen)
+# head -n1 {input[0]} > {config[TMPDIR]}/$uuid
+# tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
+# mv {config[TMPDIR]}/$uuid {output}
+# 		'''
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + "all.{capDesign}.readlength.tsv.gz"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.readLength.stats")  if config["DEMULTIPLEX"] else returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
+	input: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, 'allTissues', wildcards.corrLevel, wildcards.techname) if config["DEMULTIPLEX"] else merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
 		'''
 echo "

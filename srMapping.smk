@@ -162,6 +162,9 @@ which perl
 
 
 
+set +eu
+conda activate perl_env
+set -eu
 
 echoerr "splitting"
 split -a 3 -d -e -n l/24 {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split

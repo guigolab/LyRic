@@ -23,23 +23,23 @@
   "getHiSeqSupportedHCGMs": {
     "virtual_free": "15G"
   },
-  "aggReadLength": {
-    "virtual_free": "40G",
-    "h_rt": "03:30:00",
+  "getReadLengthSummary": {
+    "virtual_free": "20G",
+    "h_rt": "01:30:00",
   },
   "makeBigWigExonicRegions": {
     "h_rt": "06:00:00"
   },
   "aggMappedReadLength": {
-    "virtual_free": "40G",
-    "h_rt": "03:30:00",
+    "virtual_free": "50G",
+    "h_rt": "06:00:00",
   },
   "nonAnchoredMergeUnfilteredSirvReads": {
     "h_rt": "05:30:00",
   },
   "plotReadLength": {
-    "virtual_free": "60G",
-    "h_rt": "03:30:00",
+    "virtual_free": "25G",
+    "h_rt": "01:30:00",
   },
   "aggTmStats": {
     "h_rt": "04:00:00",
@@ -137,7 +137,7 @@
     "h_rt": "06:00:00"
   },
   "mergeWithRef": {
-    "virtual_free": "12G",
+    "virtual_free": "20G",
     "h_rt": "06:00:00"
   },
   "nonAnchoredMergeReads": {
