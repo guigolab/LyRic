@@ -653,6 +653,28 @@ zcat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' | sed 's/Corr0/\\t
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
+rule aggHistTmLengthSummaryStats:
+	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
+	output: summary=config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+ set +eu
+conda activate R_env
+set -eu
+
+echo "
+library(tidyverse)
+library(data.table)
+dat<-fread('{input}', header=T, sep='\\t')
+dat %>%
+  group_by(seqTech, correctionLevel, sizeFrac, capDesign, tissue, category) %>%
+  summarise(med=median(mature_RNA_length), max=max(mature_RNA_length)) -> datSumm
+write_tsv(datSumm, '{config[TMPDIR]}/$uuid')
+" | R --slave
+mv {config[TMPDIR]}/$uuid {output.summary}
+
+		'''
 
 
 rule plotHistTmLengthStats:
@@ -736,6 +758,7 @@ save_plot('{output.hist[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_heig
 conda activate R_env
 set -eu
 cat $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r | R --slave
+
 
 		'''
 

@@ -251,6 +251,7 @@ geom_point(aes(color=metric), shape=18, size=lineSize*15, alpha=0.7) +
 scale_colour_manual (values=cbPalette, name='Metric', breaks=c('Sn', 'Pr'))+
 ylab('Sn | Pr (%)') +
 xlab('Evaluation level') +
+scale_x_discrete(limits=c('Base', 'Locus', 'Exon', 'Intron', 'Intronchain', 'Transcript')) +
 scale_y_continuous() +
 expand_limits(y=c(0,100))+
 theme(axis.text.x = element_text(angle = 45, hjust = 1)) +

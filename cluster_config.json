@@ -170,7 +170,7 @@
     "threads": "-pe smp 6"
   },
   "plotHistTmLengthStats": {
-    "virtual_free": "10G"
+    "virtual_free": "20G"
   },
   "compareToPASTestPolyAmapping": {
     "virtual_free": "30G"

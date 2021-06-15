@@ -699,6 +699,7 @@ rule all:
 		config["STATSDATADIR"] + "all.readlength.summary.tsv",
 		config["STATSDATADIR"] + "all.mappedReadlength.summary.tsv",
 		expand("annotations/{capDesign}.partition.gff", capDesign=CAPDESIGNS),
+		expand(config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 ## temporary
 
 
