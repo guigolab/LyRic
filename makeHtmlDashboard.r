@@ -264,7 +264,7 @@ options= list(
 	autowidth=TRUE,
 	keys = TRUE,
 	rowId =0,
-	searching = FALSE,
+#	searching = FALSE,
 #	rowGroup = list(dataSrc = c(7)),
 	initComplete = JS(
     "function(settings, json) {",

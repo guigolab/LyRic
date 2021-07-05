@@ -60,7 +60,8 @@
     "virtual_free": "30G"
   },
   "getGeneReadCoverageStats": {
-    "virtual_free": "25G"
+    "virtual_free": "25G",
+    "h_rt": "20:00:00"
   },
   "plotAbsThreeTmEndsStats": {
     "h_rt": "01:00:00",
@@ -133,7 +134,7 @@
     "virtual_free": "2G",
   },
   "getHiSSStats": {
-    "virtual_free": "45G",
+    "virtual_free": "65G",
     "h_rt": "06:00:00"
   },
   "mergeWithRef": {
@@ -141,7 +142,8 @@
     "h_rt": "06:00:00"
   },
   "nonAnchoredMergeReads": {
-    "virtual_free": "30G",
+    "virtual_free": "60G",
+    "h_rt": "26:00:00"
   },
   "nonAnchoredMergeReadsToBed": {
     "virtual_free": "10G",

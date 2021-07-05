@@ -793,72 +793,7 @@ cat $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r | R --s
 		'''
 
 
-rule getDetectedAnnTranscriptLength:
-	input: "mappings/nonAnchoredMergeReads/gffcompare/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.simple.tsv"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv.gz"
-	shell:
-		'''
-uuid=$(uuidgen)
-file="$(dirname {input})/$(basename {input} .simple.tsv).tmap"
-tail -n+2 $file | awk '$2!="-"' | cut -f1,2,12 > {config[TMPDIR]}/$uuid
-cat {config[TMPDIR]}/$uuid | awk -v sid={wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes} -v co=Corr{wildcards.corrLevel} -v sp={wildcards.splicedStatus} -v rs={wildcards.minReadSupport} -v es={wildcards.endSupport} '{{print sid"\\t"co"\\t"sp"\\t"rs"\\t"es"\\t"$0}}' | sed 's/Corr0/No/' | sed 's/Corr{lastK}/Yes/' | gzip > {config[TMPDIR]}/$uuid.TmpOut
-mv {config[TMPDIR]}/$uuid.TmpOut {output}
 
-		'''
-
-rule aggDetectedAnnTranscriptLength:
-	input: lambda wildcards:expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.tsv.gz", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
-	output: config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv.gz"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-echo -e "sample_name\tcorrectionLevel\tsplicingStatus\tminReadSupport\tendSupport\tref_gene_id\tref_id\tref_match_len" | gzip > {config[TMPDIR]}/$uuidTmpOut
-zcat {input} | gzip >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-
-		'''
-
-rule plotDetectedAnnTranscriptLength:
-	input: 
-		stats=config["STATSDATADIR"] + "all.{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.tsv.gz",
-		sampleAnnot=config["SAMPLE_ANNOT"]
-	output: config["PLOTSDIR"] + "gencode.detected.length.stats/{capDesign}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.detected.length.stats.{ext}"
-	shell:
-		'''
-echo "
-library(tidyverse)
-library(data.table)
-library(scales)
-annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\\t')
-dat<-fread('{input.stats}', header=T, sep='\\t')
-dat <- inner_join(dat,annot,by='sample_name')
-annot <- mutate(annot, label=paste(sep=':', seqPlatform, tissue))
-paletteList={sampleAnnot_Rpalette}
-themeSize = 6
-lineSize=0.175
-minorLineSize=lineSize/2
-
-libraryPrepPalette=paletteList\$libraryPrep
-labeller <- deframe(select(annot, sample_name, label))
-
-
-p <- ggplot(dat, aes(x=sample_name, y=ref_match_len, fill=libraryPrep)) +
-geom_violin(width=1.1, colour=NA) +
-scale_fill_manual(values=libraryPrepPalette) +
-geom_boxplot(width=0.2, alpha=0.8, outlier.shape=NA) +
-scale_y_continuous(labels=comma)+
-coord_flip(ylim=c(0,5000)) +
-ylab('Length of detected GENCODE transcript (nts)') +
-scale_x_discrete('Sample', labels=labeller) +
-
-{GGPLOT_PUB_QUALITY}
-ggsave('{output}', p, width=9, height=7)
-" > {output}.r
- set +eu
-conda activate R_env
-set -eu
-cat {output}.r | R --slave
-		'''
 
 
 rule mergeTmsWithGencode:
@@ -911,7 +846,9 @@ rule getNovelIntergenicLoci:
 	input:
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.loci.refmerged.gff.gz"
-	output:"mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.gff.gz"
+	output:
+		gtf="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.gff.gz",
+		locusBed="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.geneCoords.bed"
 	shell:
 		'''
 uuid1=$(uuidgen)
@@ -931,7 +868,43 @@ set -eu
 bedtools intersect -v -a {config[TMPDIR]}/$uuid2 -b {config[TMPDIR]}/$uuid1 > {config[TMPDIR]}/$uuid5
 cat {config[TMPDIR]}/$uuid5 |awk '$1 !~ /ERCC/' |cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid3
 zcat {input.tmergeGencode}| tgrep -F -w -f {config[TMPDIR]}/$uuid3 - |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {config[TMPDIR]}/$uuidTmpOut |  extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2.bed
+mv {config[TMPDIR]}/$uuidTmpOut {output.gtf}
+mv {config[TMPDIR]}/$uuid2.bed {output.locusBed}
+		'''
+
+rule getNovelIntergenicLociQcStats:
+	input:
+		intergenic="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.gff.gz",
+		repeats= lambda wildcards: "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
+
+	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+zcat {input.intergenic} | gff2bed_full.pl - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n> {config[TMPDIR]}/$uuid.bed
+mono=$(cat {config[TMPDIR]}/$uuid.bed |awk '$10==1'|wc -l)
+total=$(cat {config[TMPDIR]}/$uuid.bed |wc -l);
+set +eu
+conda activate bedtools_env
+set -eu
+repeats=$(bedtools intersect -split -u -a {config[TMPDIR]}/$uuid.bed -b {input.repeats} | wc -l)
+
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.barcodes}\\t$total\\t$mono\\t$repeats" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5}}' > {config[TMPDIR]}/$uuid.1
+mv {config[TMPDIR]}/$uuid.1 {output}
+
+		'''
+
+rule aggNovelIntergenicLociQcStats:
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=wildcards.endSupport, minReadSupport=wildcards.minReadSupport)
+	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv"
+	shell:
+		'''
+uuid=$(uuidgen)
+echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\ttotal\\tcountMono\\tcountRepeats\\tpercentMono\\tpercentRepeats" > {config[TMPDIR]}/$uuid
+cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+
 		'''
 
 rule getNovelIntergenicLociStats:
@@ -991,7 +964,7 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('intronic', 'intergenic')))
 plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=factor(correctionLevel), y=count, fill=category)) +
 geom_bar(stat='identity') +
-ylab('# Novel CLS loci') +
+ylab('# Novel loci') +
 scale_y_continuous(labels=comma)+
 scale_fill_manual (values=c(intronic='#8cd9b3', intergenic='#00b386'))+
 xlab('') +
