@@ -847,7 +847,7 @@ rule getNovelIntergenicLoci:
 		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.loci.refmerged.gff.gz"
 	output:
-		gtf="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.gff.gz",
+		gtf="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelIntergenicLoci.gff.gz",
 		locusBed="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.geneCoords.bed"
 	shell:
 		'''
@@ -875,20 +875,32 @@ mv {config[TMPDIR]}/$uuid2.bed {output.locusBed}
 
 rule getNovelIntergenicLociQcStats:
 	input:
-		intergenic="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.gff.gz",
+		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.loci.refmerged.gff.gz",
 		repeats= lambda wildcards: "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
 
 	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
-zcat {input.intergenic} | gff2bed_full.pl - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n> {config[TMPDIR]}/$uuid.bed
-mono=$(cat {config[TMPDIR]}/$uuid.bed |awk '$10==1'|wc -l)
-total=$(cat {config[TMPDIR]}/$uuid.bed |wc -l);
+zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid
+cat {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.genes.list
+
+cat {config[TMPDIR]}/$uuid | gff2bed_full.pl - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid.bed
+cat {config[TMPDIR]}/$uuid.bed | awk '$10>1' | cut -f4 | sort -T {config[TMPDIR]} |uniq >  {config[TMPDIR]}/$uuid.spliced.transcripts.list
+
+tgrep -F -w -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.spliced.genes.list
+
+total=$(cat {config[TMPDIR]}/$uuid.genes.list |wc -l)
+spliced=$(cat {config[TMPDIR]}/$uuid.spliced.genes.list  |wc -l)
+let mono=$total-$spliced || true
+
 set +eu
 conda activate bedtools_env
 set -eu
-repeats=$(bedtools intersect -split -u -a {config[TMPDIR]}/$uuid.bed -b {input.repeats} | wc -l)
+bedtools intersect -split -u -a {config[TMPDIR]}/$uuid.bed -b {input.repeats} | cut -f4 | sort|uniq > {config[TMPDIR]}/$uuid.repeats.transcripts.list
+tgrep -F -w -f {config[TMPDIR]}/$uuid.repeats.transcripts.list {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.repeats.genes.list
+
+repeats=$(cat {config[TMPDIR]}/$uuid.repeats.genes.list| wc -l)
 
 echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.barcodes}\\t$total\\t$mono\\t$repeats" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5}}' > {config[TMPDIR]}/$uuid.1
 mv {config[TMPDIR]}/$uuid.1 {output}
@@ -910,7 +922,7 @@ mv {config[TMPDIR]}/$uuid {output}
 rule getNovelIntergenicLociStats:
 	input:
 		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.loci.refmerged.gff.gz",
-		intergenic="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.gff.gz"
+		intergenic="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelIntergenicLoci.gff.gz"
 	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.stats.tsv"
 	shell:
 		'''

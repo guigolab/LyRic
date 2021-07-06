@@ -84,6 +84,11 @@ novelFlLociStats <- rename(novelFlLociStats, 'novelIntergenicFlLoci'=intergenic,
 novelFlLociStats <- mutate(novelFlLociStats, 'novelFlLoci'=novelIntergenicFlLoci+novelIntronicFlLoci)
 novelFlLociStats <- select(novelFlLociStats, -novelIntergenicFlLoci, -novelIntronicFlLoci)
 
+novelLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:all.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
+novelLociQcStats <- concatMetadata(novelLociQcStats)
+novelLociQcStats <- select(novelLociQcStats, -total)
+novelLociQcStats <- relocate(novelLociQcStats, percentMono, .after=countMono)
+
 ntCoverageStats <- read.table("Rinput/all.tmerge.min2reads.endSupport:all.vs.ntCoverageByGenomePartition.stats.tsv", header=TRUE, sep='\t')
 ntCoverageStats <- concatMetadata(ntCoverageStats)
 ntCoverageStats <- filter(ntCoverageStats, splicingStatus=="all")
@@ -124,6 +129,7 @@ dat <- inner_join(dat, ntCoverageSummary, by='sample_name')
 dat <- inner_join(dat, ntCoverageStats, by='sample_name')
 dat <- inner_join(dat, novelLociStats, by='sample_name')
 dat <- inner_join(dat, novelFlLociStats, by='sample_name')
+dat <- inner_join(dat, novelLociQcStats, by='sample_name')
 
 dat <- mutate(dat, '%\nHCGM\nreads' =  HCGMreads / mappedReads)
 dat <- relocate(dat, '%\nHCGM\nreads', .after=HCGMreads)
@@ -138,12 +144,18 @@ dat <- mutate(dat, 'merge\nrate' = mergedTMs / HCGMreads)
 dat <- mutate(dat, '# novel\nloci\nper\nmillion\nmapped\nreads'= novelLoci / (mappedReads/1000000) )
 dat <- relocate(dat, '# novel\nloci\nper\nmillion\nmapped\nreads', .after=novelLoci)
 dat <- mutate(dat, '% novel\nloci\nFL'= novelFlLoci/novelLoci)
-dat <- rename(dat, '# novel\nloci'=novelLoci, '% novel\nloci\nintergenic' = percentIntergenicNovelLoci)
-dat <- select(dat, -mappedReads, -novelFlLoci)
+dat <- relocate(dat, '% novel\nloci\nFL', .after=novelFlLoci)
+dat <- rename(dat, '# novel\nloci'=novelLoci, '% novel\nloci\nintergenic' = percentIntergenicNovelLoci, '# novel\nloci\nFL'=novelFlLoci, '# monoexonic\nnovel\nloci'=countMono, '% monoexonic\nnovel\nloci'=percentMono, '# novel loci\non\nrepeats'=countRepeats, '% novel loci\non\nrepeats'=percentRepeats)
+dat <- select(dat, -mappedReads)
 dat$'# novel\nloci' <- comma(dat$'# novel\nloci', digits=0)
 dat$'# novel\nloci\nper\nmillion\nmapped\nreads' <- comma(dat$'# novel\nloci\nper\nmillion\nmapped\nreads', digits=0)
 dat$'% novel\nloci\nintergenic' <- percent(dat$'% novel\nloci\nintergenic', digits=0)
 dat$'% novel\nloci\nFL' <- percent(dat$'% novel\nloci\nFL', digits=0)
+dat$'# novel\nloci\nFL' <- comma(dat$'# novel\nloci\nFL', digits=0)
+dat$'# monoexonic\nnovel\nloci' <- comma(dat$'# monoexonic\nnovel\nloci', digits=0)
+dat$'% monoexonic\nnovel\nloci' <- percent(dat$'% monoexonic\nnovel\nloci', digits=0)
+dat$'# novel loci\non\nrepeats' <- comma(dat$'# novel loci\non\nrepeats', digits=0)
+dat$'% novel loci\non\nrepeats' <- percent(dat$'% novel loci\non\nrepeats', digits=0)
 
 dat <- relocate(dat, 'merge\nrate', .after=mergedTMs)
 dat$n <- comma(dat$n, digits=0)
@@ -234,7 +246,13 @@ tb <- formattable(dat,
 	'# novel\nloci' = color_tile('#e6ffff', '#00cccc'),
 	'# novel\nloci\nper\nmillion\nmapped\nreads' = color_tile('#e6ffff', '#00cccc'),
 	'% novel\nloci\nintergenic' = color_tile('#e6ffff', '#00cccc'),
-	'% novel\nloci\nFL' = color_tile('#e6ffff', '#00cccc')
+	'% novel\nloci\nFL' = color_tile('#e6ffff', '#00cccc'),
+	'# novel\nloci\nFL' = color_tile('#e6ffff', '#00cccc'),
+	'# monoexonic\nnovel\nloci' = color_tile('#e6ffff', '#00cccc'),
+	'% monoexonic\nnovel\nloci' = color_tile('#e6ffff', '#00cccc'),
+	'# novel loci\non\nrepeats' = color_tile('#e6ffff', '#00cccc'),
+	'% novel loci\non\nrepeats' = color_tile('#e6ffff', '#00cccc')
+
 
 
 )
