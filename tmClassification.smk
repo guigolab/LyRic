@@ -882,18 +882,46 @@ rule getNovelIntergenicLociQcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
+
+# extract transcript models from novel genes
 zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid
+# extract gene_ids from novel genes and make a list of those
 cat {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.genes.list
 
+# extract bed12 file of transcript models (TMs) from novel genes
 cat {config[TMPDIR]}/$uuid | gff2bed_full.pl - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid.bed
+
+############## spliced vs monoexonic novel genes:
+
+# extract spliced TMs from bed12 file
 cat {config[TMPDIR]}/$uuid.bed | awk '$10>1' | cut -f4 | sort -T {config[TMPDIR]} |uniq >  {config[TMPDIR]}/$uuid.spliced.transcripts.list
 
+# extract gene_ids of spliced TMs
 tgrep -F -w -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.spliced.genes.list
 
 total=$(cat {config[TMPDIR]}/$uuid.genes.list |wc -l)
 spliced=$(cat {config[TMPDIR]}/$uuid.spliced.genes.list  |wc -l)
 let mono=$total-$spliced || true
 
+############## length statistics
+
+cat {config[TMPDIR]}/$uuid.bed | bed12ToTranscriptLength.pl - > {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp
+tgrep -F -w -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp |cut -f2 > {config[TMPDIR]}/$uuid.stats.splicedtranscripts.tsv
+tgrep -F -w -v -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 > {config[TMPDIR]}/$uuid.stats.monotranscripts.tsv
+cat {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 >{config[TMPDIR]}/$uuid.stats.alltranscripts.tsv
+
+set +eu
+conda activate R_env
+set -eu
+
+#use of readarray: see https://www.baeldung.com/linux/reading-output-into-array
+
+readarray -t lengthStatsAll < <(minMedMaxStats.r {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv)
+readarray -t lengthStatsMono < <(minMedMaxStats.r {config[TMPDIR]}/$uuid.stats.monotranscripts.tsv)
+readarray -t lenthStatsSpliced < <(minMedMaxStats.r {config[TMPDIR]}/$uuid.stats.splicedtranscripts.tsv)
+
+
+########### repeatmasked regions:
 set +eu
 conda activate bedtools_env
 set -eu
@@ -902,7 +930,8 @@ tgrep -F -w -f {config[TMPDIR]}/$uuid.repeats.transcripts.list {config[TMPDIR]}/
 
 repeats=$(cat {config[TMPDIR]}/$uuid.repeats.genes.list| wc -l)
 
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.barcodes}\\t$total\\t$mono\\t$repeats" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5}}' > {config[TMPDIR]}/$uuid.1
+############ write output
+echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.barcodes}\\t$total\\t$mono\\t$repeats\\t${{lengthStatsAll[*]}}\\t${{lengthStatsMono[*]}}\\t${{lenthStatsSpliced[*]}}" | ssv2tsv| awk '{{print $0"\\t"$6/$5"\\t"$7/$5}}' > {config[TMPDIR]}/$uuid.1
 mv {config[TMPDIR]}/$uuid.1 {output}
 
 		'''
@@ -913,7 +942,7 @@ rule aggNovelIntergenicLociQcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\ttotal\\tcountMono\\tcountRepeats\\tpercentMono\\tpercentRepeats" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\ttotal\\tcountMono\\tcountRepeats\\tminLengthAllTms\\tmedianLengthAllTms\\tmaxLengthAllTms\\tminLengthMonoTms\\tmedianLengthMonoTms\\tmaxLengthMonoTms\\tminLengthSplicedTms\\tmedianLengthSplicedTms\\tmaxLengthSplicedTms\\tpercentMono\\tpercentRepeats" > {config[TMPDIR]}/$uuid
 cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 

@@ -38,7 +38,7 @@ hissStats <- spread(hissStats, category, count)
 hissStats <- rename(hissStats, HCGMspliced='HCGM-spliced', HCGMmono='HCGM-mono')
 hissStats <- mutate(hissStats, percentHcgmSpliced=HCGMspliced/(HCGMmono+HCGMspliced))
 hissStats <- select(hissStats, sample_name, percentHcgmSpliced)
-hissStats <- rename(hissStats, '%\nspliced\nHCGMs' = percentHcgmSpliced)
+hissStats <- rename(hissStats, '% spliced HCGMs' = percentHcgmSpliced)
 
 mergedStats <- read.table("Rinput/all.min2reads.merged.stats.tsv", header=TRUE, sep='\t')
 mergedStats <- spread(mergedStats, category, count)
@@ -48,24 +48,24 @@ tmLengthStats <- read.table('Rinput/all.min2reads.matureRNALengthSummary.stats.t
 tmLengthStats <- concatMetadata(tmLengthStats)
 tmLengthStats <- filter(tmLengthStats, category=='CLS_TMs')
 tmMedLengthStats <- spread(select(tmLengthStats, -max), category, med)
-tmMedLengthStats <- rename(tmMedLengthStats, 'TM\nmedian\nlength'=CLS_TMs)
+tmMedLengthStats <- rename(tmMedLengthStats, 'TM median length'=CLS_TMs)
 tmMaxLengthStats <- spread(select(tmLengthStats, -med), category, max)
-tmMaxLengthStats <- rename(tmMaxLengthStats, 'TM\nmax\nlength'=CLS_TMs)
+tmMaxLengthStats <- rename(tmMaxLengthStats, 'TM max length'=CLS_TMs)
 tmLengthStats <- inner_join(tmMedLengthStats, tmMaxLengthStats, by='sample_name')
 
 sirvAccuracyStats <- read.table('Rinput/all.HiSS.tmerge.min2reads.vs.SIRVs.stats.tsv', header=TRUE, sep='\t')
 sirvAccuracyStats <- concatMetadata(sirvAccuracyStats)
 sirvAccuracyStats <- filter(sirvAccuracyStats, level=='Transcript')
 sirvAccuracyStats <- spread(select(sirvAccuracyStats, -level), metric, value)
-sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV\nTx\nSn' = 'Sn')
-sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV\nTx\nPr' = 'Pr')
+sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV Tx Sn' = 'Sn')
+sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV Tx Pr' = 'Pr')
 
 cagePolyASupportStats <- read.table('Rinput/all.min2reads.splicing_status:all.cagePolyASupport.stats.tsv', header=TRUE, sep='\t')
 cagePolyASupportStats <- select(cagePolyASupportStats, -count)
 cagePolyASupportStats <- spread(cagePolyASupportStats, category, percent)
 cagePolyASupportStats <- select(cagePolyASupportStats, -cageOnly, -noCageNoPolyA, -polyAOnly)
 cagePolyASupportStats <- concatMetadata(cagePolyASupportStats)
-cagePolyASupportStats <- rename(cagePolyASupportStats, '%\nFL TMs' = cageAndPolyA)
+cagePolyASupportStats <- rename(cagePolyASupportStats, '% FL TMs' = cageAndPolyA)
 
 novelLociStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:all.novelLoci.stats.tsv', header=TRUE, sep='\t')
 novelLociStats <- concatMetadata(novelLociStats)
@@ -86,15 +86,26 @@ novelFlLociStats <- select(novelFlLociStats, -novelIntergenicFlLoci, -novelIntro
 
 novelLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:all.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
 novelLociQcStats <- concatMetadata(novelLociQcStats)
-novelLociQcStats <- select(novelLociQcStats, -total)
-novelLociQcStats <- relocate(novelLociQcStats, percentMono, .after=countMono)
+novelLociQcStats <- mutate(novelLociQcStats, countSpliced=total-countMono, percentSpliced=1-percentMono)
+novelLociQcStats <- select(novelLociQcStats, -total, -minLengthAllTms, -minLengthMonoTms, -minLengthSplicedTms, -countMono, -percentMono)
+novelLociQcStats <- relocate(novelLociQcStats, percentSpliced, .after=countSpliced)
+novelLociQcStats <- relocate(novelLociQcStats, percentRepeats, .after=countRepeats)
+
+novelFlLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:cagePolyASupported.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
+novelFlLociQcStats <- concatMetadata(novelFlLociQcStats)
+novelFlLociQcStats <- mutate(novelFlLociQcStats, countSpliced=total-countMono, percentSpliced=1-percentMono)
+novelFlLociQcStats <- select(novelFlLociQcStats, -total, -minLengthAllTms, -minLengthMonoTms, -minLengthSplicedTms, -countMono, -percentMono)
+novelFlLociQcStats <- relocate(novelFlLociQcStats, percentSpliced, .after=countSpliced)
+novelFlLociQcStats <- relocate(novelFlLociQcStats, percentRepeats, .after=countRepeats)
+novelFlLociQcStats <- rename(novelFlLociQcStats, countFlLociSpliced=countSpliced, '% FL spliced novel loci'=percentSpliced, '# FL novel loci on repeats'=countRepeats, '% FL novel loci on repeats'=percentRepeats, 'median length all TMs (FL novel loci)'=medianLengthAllTms, 'max length all TMs (FL novel loci)'=maxLengthAllTms, 'median length monoexonic TMs (FL novel loci)'=medianLengthMonoTms, 'max length monoexonic TMs (FL novel loci)'=maxLengthMonoTms, 'median length spliced TMs (FL novel loci)'=medianLengthSplicedTms, 'max length spliced TMs (FL novel loci)'=maxLengthSplicedTms)
+
 
 ntCoverageStats <- read.table("Rinput/all.tmerge.min2reads.endSupport:all.vs.ntCoverageByGenomePartition.stats.tsv", header=TRUE, sep='\t')
 ntCoverageStats <- concatMetadata(ntCoverageStats)
 ntCoverageStats <- filter(ntCoverageStats, splicingStatus=="all")
 ntCoverageStats <- select(ntCoverageStats, -splicingStatus)
 ntCoverageSummary <- ntCoverageStats %>% group_by(sample_name) %>% summarise(sum=sum(nt_coverage_count))
-ntCoverageSummary <- rename(ntCoverageSummary, 'genomic nts\ncovered'= sum)
+ntCoverageSummary <- rename(ntCoverageSummary, 'genomic nts covered'= sum)
 ntCoverageStatsCounts <- select(ntCoverageStats, -nt_coverage_percent)
 ntCoverageStatsCounts <- spread(ntCoverageStatsCounts, partition, nt_coverage_count)
 ntCoverageStatsPercent <- select(ntCoverageStats, -nt_coverage_count)
@@ -130,34 +141,58 @@ dat <- inner_join(dat, ntCoverageStats, by='sample_name')
 dat <- inner_join(dat, novelLociStats, by='sample_name')
 dat <- inner_join(dat, novelFlLociStats, by='sample_name')
 dat <- inner_join(dat, novelLociQcStats, by='sample_name')
+dat <- inner_join(dat, novelFlLociQcStats, by='sample_name')
 
-dat <- mutate(dat, '%\nHCGM\nreads' =  HCGMreads / mappedReads)
-dat <- relocate(dat, '%\nHCGM\nreads', .after=HCGMreads)
-dat <- relocate(dat, '%\nspliced\nHCGMs', .after='%\nHCGM\nreads')
+dat <- mutate(dat, '% HCGM reads' =  HCGMreads / mappedReads)
+dat <- relocate(dat, '% HCGM reads', .after=HCGMreads)
+dat <- relocate(dat, '% spliced HCGMs', .after='% HCGM reads')
 dat <- relocate(dat, date_sequenced, .after=sample_name)
 dat <- relocate(dat, seqPlatform, .after=seqCenter)
 dat <- relocate(dat, species, .after=seqPlatform)
 dat <- relocate(dat, tissue, .after=species)
 dat <- relocate(dat, biosample_id, .after=sample_name)
 dat <- relocate(dat, reverse_transcriptase, .after=libraryPrep)
-dat <- mutate(dat, 'merge\nrate' = mergedTMs / HCGMreads)
-dat <- mutate(dat, '# novel\nloci\nper\nmillion\nmapped\nreads'= novelLoci / (mappedReads/1000000) )
-dat <- relocate(dat, '# novel\nloci\nper\nmillion\nmapped\nreads', .after=novelLoci)
-dat <- mutate(dat, '% novel\nloci\nFL'= novelFlLoci/novelLoci)
-dat <- relocate(dat, '% novel\nloci\nFL', .after=novelFlLoci)
-dat <- rename(dat, '# novel\nloci'=novelLoci, '% novel\nloci\nintergenic' = percentIntergenicNovelLoci, '# novel\nloci\nFL'=novelFlLoci, '# monoexonic\nnovel\nloci'=countMono, '% monoexonic\nnovel\nloci'=percentMono, '# novel loci\non\nrepeats'=countRepeats, '% novel loci\non\nrepeats'=percentRepeats)
-dat <- select(dat, -mappedReads)
-dat$'# novel\nloci' <- comma(dat$'# novel\nloci', digits=0)
-dat$'# novel\nloci\nper\nmillion\nmapped\nreads' <- comma(dat$'# novel\nloci\nper\nmillion\nmapped\nreads', digits=0)
-dat$'% novel\nloci\nintergenic' <- percent(dat$'% novel\nloci\nintergenic', digits=0)
-dat$'% novel\nloci\nFL' <- percent(dat$'% novel\nloci\nFL', digits=0)
-dat$'# novel\nloci\nFL' <- comma(dat$'# novel\nloci\nFL', digits=0)
-dat$'# monoexonic\nnovel\nloci' <- comma(dat$'# monoexonic\nnovel\nloci', digits=0)
-dat$'% monoexonic\nnovel\nloci' <- percent(dat$'% monoexonic\nnovel\nloci', digits=0)
-dat$'# novel loci\non\nrepeats' <- comma(dat$'# novel loci\non\nrepeats', digits=0)
-dat$'% novel loci\non\nrepeats' <- percent(dat$'% novel loci\non\nrepeats', digits=0)
+dat <- mutate(dat, 'merge rate' = mergedTMs / HCGMreads)
+dat <- mutate(dat, '# novel loci per million mapped reads'= novelLoci / (mappedReads/1000000) )
+dat <- mutate(dat, '# FL spliced novel loci per million mapped reads' = countFlLociSpliced / (mappedReads/1000000) )
+dat <- rename(dat, '# FL spliced novel loci'=countFlLociSpliced)
+dat <- relocate(dat, '# novel loci per million mapped reads', .after=novelLoci)
+dat <- relocate(dat, '# FL spliced novel loci per million mapped reads', .after='# FL spliced novel loci')
 
-dat <- relocate(dat, 'merge\nrate', .after=mergedTMs)
+dat <- mutate(dat, '% novel loci FL'= novelFlLoci/novelLoci)
+dat <- relocate(dat, '% novel loci FL', .after=novelFlLoci)
+dat <- rename(dat, '# novel loci'=novelLoci, '% novel loci intergenic' = percentIntergenicNovelLoci, '# novel loci FL'=novelFlLoci, '# spliced novel loci'=countSpliced, '% spliced novel loci'=percentSpliced, '# novel loci on repeats'=countRepeats, '% novel loci on repeats'=percentRepeats, 'median length all TMs (novel loci)'=medianLengthAllTms, 'max length all TMs (novel loci)'=maxLengthAllTms, 'median length monoexonic TMs (novel loci)'=medianLengthMonoTms, 'max length monoexonic TMs (novel loci)'=maxLengthMonoTms, 'median length spliced TMs (novel loci)'=medianLengthSplicedTms, 'max length spliced TMs (novel loci)'=maxLengthSplicedTms)
+dat <- relocate(dat, '# spliced novel loci', '% spliced novel loci', .after='% novel loci intergenic')
+dat <- select(dat, -mappedReads)
+dat$'# novel loci' <- comma(dat$'# novel loci', digits=0)
+dat$'# novel loci per million mapped reads' <- comma(dat$'# novel loci per million mapped reads', digits=0)
+dat$'% novel loci intergenic' <- percent(dat$'% novel loci intergenic', digits=0)
+dat$'% novel loci FL' <- percent(dat$'% novel loci FL', digits=0)
+dat$'# novel loci FL' <- comma(dat$'# novel loci FL', digits=0)
+dat$'# spliced novel loci' <- comma(dat$'# spliced novel loci', digits=0)
+dat$'% spliced novel loci' <- percent(dat$'% spliced novel loci', digits=0)
+dat$'# novel loci on repeats' <- comma(dat$'# novel loci on repeats', digits=0)
+dat$'% novel loci on repeats' <- percent(dat$'% novel loci on repeats', digits=0)
+dat$'# FL spliced novel loci per million mapped reads'<- comma(dat$'# FL spliced novel loci per million mapped reads', digits=0)
+
+dat$'median length all TMs (novel loci)' <- comma(dat$'median length all TMs (novel loci)', digits=0)
+dat$'max length all TMs (novel loci)' <- comma(dat$'max length all TMs (novel loci)', digits=0)
+dat$'median length monoexonic TMs (novel loci)' <- comma(dat$'median length monoexonic TMs (novel loci)', digits=0)
+dat$'max length monoexonic TMs (novel loci)' <- comma(dat$'max length monoexonic TMs (novel loci)', digits=0)
+dat$'median length spliced TMs (novel loci)' <- comma(dat$'median length spliced TMs (novel loci)', digits=0)
+dat$'max length spliced TMs (novel loci)' <- comma(dat$'max length spliced TMs (novel loci)', digits=0)
+dat$'# FL spliced novel loci' <- comma(dat$'# FL spliced novel loci', digits=0)
+dat$'% FL spliced novel loci' <- percent(dat$ '% FL spliced novel loci', digits=0)
+dat$'# FL novel loci on repeats' <- comma(dat$'# FL novel loci on repeats', digits=0)
+dat$'% FL novel loci on repeats'  <- percent(dat$'% FL novel loci on repeats', digits=0)
+dat$'median length all TMs (FL novel loci)' <- comma(dat$'median length all TMs (FL novel loci)', digits=0)
+dat$'max length all TMs (FL novel loci)' <- comma(dat$'max length all TMs (FL novel loci)', digits=0)
+dat$'median length monoexonic TMs (FL novel loci)' <- comma(dat$'median length monoexonic TMs (FL novel loci)', digits=0)
+dat$'max length monoexonic TMs (FL novel loci)' <- comma(dat$'max length monoexonic TMs (FL novel loci)', digits=0)
+dat$'median length spliced TMs (FL novel loci)' <- comma(dat$'median length spliced TMs (FL novel loci)', digits=0)
+dat$'max length spliced TMs (FL novel loci)' <- comma(dat$'max length spliced TMs (FL novel loci)', digits=0)
+
+dat <- relocate(dat, 'merge rate', .after=mergedTMs)
 dat$n <- comma(dat$n, digits=0)
 dat$median <- comma(dat$median, digits=0)
 dat$mean <- comma(dat$mean, digits=0)
@@ -165,17 +200,17 @@ dat$max <- comma(dat$max, digits=0)
 dat$FASTQ_modified <- as.Date(dat$FASTQ_modified, format="%Y-%m-%d")
 dat$date_sequenced <- as.Date(as.character(dat$date_sequenced), format="%Y%m%d")
 dat$percentMappedReads <- percent(dat$percentMappedReads, digits=0)
-dat$'%\nHCGM\nreads' <- percent(dat$'%\nHCGM\nreads', digits=0)
-dat$'%\nspliced\nHCGMs' <- percent(dat$'%\nspliced\nHCGMs', digits=0)
+dat$'% HCGM reads' <- percent(dat$'% HCGM reads', digits=0)
+dat$'% spliced HCGMs' <- percent(dat$'% spliced HCGMs', digits=0)
 dat$HCGMreads <- comma(dat$HCGMreads, digits=0)
 dat$mergedTMs <- comma(dat$mergedTMs, digits=0)
-dat$'merge\nrate' <- percent(dat$'merge\nrate', digits=2)
-dat$'TM\nmedian\nlength' <- comma(dat$'TM\nmedian\nlength', digits=0)
-dat$'TM\nmax\nlength' <- comma(dat$'TM\nmax\nlength', digits=0)
-dat$'SIRV\nTx\nSn' <- percent(dat$'SIRV\nTx\nSn'/100, digits=0)
-dat$'SIRV\nTx\nPr' <- percent(dat$'SIRV\nTx\nPr'/100, digits=0)
-dat$'%\nFL TMs' <- percent(dat$'%\nFL TMs', digits=0)
-dat$'genomic nts\ncovered' <- comma(dat$'genomic nts\ncovered',digits=0)
+dat$'merge rate' <- percent(dat$'merge rate', digits=2)
+dat$'TM median length' <- comma(dat$'TM median length', digits=0)
+dat$'TM max length' <- comma(dat$'TM max length', digits=0)
+dat$'SIRV Tx Sn' <- percent(dat$'SIRV Tx Sn'/100, digits=0)
+dat$'SIRV Tx Pr' <- percent(dat$'SIRV Tx Pr'/100, digits=0)
+dat$'% FL TMs' <- percent(dat$'% FL TMs', digits=0)
+dat$'genomic nts covered' <- comma(dat$'genomic nts covered',digits=0)
 
 dat$intergenic.x <- comma(dat$intergenic.x, digits=0)
 dat$CDS.x <- comma(dat$CDS.x, digits=0)
@@ -192,66 +227,66 @@ dat$exonOfPseudo.y <- percent(dat$exonOfPseudo.y, digits=0)
 dat$intron.y <- percent(dat$intron.y, digits=0)
 
 
-dat <- rename(dat, 'capped\nspike-ins?' = cappedSpikeIns)
-dat <- rename(dat, 'FASTQ\nlast\nmodified' = FASTQ_modified)
-dat <- rename(dat, 'date\nsequenced' = date_sequenced)
-dat <- rename(dat, 'reverse\ntranscriptase' = reverse_transcriptase)
+dat <- rename(dat, 'capped spike-ins?' = cappedSpikeIns)
+dat <- rename(dat, 'FASTQ last modified' = FASTQ_modified)
+dat <- rename(dat, 'date sequenced' = date_sequenced)
+dat <- rename(dat, 'reverse transcriptase' = reverse_transcriptase)
 dat <- rename(dat, '# reads' = n)
-dat <- rename(dat, 'median\nread\nlength' = median)
-dat <- rename(dat, 'mean\nread\nlength' = mean)
-dat <- rename(dat, 'max\nread\nlength\n(FASTQ)' = max)
-dat <- rename(dat, '%\nmapped\nreads'=percentMappedReads)
-dat <- rename(dat, 'seq\nplatform' = seqPlatform)
-dat <- rename(dat, 'seq\ncenter' = seqCenter)
-dat <- rename(dat, 'library\nprep' = libraryPrep)
-dat <- rename(dat, 'size\nfraction' = sizeFrac)
-dat <- rename(dat, 'cell\nfraction' = cellFrac)
-dat <- rename(dat, 'bio\nrep' = bioRep)
-dat <- rename(dat, 'tech\nrep' = techRep)
-dat <- rename(dat, 'capture\ndesign' = captureDesign)
-dat <- rename(dat, '#\nHCGM\nreads' = HCGMreads)
-dat <- rename(dat, '#\nmerged\nTMs\n(min.\n2 reads)' =mergedTMs)
-dat <- rename(dat, '# TM nts over\nintergenic\nregions' = intergenic.x, '% TM nts over\nintergenic\nregions' = intergenic.y, '# TM nts over\nCDS\nregions'=CDS.x, '% TM nts over\nCDS\nregions'=CDS.y, '# TM nts over\nUTR\nregions'=UTR.x, '% TM nts over\nUTR\nregions'=UTR.y, '# TM nts over\nexons of\nnoncoding\ntranscripts' =exonOfNCT.x, '% TM nts over\nexons of\nnoncoding\ntranscripts' =exonOfNCT.y, '# TM nts over\nexons of\npseudogenes' = exonOfPseudo.x, '% TM nts over\nexons of\npseudogenes' = exonOfPseudo.y, '# TM nts over\nintrons' = intron.x, '% TM nts over\nintrons' = intron.y)
+dat <- rename(dat, 'median read length' = median)
+dat <- rename(dat, 'mean read length' = mean)
+dat <- rename(dat, 'max read length (FASTQ)' = max)
+dat <- rename(dat, '% mapped reads'=percentMappedReads)
+dat <- rename(dat, 'seq platform' = seqPlatform)
+dat <- rename(dat, 'seq center' = seqCenter)
+dat <- rename(dat, 'library prep' = libraryPrep)
+dat <- rename(dat, 'size fraction' = sizeFrac)
+dat <- rename(dat, 'cell fraction' = cellFrac)
+dat <- rename(dat, 'bio rep' = bioRep)
+dat <- rename(dat, 'tech rep' = techRep)
+dat <- rename(dat, 'capture design' = captureDesign)
+dat <- rename(dat, '# HCGM reads' = HCGMreads)
+dat <- rename(dat, '# merged TMs (min. 2 reads)' =mergedTMs)
+dat <- rename(dat, '# TM nts over intergenic regions' = intergenic.x, '% TM nts over intergenic regions' = intergenic.y, '# TM nts over CDS regions'=CDS.x, '% TM nts over CDS regions'=CDS.y, '# TM nts over UTR regions'=UTR.x, '% TM nts over UTR regions'=UTR.y, '# TM nts over exons of noncoding transcripts' =exonOfNCT.x, '% TM nts over exons of noncoding transcripts' =exonOfNCT.y, '# TM nts over exons of pseudogenes' = exonOfPseudo.x, '% TM nts over exons of pseudogenes' = exonOfPseudo.y, '# TM nts over introns' = intron.x, '% TM nts over introns' = intron.y)
 
 
 tb <- formattable(dat, 
 	list('# reads' = color_tile("#def7e9", "#45ba78"),
-	'median\nread\nlength' = color_tile("#e6f7ff", "#0088cc"),
-	'mean\nread\nlength' = color_tile("#e6f7ff", "#0088cc"),
-	'max\nread\nlength\n(FASTQ)' = color_tile("#e6f7ff", "#0088cc"),
-	'%\nmapped\nreads' = color_tile("#def7e9", "#45ba78"),
-	'#\nHCGM\nreads' = color_tile("#def7e9", "#45ba78"),
-	'%\nHCGM\nreads' = color_tile("#def7e9", "#45ba78"),
-	'%\nspliced\nHCGMs' = color_tile("#def7e9", "#45ba78"), 
-	'#\nmerged\nTMs\n(min.\n2 reads)' = color_tile('#ffe6cc','#ff8c1a'),
-	'merge\nrate' = color_tile('#ffe6cc','#ff8c1a'),
-	'TM\nmedian\nlength'= color_tile("#e6f7ff", "#0088cc"),
-	'TM\nmax\nlength'= color_tile("#e6f7ff", "#0088cc"),
-	'%\nFL TMs' = color_tile('#f8ecf8', '#d17ad1'),
-	'SIRV\nTx\nSn'=color_tile('#ffeee6','#ff7733'),
-	'SIRV\nTx\nPr'=color_tile('#ecf9f2', '#339966'),
-	'genomic nts\ncovered' = color_tile("#f9ecf2", "#c6538c"),
-	'# TM nts over\nintergenic\nregions' = color_tile("#f9ecf2", "#c6538c"),
-	'% TM nts over\nintergenic\nregions' = color_tile("#f9ecf2", "#c6538c"),
-	'# TM nts over\nCDS\nregions'=color_tile("#f9ecf2", "#c6538c"),
-	'% TM nts over\nCDS\nregions'=color_tile("#f9ecf2", "#c6538c"),
-	'# TM nts over\nUTR\nregions'=color_tile("#f9ecf2", "#c6538c"),
-	'% TM nts over\nUTR\nregions'=color_tile("#f9ecf2", "#c6538c"),
-	'# TM nts over\nexons of\nnoncoding\ntranscripts' =color_tile("#f9ecf2", "#c6538c"),
-	'% TM nts over\nexons of\nnoncoding\ntranscripts' =color_tile("#f9ecf2", "#c6538c"),
-	'# TM nts over\nexons of\npseudogenes' = color_tile("#f9ecf2", "#c6538c"),
-	'% TM nts over\nexons of\npseudogenes' = color_tile("#f9ecf2", "#c6538c"),
-	'# TM nts over\nintrons' = color_tile("#f9ecf2", "#c6538c"),
-	'% TM nts over\nintrons' = color_tile("#f9ecf2", "#c6538c"),
-	'# novel\nloci' = color_tile('#e6ffff', '#00cccc'),
-	'# novel\nloci\nper\nmillion\nmapped\nreads' = color_tile('#e6ffff', '#00cccc'),
-	'% novel\nloci\nintergenic' = color_tile('#e6ffff', '#00cccc'),
-	'% novel\nloci\nFL' = color_tile('#e6ffff', '#00cccc'),
-	'# novel\nloci\nFL' = color_tile('#e6ffff', '#00cccc'),
-	'# monoexonic\nnovel\nloci' = color_tile('#e6ffff', '#00cccc'),
-	'% monoexonic\nnovel\nloci' = color_tile('#e6ffff', '#00cccc'),
-	'# novel loci\non\nrepeats' = color_tile('#e6ffff', '#00cccc'),
-	'% novel loci\non\nrepeats' = color_tile('#e6ffff', '#00cccc')
+	'median read length' = color_tile("#e6f7ff", "#0088cc"),
+	'mean read length' = color_tile("#e6f7ff", "#0088cc"),
+	'max read length (FASTQ)' = color_tile("#e6f7ff", "#0088cc"),
+	'% mapped reads' = color_tile("#def7e9", "#45ba78"),
+	'# HCGM reads' = color_tile("#def7e9", "#45ba78"),
+	'% HCGM reads' = color_tile("#def7e9", "#45ba78"),
+	'% spliced HCGMs' = color_tile("#def7e9", "#45ba78"), 
+	'# merged TMs (min. 2 reads)' = color_tile('#ffe6cc','#ff8c1a'),
+	'merge rate' = color_tile('#ffe6cc','#ff8c1a'),
+	'TM median length'= color_tile("#e6f7ff", "#0088cc"),
+	'TM max length'= color_tile("#e6f7ff", "#0088cc"),
+	'% FL TMs' = color_tile('#f8ecf8', '#d17ad1'),
+	'SIRV Tx Sn'=color_tile('#ffeee6','#ff7733'),
+	'SIRV Tx Pr'=color_tile('#ffeee6','#ff7733'),
+	'genomic nts covered' = color_tile("#f9ecf2", "#c6538c"),
+	'# TM nts over intergenic regions' = color_tile("#f9ecf2", "#c6538c"),
+	'% TM nts over intergenic regions' = color_tile("#f9ecf2", "#c6538c"),
+	'# TM nts over CDS regions'=color_tile("#f9ecf2", "#c6538c"),
+	'% TM nts over CDS regions'=color_tile("#f9ecf2", "#c6538c"),
+	'# TM nts over UTR regions'=color_tile("#f9ecf2", "#c6538c"),
+	'% TM nts over UTR regions'=color_tile("#f9ecf2", "#c6538c"),
+	'# TM nts over exons of noncoding transcripts' =color_tile("#f9ecf2", "#c6538c"),
+	'% TM nts over exons of noncoding transcripts' =color_tile("#f9ecf2", "#c6538c"),
+	'# TM nts over exons of pseudogenes' = color_tile("#f9ecf2", "#c6538c"),
+	'% TM nts over exons of pseudogenes' = color_tile("#f9ecf2", "#c6538c"),
+	'# TM nts over introns' = color_tile("#f9ecf2", "#c6538c"),
+	'% TM nts over introns' = color_tile("#f9ecf2", "#c6538c"),
+	'# novel loci' = color_tile('#e6ffff', '#00cccc'),
+	'# novel loci per million mapped reads' = color_tile('#e6ffff', '#00cccc'),
+	'% novel loci intergenic' = color_tile('#e6ffff', '#00cccc'),
+	'% novel loci FL' = color_tile('#e6ffff', '#00cccc'),
+	'# novel loci FL' = color_tile('#e6ffff', '#00cccc'),
+	'# spliced novel loci' = color_tile('#e6ffff', '#00cccc'),
+	'% spliced novel loci' = color_tile('#e6ffff', '#00cccc'),
+	'# novel loci on repeats' = color_tile('#e6ffff', '#00cccc'),
+	'% novel loci on repeats' = color_tile('#e6ffff', '#00cccc')
 
 
 
@@ -265,7 +300,6 @@ tb <- formattable(dat,
 
 
 tbDt <- as.datatable(tb[order(tb$tissue), ], extensions = c('Buttons','ColReorder','FixedColumns', 'FixedHeader', 'KeyTable','RowGroup', 'Select', 'SearchPanes'), 
-#filter='top', 
 rownames=FALSE, 
 selection='none',
 options= list(
@@ -278,12 +312,9 @@ options= list(
 	fixedColumns = list(leftColumns=1),
 	fixedHeader = TRUE, 
 	pageLength =400,
-#	scrollX = TRUE,
 	autowidth=TRUE,
 	keys = TRUE,
 	rowId =0,
-#	searching = FALSE,
-#	rowGroup = list(dataSrc = c(7)),
 	initComplete = JS(
     "function(settings, json) {",
     "$('body').css({'font-family': 'Helvetica'});",
@@ -292,10 +323,5 @@ options= list(
 	)
 	)
 
-#tbDt <- tbDt %>% formatStyle('species', backgroundColor = styleEqual (c('Human', 'Mouse'), c('#ffcce0', '#ffff80')))
-#tbDt <- tbDt %>% formatStyle('seq_platform', backgroundColor = styleEqual (c('ONT', 'pacBioSI', 'pacBioSII'), c('#8dd3c7', '#ffffb3', '#baac91')))
-#tbDt <- tbDt %>% formatStyle('library\nprep', backgroundColor = styleEqual (c('CapTrap', 'SMARTer', 'Teloprime', 'directRNA', 'Rt', 'PcrOnt'), c('#ff99ff', '#bebada', '#fdbcb5', '#b3d0e5', '#d9d9d9', '#9999ff')))
 
-
-# unique(dat$seqPlatform)
 DT::saveWidget(tbDt, paste0(getwd(), "/", outputHtml), title='GENCODE - CRG Dashboard of Experiments')
