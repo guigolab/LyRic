@@ -1160,7 +1160,7 @@ rule sqantiStrandedReads:
 uuid=$(uuidgen)
 zcat {input.mappedReads} > {config[TMPDIR]}/$uuid
 set +eu
-conda activate SQANTI3.env
+conda activate SQANTI3_env
 export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/sequence/
 export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/
 set -eu
