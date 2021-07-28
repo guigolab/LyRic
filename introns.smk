@@ -15,13 +15,11 @@ rule getIntronMotif:
 	output:
 		gff = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz",
 		tsv = "mappings/getIntronMotif/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz"
+	conda: "envs/perl_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
 mkdir -p {config[TMPDIR]}/$uuid
-set +eu
-conda activate perl_env
-set -eu
 
 zcat {input.introns} | grep -vP "^ERCC"| extract_intron_strand_motif.pl - {input.genome} {config[TMPDIR]}/$uuid/$(basename {output.gff} .introns.gff.gz)
 
@@ -134,6 +132,7 @@ rule plotGeneidScores:
 		cls=config["STATSDATADIR"] + "all.min{minReadSupport}reads.spliceSites.stats.tsv",
 		control=config["STATSDATADIR"] + "all.control.spliceSites.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "spliceSites.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.spliceSites.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -196,9 +195,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -262,6 +259,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotCompareClsGencodeSJsStats:
 	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -320,9 +318,6 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 

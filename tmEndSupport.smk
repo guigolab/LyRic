@@ -15,12 +15,11 @@ rule cageSupportedfivepEnds:
 		cagePeaks=lambda wildcards: GENOMETOCAGEPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: "mappings/nonAnchoredMergeReads/cageSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-set +eu
-conda activate bedtools_env
-set -eu
+
 
 cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -32,12 +31,11 @@ rule dhsSupportedfivepEnds:
 		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
 		dhsPeaks=lambda wildcards: GENOMETODHSPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 	output: "mappings/nonAnchoredMergeReads/dhsSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-set +eu
-conda activate bedtools_env
-set -eu
+
 
 cat {input.fivePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools intersect -u -a stdin -b {input.dhsPeaks} | cut -f4 | fgrep -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -48,6 +46,7 @@ rule plotDhsVsCage5primeComparisonStats:
 		dhs="mappings/nonAnchoredMergeReads/dhsSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed",
 		cage="mappings/nonAnchoredMergeReads/cageSupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
 	output: config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf"
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 uuidTmpCage=$(uuidgen)
@@ -84,9 +83,7 @@ category=c('CAGE-supported', 'DHS-supported')
 )
 dev.off()
 " > {output}.r
-set +eu
-conda activate R_env
-set -eu
+
 cat {output}.r | R --slave
 
 		'''
@@ -109,15 +106,14 @@ rule polyASupportedthreepEnds:
 		tms="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
 		polyAsites="mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
+	conda: "envs/xtools_env.yml"
 	output: "mappings/nonAnchoredMergeReads/polyASupported/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed"
 	shell:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 cat {input.polyAsites} |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.polyAsites.bed
-set +eu
-conda activate bedtools_env
-set -eu
+
 
 cat {input.threePends} | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 5 -r 5 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {config[TMPDIR]}/$uuid.polyAsites.bed | cut -f4 | tgrep -F -w -f - {input.tms} > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -192,6 +188,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotCagePolyAStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -249,9 +246,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
-set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -261,6 +256,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 rule plotMetaTmEndsStats:
 	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.meta.stats"),
+	conda: "envs/R_env.yml"
 
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
@@ -314,9 +310,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
-set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -330,6 +324,7 @@ rule plotAbsFiveTmEndsStats:
 		five=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.5p.abs.stats"),
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 
@@ -387,9 +382,7 @@ save_plot('{output.five[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_heig
 save_plot('{output.five[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r
-set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r | R --slave
 
 
@@ -400,6 +393,7 @@ rule plotAbsThreeTmEndsStats:
 	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	output:
 		three=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.3p.abs.stats"),
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
 	shell:
@@ -459,9 +453,7 @@ save_plot('{output.three[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_hei
 save_plot('{output.three[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r
-set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r | R --slave
 
 

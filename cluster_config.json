@@ -32,7 +32,7 @@
   },
   "aggMappedReadLength": {
     "virtual_free": "50G",
-    "h_rt": "06:00:00",
+    "h_rt": "16:00:00",
   },
   "nonAnchoredMergeUnfilteredSirvReads": {
     "h_rt": "05:30:00",
@@ -166,7 +166,10 @@
   "collapseGencode": {
     "virtual_free": "10G",
   },
-  "getHiSeqCanonicalIntronsList": {
+  "getHiSeqCanonicalIntronsList1": {
+    "h_rt": "6:00:00",
+  },
+  "getHiSeqCanonicalIntronsList2": {
     "virtual_free": "60G",
     "h_rt": "6:00:00",
     "threads": "-pe smp 6"

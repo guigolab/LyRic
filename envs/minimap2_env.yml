@@ -1,0 +1,31 @@
+name: minimap2_env
+channels:
+  - conda-forge
+  - defaults
+  - r
+  - bioconda
+dependencies:
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=4.5
+  - bzip2=1.0.8
+  - c-ares=1.17.1
+  - ca-certificates=2021.5.30
+  - htslib=1.13
+  - k8=0.2.5
+  - krb5=1.19.1
+  - libcurl=7.77.0
+  - libdeflate=1.7
+  - libedit=3.1.20191231
+  - libev=4.33
+  - libgcc-ng=9.3.0
+  - libgomp=9.3.0
+  - libnghttp2=1.43.0
+  - libssh2=1.9.0
+  - libstdcxx-ng=9.3.0
+  - minimap2=2.17
+  - ncurses=6.2
+  - openssl=1.1.1k
+  - samtools=1.13
+  - tk=8.6.10
+  - xz=5.2.5
+  - zlib=1.2.11

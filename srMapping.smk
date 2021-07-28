@@ -1,12 +1,12 @@
 rule makeStarIndex:
 	input: genome = config["GENOMESDIR"] +"{genome}.sorted.fa"
 	output: config["GENOMESDIR"] + "STARshort_indices/" + "{genome}/SA"
+	conda: "envs/star_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
 mkdir -p {config[TMPDIR]}/$uuid ; 
 mkdir -p $(dirname {output}); 
-conda activate star_env
 STAR --runMode genomeGenerate --runThreadN 3 --genomeDir {config[TMPDIR]}/$uuid --genomeFastaFiles {input}
 mv -f {config[TMPDIR]}/$uuid/* $(dirname {output})
 		'''
@@ -19,6 +19,7 @@ rule hiSeqReadMapping:
 		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/SA",
 #		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
+	conda: "envs/star_env.yml"
 	output:
 		"mappings/hiSeq_{capDesign}.bam"
 	wildcard_constraints:
@@ -26,7 +27,6 @@ rule hiSeqReadMapping:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
- conda activate star_env
 
 echoerr "Mapping"
 mkdir -p mappings/STAR/`basename {output}`/
@@ -91,6 +91,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotHiSeqMappingStats:
 	input: config["STATSDATADIR"] + "all.hiSeq.mapping.stats.tsv"
 	output: config["PLOTSDIR"] + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}"
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -112,9 +113,7 @@ theme_bw(base_size=17) +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ggsave('{output}', width=7, height=9)
 " > {output}.r
- set +eu
-conda activate R_env
-set -eu
+
 cat {output}.r | R --slave
 
 		'''
@@ -123,45 +122,40 @@ cat {output}.r | R --slave
 rule getHiSeqCanonicalIntronsList:
 	input:
 		bam="mappings/hiSeq_{capDesign}.bam",
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	threads: 6
-	output:
-		list="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list",
-		stats=config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv"
+	output: temp("mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.bed")
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
+uuid=$(uuidgen)
+
+echoerr "making bed"
+
+samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
+
+mv {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed {output}
+		'''
+
+rule getHiSeqCanonicalIntronsList2:
+	input:
+		bed="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.bed",
+		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
+	output:	
+		list="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list",
+		stats=config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv"
+	conda: "envs/perl_env.yml"
+	
+	shell:
+		'''
+
 uuid=$(uuidgen)
 uuidTmpOutL=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
 
-echo $PATH
-
-echo 
-
-which perl
-
-echoerr "making bed"
-set +eu
-conda activate bedtools_env
-set -eu
-
-samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
-set +eu
-
-conda deactivate
-
-set -eu
-
-
-set +eu
-conda activate perl_env
-set -eu
-
 echoerr "splitting"
-split -a 3 -d -e -n l/24 {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split
-rm {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed
+split -a 3 -d -e -n l/24 {input.bed} {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split
 for file in `ls {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed.split*`; do
-echo "cat $file | awk -f ~/julien_utils/bed12fields2gff.awk > $file.gff; sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} {config[TMPDIR]}/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
+echo "cat $file | bed12togff > $file.gff; sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n $file.gff | makeIntrons.pl - | extract_intron_strand_motif.pl - {input.genome} {config[TMPDIR]}/$(basename $file); rm $file $file.gff $file.transcripts.tsv"
 done > {config[TMPDIR]}/$uuid.parallelIntrons.sh
 echoerr "extracting introns on split files"
 
@@ -187,6 +181,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotHiSeqSjStats:
 	input: config["STATSDATADIR"] + "all.hiSeq.SJs.stats.tsv"
 	output: config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}"
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "library(ggplot2)
@@ -204,9 +199,7 @@ xlab ('capDesign') +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ggsave('{output}', width=7, height=9)
 " > {output}.r
- set +eu
-conda activate R_env
-set -eu
+
 cat {output}.r | R --slave
 
 		'''

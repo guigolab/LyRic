@@ -8,7 +8,7 @@ from pprint import pprint
 
 
 #prefix all shell scripts with the following command
-shell.prefix("source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; ")
+shell.prefix('source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; export PATH="$PWD/utils/:$PATH";')
 
 
 
@@ -756,12 +756,10 @@ rule makeGencodePartition:
 	input:
 		gtf=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
+	conda: "envs/xtools_env.yml"
 	output: "annotations/{capDesign}.partition.gff"
 	shell:
 		'''
-set +eu
-conda activate bedtools_env
-set -eu
 
 partitionAnnotation.sh {input.gtf} {input.genome} | sortgff > {output}
 
@@ -806,15 +804,14 @@ rule collapseGencode:
 	input: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
 	output: "annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 	threads:1
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 cat {input} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
 uuidL=$(uuidgen)
-set +eu
-conda activate bedtools_env
-set -eu
+
 bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid | buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidL
 mergeToRef.pl {input} {config[TMPDIR]}/$uuidL | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}

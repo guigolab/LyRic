@@ -34,6 +34,7 @@ rule getReadLengthSummary:
 	output: 
 		reads=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
 		summ=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
+	conda: "envs/R_env.yml"
 	params:
 		bc=lambda wildcards: 'allTissues' if config["DEMULTIPLEX"] else wildcards.barcodes
 	shell:
@@ -42,10 +43,6 @@ uuidTmpOut=$(uuidgen)
 echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
 
 zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | gzip >> {config[TMPDIR]}/$uuidTmpOut.gz
-
-set +eu
-conda activate R_env
-set -eu
 
 echo "
 library(data.table)
@@ -90,6 +87,7 @@ mv {config[TMPDIR]}/$uuid {output}
 rule plotReadLength:
 	input: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -156,9 +154,6 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
 
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 

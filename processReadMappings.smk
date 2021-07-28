@@ -55,37 +55,17 @@ rule removeIntraPriming:
 	output: 
 		list="mappings/intraPriming/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.list",
 		stats=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats.tsv"
+	conda: "envs/perl_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
-echo $PATH
-
-echo 
-
-which perl
-set +eu
-# conda activate bedtools_env
-conda env list
-
-conda deactivate
-
-conda env list
-set -eu
-
-echo $PATH
-
-echo 
-
-which perl
 
 zcat {input.strandedGff} | awk '$3=="exon"'>  {config[TMPDIR]}/$uuid.gff
 gtfToGenePred {config[TMPDIR]}/$uuid.gff {config[TMPDIR]}/$uuid.gp
 genePredToBed {config[TMPDIR]}/$uuid.gp {config[TMPDIR]}/$uuid.bed
 rm {config[TMPDIR]}/$uuid.gp
 totalReads=$(cat {config[TMPDIR]}/$uuid.bed | wc -l)
-set +eu
-conda activate perl_env
-set -eu
+
 
 cat {config[TMPDIR]}/$uuid.bed | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
 rm {config[TMPDIR]}/$uuid.bed
@@ -114,6 +94,7 @@ rule plotIntraPrimingStats:
 	output: returnPlotFilenames(config["PLOTSDIR"] + "intraPriming.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -166,9 +147,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -279,13 +258,12 @@ rule getHiSSStats:
 		reads = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		HiSSGTF="mappings/highConfidenceReads/HiSS/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.tsv"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-set +eu
-conda activate bedtools_env
-set -eu
+
 
 bedtools bamtobed -i {input.reads} -bed12 > {config[TMPDIR]}/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.merged.bed
 zcat {input.HiSSGTF} | gff2bed_full.pl - > {config[TMPDIR]}/$uuid.{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.HiSS.bed
@@ -323,6 +301,7 @@ rule plotAllHiSSStats:
 	output:  returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -375,9 +354,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -575,6 +552,7 @@ rule plotMergingStats:
 	output: returnPlotFilenames(config["PLOTSDIR"] + "merged.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -629,9 +607,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -656,12 +632,11 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule aggHistTmLengthSummaryStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
 	output: summary=config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv"
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
- set +eu
-conda activate R_env
-set -eu
+
 
 echo "
 library(tidyverse)
@@ -683,6 +658,7 @@ rule plotHistTmLengthStats:
 		hist=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname, wildcards.splicedStatus)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -754,9 +730,7 @@ save_plot('{output.hist[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_heig
 save_plot('{output.hist[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r | R --slave
 
 
@@ -776,15 +750,13 @@ rule getGeneReadCoverageStats:
 		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+',
 		techname='(?!allSeqTechs).+'
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
 cut -f1 {input.genome} |sort|uniq > {config[TMPDIR]}/$uuid.chr
 
 #gencode
-set +eu
-conda activate bedtools_env
-set -eu
 
 cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| fgrep -w -f {config[TMPDIR]}/$uuid.chr |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.1
 
@@ -819,6 +791,7 @@ rule plotGeneReadCoverageStats:
 	output: returnPlotFilenames(config["PLOTSDIR"] + "geneReadCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -874,9 +847,7 @@ save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''

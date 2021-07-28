@@ -3,13 +3,12 @@ if config["CAPTURE"]:
 		input:
 			tms= "mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
 			targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
+		conda: "envs/xtools_env.yml"
 		output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
 		shell:
 			'''
 uuidTmpOut=$(uuidgen)
-set +eu
-conda activate bedtools_env
-set -eu
+
 zcat {input.tms} > {config[TMPDIR]}/$uuidTmpOut.1
 bedtools intersect -wao -a {input.targetedSegments} -b {config[TMPDIR]}/$uuidTmpOut.1 |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -45,6 +44,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotTargetCoverageStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.targetCoverage.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "targetCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -102,9 +102,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -220,6 +218,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotGffCompareSirvStats:
 	input:config["STATSDATADIR"] + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -276,9 +275,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 		'''
 
@@ -313,6 +310,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotSirvDetectionStats:
 	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -366,9 +364,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -441,6 +437,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotGffCompareGencodeSnPrStats:
 	input:config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -498,9 +495,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -521,6 +516,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotGffCompareStats:
 	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -581,9 +577,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -622,6 +616,7 @@ rule plotTmVsGencodeLengthStats:
 	output: 
 		bySS=returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:bySplicingStatus.endSupport:{endSupport}.vs.gencode.length.stats"),
 		all=returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.length.stats"),
+	conda: "envs/R_env.yml"
 
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
@@ -785,9 +780,7 @@ save_plot('{output.all[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_he
 
 
 " > $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -813,14 +806,13 @@ rule makeClsGencodeLoci:
 	input: "mappings/nonAnchoredMergeReads/gencodeMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.gff.gz"
 	params: locusPrefix=config["PROJECT_NAME"]
 	output: temp("mappings/nonAnchoredMergeReads/gencodeLociMerge/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.loci.gff.gz")
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 zcat {input} > {config[TMPDIR]}/$uuid
-set +eu
-conda activate bedtools_env
-set -eu
+
 
 bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -849,6 +841,7 @@ rule getNovelIntergenicLoci:
 	output:
 		gtf="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelIntergenicLoci.gff.gz",
 		locusBed="mappings/nonAnchoredMergeReads/mergeToRef/novelLoci/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.geneCoords.bed"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid1=$(uuidgen)
@@ -861,9 +854,7 @@ cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sort -T {conf
 zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid4
 cat {config[TMPDIR]}/$uuid4 | extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2
 
-set +eu
-conda activate bedtools_env
-set -eu
+
 
 bedtools intersect -v -a {config[TMPDIR]}/$uuid2 -b {config[TMPDIR]}/$uuid1 > {config[TMPDIR]}/$uuid5
 cat {config[TMPDIR]}/$uuid5 |awk '$1 !~ /ERCC/' |cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid3
@@ -877,7 +868,7 @@ rule getNovelIntergenicLociQcStats:
 	input:
 		tmergeGencode="mappings/nonAnchoredMergeReads/mergeToRef/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.+gencode.loci.refmerged.gff.gz",
 		repeats= lambda wildcards: "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
-
+	conda: "envs/Redtools_env.yml"
 	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv"
 	shell:
 		'''
@@ -910,9 +901,7 @@ tgrep -F -w -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/
 tgrep -F -w -v -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 > {config[TMPDIR]}/$uuid.stats.monotranscripts.tsv
 cat {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 >{config[TMPDIR]}/$uuid.stats.alltranscripts.tsv
 
-set +eu
-conda activate R_env
-set -eu
+
 
 #use of readarray: see https://www.baeldung.com/linux/reading-output-into-array
 
@@ -922,9 +911,7 @@ readarray -t lenthStatsSpliced < <(minMedMaxStats.r {config[TMPDIR]}/$uuid.stats
 
 
 ########### repeatmasked regions:
-set +eu
-conda activate bedtools_env
-set -eu
+
 bedtools intersect -split -u -a {config[TMPDIR]}/$uuid.bed -b {input.repeats} | cut -f4 | sort|uniq > {config[TMPDIR]}/$uuid.repeats.transcripts.list
 tgrep -F -w -f {config[TMPDIR]}/$uuid.repeats.transcripts.list {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.repeats.genes.list
 
@@ -1035,9 +1022,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
@@ -1091,60 +1076,6 @@ zcat {input} | tmergeToBinaryMatrix.pl - $(dirname {output.simpsonMatrix})/$(bas
 
 		'''
 
-# rule plotSampleComparisonStats:
-# 	input: 
-# 		simpson=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.overlap_coeff.tsv",
-# 		jaccard=config["STATSDATADIR"] + "all.sampleComparison.{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.jaccard_ind.tsv",
-# 		sampleAnnot=config["SAMPLE_ANNOT"]
-# 	output: 
-# 		simpson=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.simpson.png",
-# 		jaccard=config["PLOTSDIR"] + "sampleComparison.stats/{capDesign}/{capDesign}_min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.heatmap.sampleComparison.jaccard.png"
-# 	shell:
-# 		'''
-# echo "
-# library(pheatmap)
-# library(tidyverse)
-# library(RColorBrewer)
-# library(viridis)
-
-# dat <- read.table('{input.simpson}', header=T, as.is=T, sep='\t', row.names=1)
-# annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
-# annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
-# annotSumm <- column_to_rownames(annotSumm, 'sample_name')
-# #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-# pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.simpson}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
-
-# " > {output.simpson}.r
-#  set +eu
-# conda activate R_env
-# set -eu
-# cat {output.simpson}.r | R --slave
-
-
-
-# echo "
-# library(pheatmap)
-# library(tidyverse)
-# library(RColorBrewer)
-# library(viridis)
-
-# dat <- read.table('{input.jaccard}', header=T, as.is=T, sep='\t', row.names=1)
-# annot <- read.table('{input.sampleAnnot}', header=T, as.is=T, sep='\t')
-# annotSumm <- annot %>% select(sample_name, seqPlatform, libraryPrep, tissue)
-# annotSumm <- column_to_rownames(annotSumm, 'sample_name')
-# #simBreaks <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
-# pheatmap(dat,clustering_method='ward.D2', color = inferno(50), treeheight_col=10, annotation_row = annotSumm, filename='{output.jaccard}', width=6, height=6,fontsize_row=4, fontsize_col=4, annotation_colors = {sampleAnnot_Rpalette})
-
-
-# " > {output.jaccard}.r
-#  set +eu
-# conda activate R_env
-# set -eu
-
-# cat {output.jaccard}.r | R --slave
-
-# 		'''
-
 
 rule sqantiStrandedReads:
 	input: 
@@ -1159,12 +1090,14 @@ rule sqantiStrandedReads:
 		'''
 uuid=$(uuidgen)
 zcat {input.mappedReads} > {config[TMPDIR]}/$uuid
+
+# SQANTI3/CupCake don't install correctly using Snakemake's conda, need to load env manually
 set +eu
-conda activate SQANTI3_env
+conda activate SQANTI3.env
 export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/sequence/
 export PYTHONPATH=$PYTHONPATH:$HOME/bin/SQANTI3/cDNA_Cupcake/
 set -eu
-python ~/bin/SQANTI3/sqanti3_qc.py --gtf --skipORF --skip_report -o {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded -d mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded {config[TMPDIR]}/$uuid {input.gencode} {input.genome}
+python ~/bin/SQANTI3/sqanti3_qc.py --skipORF --report skip -o {wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded -d mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded {config[TMPDIR]}/$uuid {input.gencode} {input.genome}
 
 # erase useless output files:
 cd mappings/strandGffs/sqanti/{wildcards.techname}Corr{wildcards.corrLevel}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}.stranded/
@@ -1227,6 +1160,7 @@ rule plotSqantiRtsJunctionsStats:
 	output: returnPlotFilenames(config["PLOTSDIR"] + "sqantiRtsJunctions.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiRtsJunctions.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -1279,9 +1213,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -1295,6 +1227,7 @@ rule plotSqantiCanJunctionsStats:
 	output: returnPlotFilenames(config["PLOTSDIR"] + "sqantiCanJunctions.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiCanJunctions.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -1347,9 +1280,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -1384,6 +1315,7 @@ mv {config[TMPDIR]}/$uuid {output}
 rule plotAnnotatedGeneDetectionStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "gencode.geneDetection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -1437,9 +1369,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -1450,11 +1380,10 @@ rule getNtCoverageByGenomePartition:
 		tm="mappings/nonAnchoredMergeReads/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gff.gz",
 		gencodePart="annotations/{capDesign}.partition.gff"
 	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.ntCoverageByGenomePartition.stats.tsv"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
-set +eu
-conda activate bedtools_env
-set -eu
+
 
 uuid=$(uuidgen)
 zcat {input.tm} | bedtools merge -i stdin > {config[TMPDIR]}/$uuid.tmp.tm.bed
@@ -1484,6 +1413,7 @@ mv {config[TMPDIR]}/$uuid {output}
 rule plotNtCoverageByGenomePartition:
 	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.vs.ntCoverageByGenomePartition.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -1545,9 +1475,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 

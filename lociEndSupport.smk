@@ -5,11 +5,8 @@ if GENOMETOPREVIOUS is not None:
 			previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 			annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 		threads:1
+		conda: "envs/xtools_env.yml"
 		output: "mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.all.gff.gz"
-	# wildcard_constraints:
-	# 	barcodes='allTissues',
-	# 	sizeFrac='allFracs',
-	# 	techname='allSeqTechs'
 		shell:
 			'''
 uuid=$(uuidgen)
@@ -17,9 +14,7 @@ uuidM=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
 cat {input.previous} {input.annot} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
-set +eu
-conda activate bedtools_env
-set -eu
+
 bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM |awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -48,11 +43,8 @@ if GENOMETOPREVIOUS is not None:
 			previous=lambda wildcards: GENOMETOPREVIOUS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 			annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 		threads:1
+		conda: "envs/xtools_env.yml"
 		output: "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz"
-	# wildcard_constraints:
-	# 	barcodes='allTissues',
-	# 	sizeFrac='allFracs',
-	# 	techname='allSeqTechs'
 		shell:
 			'''
 uuid=$(uuidgen)
@@ -60,9 +52,6 @@ uuidM=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
 zcat -f {input.previous} {input.annot} {input.current} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
-set +eu
-conda activate bedtools_env
-set -eu
 bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM | awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -92,6 +81,7 @@ rule getGencodeSupportedEnds:
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 
 	output:"mappings/nonAnchoredMergeReads/mergeWithPrevious/gencode/{capDesign}.gencode.cage+PASsupported.gff.gz"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid5pEnds=$(uuidgen)
@@ -102,9 +92,7 @@ cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}  |uniq > {config[TMPDIR]
 cat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2 | gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
 uuid3pEnds=$(uuidgen)
 cat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
-set +eu
-conda activate bedtools_env
-set -eu
+
 uuidCageSupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
 
@@ -127,6 +115,7 @@ rule getCurrentPreviousPhaseTmsWithGencodeSupportedEnds:
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 
 	output:"mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.cage+PASsupported.gff.gz"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid5pEnds=$(uuidgen)
@@ -137,10 +126,6 @@ cut -f1 {input.genome} |sort|uniq > {config[TMPDIR]}/$uuidChrList
 zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuidChrList |gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
 uuid3pEnds=$(uuidgen)
 zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuidChrList |gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
-
-set +eu
-conda activate bedtools_env
-set -eu
 
 uuidCageSupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
@@ -165,6 +150,7 @@ rule getPreviousPhaseTmsWithGencodeSupportedEnds:
 		PAS=lambda wildcards: GENOMETOPAS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 
 	output:"mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.cage+PASsupported.gff.gz"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid5pEnds=$(uuidgen)
@@ -176,9 +162,6 @@ zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extract
 uuid3pEnds=$(uuidgen)
 zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
 
-set +eu
-conda activate bedtools_env
-set -eu
 
 uuidCageSupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
@@ -266,6 +249,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotFlLocusGencodeOnlyStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.FLloci.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "FLloci.gencodeOnly.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.gencodeOnly.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -328,9 +312,6 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -339,6 +320,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 rule plotFlLocusStats:
 	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.FLloci.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "FLloci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats")
+	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -401,9 +383,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 

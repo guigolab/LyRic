@@ -13,8 +13,7 @@ rule readMapping:
 	output:
 		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
-		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
-
+	conda: "envs/minimap2_env.yml"
 	wildcard_constraints:
 		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+',
@@ -23,9 +22,6 @@ rule readMapping:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-set +eu
-conda activate minimap2_env
-set -eu
 
 echoerr "Mapping"
 
@@ -39,18 +35,22 @@ echoerr "Done creating/sorting BAM"
 sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
 
-echoerr "Making BigWigs"
-set +eu
-conda activate deeptools_env
-set -eu
-
-bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw 
-
-echoerr "Done making BigWigs"
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
 mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
-mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
 		'''
+
+rule makeBigWigs:
+	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
+	conda: "envs/xtools_env.yml"
+	shell:
+		'''
+uuid=$(uuidgen)
+bamCoverage --normalizeUsing CPM  -b {input} -o {config[TMPDIR]}/$uuid.bw 
+mv {config[TMPDIR]}/$uuid.bw {output}
+		'''
+
+
 
 rule bamqc:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
@@ -177,9 +177,7 @@ save_plot('{output.deletionsOnly[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, 
 
 
 " > $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnly.png).r | R --slave
 
 
@@ -191,21 +189,15 @@ rule makeBigWigExonicRegions:
 	input:
 		bam= lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		annotGff=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	conda: "envs/xtools_env.yml"
 	output:
 		"mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
 	shell:
 		'''
 uuid=$(uuidgen)
 cat {input.annotGff} | awk '$3=="exon"' > {config[TMPDIR]}/$uuid.gff
-set +eu
-conda activate bedtools_env
-set -eu
 bedtools intersect -split -u -a {input.bam} -b {config[TMPDIR]}/$uuid.gff > {config[TMPDIR]}/$uuid.bam
 samtools index {config[TMPDIR]}/$uuid.bam
-
-set +eu
-conda activate deeptools_env
-set -eu
 
 bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuid.bam -o {config[TMPDIR]}/$uuid.bw
 
@@ -214,21 +206,16 @@ mv {config[TMPDIR]}/$uuid.bw {output}
 		'''
 
 
-rule getReadProfileMatrix:
-	input:
-		annot="annotations/{capDesign}.bed",
+rule setupReadProfileMatrix:
+	input: 
 		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
-		sampleAnnot=config["SAMPLE_ANNOT"],
-
-	output: 
-		matrix=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+		sampleAnnot=config["SAMPLE_ANNOT"]
+	output:
 		colorList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.colors.txt",
 		libraryPrepList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
-	threads: 6
+	conda: "envs/R_env.yml"
 	shell:
 		'''
-uuid=$(uuidgen)
-
 # extract libraryPrep names and matching colors, in the same order as input files
 
 echo "
@@ -253,19 +240,28 @@ write(outTable\$libraryPrep, '{output.libraryPrepList}', ncolumns=nrow(outTable)
 write(outTable\$color, '{output.colorList}', ncolumns=nrow(outTable))
 
 
-" > {output.matrix}.r
+" > {output.colorList}.r
 
-set +eu
-conda activate R_env
-set -eu
+echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscript {output.colorList}.r
 
-echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscript {output.matrix}.r
+		'''
 
-set +eu
-conda activate deeptools_env
-set -eu
 
-computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {config[TMPDIR]}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {output.libraryPrepList} | perl -ne 'chomp; print')
+rule getReadProfileMatrix:
+	input:
+		annot="annotations/{capDesign}.bed",
+		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		libraryPrepList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
+
+	output: 
+		matrix=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+	conda: "envs/xtools_env.yml"
+	threads: 6
+	shell:
+		'''
+uuid=$(uuidgen)
+
+computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {config[TMPDIR]}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {input.libraryPrepList} | perl -ne 'chomp; print')
 
 mv {config[TMPDIR]}/$uuid.gz {output.matrix}
 		'''
@@ -277,13 +273,11 @@ rule plotReadProfileMatrix:
 	output: 
 		profile=config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png",
 		heatmap=config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 	
-set +eu
-conda activate deeptools_env
-set -eu
-	
+
   plotProfile -m {input.matrix} -o {output.profile} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --colors $(cat {input.colorList} | perl -ne 'chomp; print')
 
   plotHeatmap -m {input.matrix} -o {output.heatmap} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --whatToShow 'heatmap and colorbar'
@@ -333,6 +327,7 @@ rule plotMappingStats:
 	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -383,9 +378,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -406,6 +399,7 @@ rule aggMappedReadLength:
 	output:
 		all=config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.stats.tsv.gz",
 		summary=config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv"
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -413,10 +407,6 @@ echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" |gzip > 
 zcat {input} |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output.all}
 
-
- set +eu
-conda activate R_env
-set -eu
 
 echo "
 library(data.table)
@@ -461,6 +451,7 @@ rule plotSpikeInsMappingStats:
 	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats")
 	params:
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+	conda: "envs/R_env.yml"
 	shell:
 		'''
 echo "
@@ -517,9 +508,7 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
@@ -531,6 +520,7 @@ rule mergeBarcodeBams:
 		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam",
 		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam.bai",
 		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bw"
+	conda: "envs/xtools_env.yml"
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
 		techname='(?!allSeqTechs).+' #to avoid ambiguity with downstream merging rules
@@ -540,9 +530,6 @@ uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
-set +eu
-conda activate deeptools_env
-set -eu
 
 bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
 
@@ -564,16 +551,13 @@ rule mergeAllSeqTechsFracsAndTissuesBams:
 #		sizeFrac='allFracs',
 		barcodes='allTissues',
 		capDesign='|'.join(CAPDESIGNS)
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
-
-set +eu
-conda activate deeptools_env
-set -eu
 
 bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
 
@@ -595,15 +579,13 @@ rule mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams:
 #		sizeFrac='allFracs',
 		barcodes='allTissues',
 		capDesign='|'.join(MERGEDCAPDESIGNS)
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
 sleep 200s
 samtools index {config[TMPDIR]}/$uuidTmpOut
-set +eu
-conda activate deeptools_env
-set -eu
 
 bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
 
@@ -631,13 +613,12 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule readBamToBed:
 	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
 	output: "mappings/readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 #remove mappings with ultra-short exons after bamtobed
-set +eu
-conda activate bedtools_env
-set -eu
+
 bedtools bamtobed -i {input} -bed12 | perl -ne '$line=$_; @line=split ("\\t", $line); @blockSizes=split(",", $line[10]); $allExonsOK=1; foreach $block (@blockSizes){{if ($block<2){{$allExonsOK=0; last;}}}}; if ($allExonsOK==1){{print $line}}'| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -649,7 +630,7 @@ rule readBedToGff:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | awk -f ~jlagarde/julien_utils/bed12fields2gff.awk | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip > {config[TMPDIR]}/$uuidTmpOut
+zcat {input} | bed12togff | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
@@ -658,13 +639,12 @@ rule getReadBiotypeClassification:
 		reads="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		ann="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 	output: "mappings/readMapping/reads2biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 
-set +eu
-conda activate bedtools_env
-set -eu
+
 bedtools intersect -split -wao -bed -a {input.reads} -b {input.ann} |perl -lane '$line=$_; $gid="NA"; $gt="nonExonic"; if($line=~/gene_id \"(\S+)\";/){{$gid=$1}}; if ($line=~/gene_type \"(\S+)\";/){{$gt=$1}}; print "$F[3]\\t$gid\\t$gt\\t$F[-1]"'|cut -f1,3|sort -T {config[TMPDIR]} |uniq | gzip > {config[TMPDIR]}/$uuidTmpOut.2
 mv  {config[TMPDIR]}/$uuidTmpOut.2 {output}
 		'''
@@ -695,6 +675,7 @@ mv  {config[TMPDIR]}/$uuidTmpOut {output}
 rule plotReadToBiotypeBreakdownStats:
 	input: config["STATSDATADIR"] + "all.readToBiotypeBreakdown.stats.tsv"
 	output: returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats")
+	conda: "envs/R_env.yml"
 	params: 
 		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
 	shell:
@@ -749,9 +730,7 @@ save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
- set +eu
-conda activate R_env
-set -eu
+
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
