@@ -7,16 +7,23 @@ import pandas as pd
 from pprint import pprint
 
 
-#prefix all shell scripts with the following command
+#prefix all shell scripts with the following commands:
 shell.prefix('source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; export PATH="$PWD/utils/:$PATH";')
+#(it seems DRMAA does not source ~/.bashrc by itself)
 
-
-
+# consistent ggplot2 theme across R plots:
 GGPLOT_PUB_QUALITY="theme(axis.text= element_text(size=themeSize*1.8), axis.ticks = element_line(size=lineSize), axis.line = element_line(colour = '#595959', size=lineSize), axis.title=element_text(size = themeSize*2), panel.grid.major = element_line(colour='#d9d9d9', size=lineSize),panel.grid.minor = element_line(colour='#e6e6e6', size=minorLineSize),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'), legend.key.size=unit(0.5,'line'), legend.title=element_text(size=themeSize*1.2), legend.text=element_text(size=themeSize), strip.text = element_text(size = themeSize))"
 
+# color sizeFracs:
 sizeFrac_Rpalette="c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')"
+
+# generic long color palette for R:
 long_Rpalette="c('#8dd3c7','#ffffb3','#80ff80','#ff4dff','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f','#c4ff4d','#ff66a3')"
-sampleAnnot_Rpalette="list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = '#5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', SmartSeq2 ='#751aff', Teloprime = '#fb8072', directRNA = '#80b1d3', 'Rt' = '#8c8c8c', PcrOnt='#3333ff', R2C2='#ff9900'))"
+
+# color palette for seqPlatform's and libraryPrep's
+sampleAnnot_Rpalette="list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3', pacBioSII = '#5d513a'), libraryPrep = c(CapTrap = '#ff4dff', SMARTer = '#bebada', SmartSeq2 ='#751aff', Teloprime = '#fb8072', directRNA = '#80b1d3', 'Rt' = '#8c8c8c', PcrOnt='#3333ff', R2C2='#ff9900', IsoSeq='#800080'))"
+
+# color palette for gencode biotypes
 simpleBiotypes_Rpalette="c('lncRNA' = '#66ccff',  'nonExonic' = '#6666ff',  'protein_coding' = '#ff8c66', miRNA = '#808000', 'misc_RNA' = '#99ff99','pseudogene' = '#d98cb3', 'rRNA' = '#d9d9d9', 'ERCC' = '#8dd3c7', 'SIRV' = '#399384')"
 
 
@@ -685,11 +692,7 @@ rule all:
 		expand(config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png", filtered_product, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "sqantiRtsJunctions.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiRtsJunctions.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "sqantiCanJunctions.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sqantiCanJunctions.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "gencode.geneDetection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		#expand(config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv", capDesign=CAPDESIGNS),
-		#expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 
