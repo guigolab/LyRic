@@ -383,56 +383,6 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 		'''
 
-rule getMappedReadLength:
-	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mappedReadlength.stats.tsv.gz"
-	shell:
-		'''
-uuid=$(uuidgen)
-samtools view -F 4 {input} | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($10)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' |gzip > {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
-
-		'''
-
-rule aggMappedReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mappedReadlength.stats.tsv.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output:
-		all=config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.stats.tsv.gz",
-		summary=config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv"
-	conda: "envs/R_env.yml"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut
-zcat {input} |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output.all}
-
-
-echo "
-library(data.table)
-library(tidyverse)
-dat<-fread('{output.all}', header=T, sep='\\t')
-dat %>%
-  group_by(seqTech, sizeFrac, capDesign, tissue) %>%
-  summarise(n=n(), median=median(length), mean=mean(length), max=max(length)) -> datSumm
-
-write_tsv(datSumm, '{output.summary}')
-
-" | R --slave
-
-		'''
-
-rule aggSummaryMappedReadLength:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "all.{capDesign}.mappedReadlength.summary.tsv", capDesign=CAPDESIGNS),
-	output: config["STATSDATADIR"] + "all.mappedReadlength.summary.tsv"
-	shell:
-		'''
-uuid=$(uuidgen)
-head -n1 {input[0]} > {config[TMPDIR]}/$uuid
-tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
-		'''
-
 
 rule aggSpikeInsMappingStats:
 	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv",filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)

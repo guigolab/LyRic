@@ -1,0 +1,274 @@
+{
+  "__default__": {
+    "queue": "rg-el7,short-sl7,long-sl7",
+    "virtual_free": "5G",
+    "h_rt": "03:00:00",
+    "email": "julien.lagarde@crg.eu",
+    "notify": "ae",
+    "err": "{workflow.basedir}/qsub_logs/",
+    "out": "{workflow.basedir}/qsub_logs/",
+    "project": "prj006070",
+    "threads": "",
+    "node": "!node-hp0105rg.linux.crg.es",
+    "disk": "2G"
+  },
+  "makeStarIndex": {
+    "virtual_free": "40G",
+    "h_rt": "06:00:00"
+  },
+  "makeReadsBlastDB": {
+    "h_rt": "00:20:00",
+    "virtual_free": "2G"
+  },
+  "getHiSeqSupportedHCGMs": {
+    "virtual_free": "15G"
+  },
+  "getReadLengthSummary": {
+    "virtual_free": "20G",
+    "h_rt": "01:30:00",
+  },
+  "makeBigWigExonicRegions": {
+    "h_rt": "06:00:00"
+  },
+  "nonAnchoredMergeUnfilteredSirvReads": {
+    "h_rt": "05:30:00",
+  },
+  "plotReadLength": {
+    "virtual_free": "25G",
+    "h_rt": "01:30:00",
+  },
+  "aggTmStats": {
+    "h_rt": "04:00:00",
+  },
+  "compareTargetsToTms": {
+    "disk": "30G",
+    "virtual_free": "15G"
+  },
+  "removeIntraPriming": {
+    "virtual_free": "25G"
+  },
+  "plotMetaTmEndsStats": {
+    "h_rt": "02:00:00",
+    "virtual_free": "30G"
+  },
+  "plotAbsFiveTmEndsStats": {
+    "h_rt": "01:00:00",
+    "virtual_free": "30G"
+  },
+  "getGeneReadCoverageStats": {
+    "virtual_free": "25G",
+    "h_rt": "20:00:00"
+  },
+  "plotAbsThreeTmEndsStats": {
+    "h_rt": "01:00:00",
+    "virtual_free": "30G"
+  },
+  "mergeCurrentPreviousPhaseTmsWithGencodeBiotypes": {
+    "virtual_free": "15G"
+  },
+  "mergePreviousPhaseTmsWithGencodeBiotypes": {
+    "virtual_free": "15G"
+  },
+  "readMapping": {
+    "virtual_free": "40G",
+    "h_rt": "20:00:00",
+    "threads": "-pe smp 12",
+    "queue": "rg-el7,long-sl7"
+  },
+  "hiSeqReadMapping": {
+    "virtual_free": "70G",
+    "h_rt": "20:00:00",
+    "queue": "rg-el7,long-sl7",
+    "threads": "-pe smp 12"
+  },
+  "highConfidenceReads": {
+    "h_rt": "6:00:00",
+    "virtual_free": "35G"
+  },
+  "readBedToGff": {
+    "queue": "rg-el7,long-sl7",
+    "h_rt": "10:00:00",
+    "virtual_free": "5G"
+  },
+  "polyAmapping": {
+    "h_rt": "3:00:00",
+    "virtual_free": "2G"
+  },
+  "getPolyAreadsList": {
+    "virtual_free": "1G"
+  },
+  "getPolyAreadsStats": {
+    "h_rt": "6:00:00",
+  },
+  "makeIntrons": {
+    "h_rt": "10:00:00",
+    "queue": "rg-el7,long-sl7",
+    "virtual_free": "20G"
+  },
+  "blastDemultiplex": {
+    "virtual_free": "120G",
+    "h_rt": "6:00:00",
+    "threads": "-pe smp 12"
+  },
+  "getIntronMotif": {
+    "virtual_free": "15G",
+  },
+  "getReadsSpliceSites": {
+    "virtual_free": "10G",
+  },
+  "processBlastDemultiplex": {
+    "virtual_free": "15G",
+  },
+  "getUndeterminedReads": {
+    "virtual_free": "20G",
+  },
+  "getGeneidScores": {
+    "virtual_free": "2G",
+    "h_rt": "06:00:00"
+  },
+  "getControlGeneidScores": {
+    "virtual_free": "2G",
+  },
+  "getHiSSStats": {
+    "virtual_free": "65G",
+    "h_rt": "06:00:00"
+  },
+  "mergeWithRef": {
+    "virtual_free": "20G",
+    "h_rt": "06:00:00"
+  },
+  "nonAnchoredMergeReads": {
+    "virtual_free": "60G",
+    "h_rt": "26:00:00"
+  },
+  "nonAnchoredMergeReadsToBed": {
+    "virtual_free": "10G",
+  },
+  "mergeTissuesNonAnchoredMergeReads": {
+    "virtual_free": "10G",
+  },
+  "mergeFracsNonAnchoredMergeReads": {
+    "virtual_free": "10G",
+  },
+  "mergeFracsAndTissuesNonAnchoredMergeReads": {
+    "virtual_free": "10G",
+  },
+  "mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads": {
+    "virtual_free": "10G",
+  },
+  "mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads": {
+    "virtual_free": "10G",
+  },
+  "collapseGencode": {
+    "virtual_free": "10G",
+  },
+  "getHiSeqCanonicalIntronsList1": {
+    "h_rt": "6:00:00",
+  },
+  "getHiSeqCanonicalIntronsList2": {
+    "virtual_free": "60G",
+    "h_rt": "16:00:00",
+    "threads": "-pe smp 6"
+  },
+  "plotHistTmLengthStats": {
+    "virtual_free": "20G"
+  },
+  "compareToPASTestPolyAmapping": {
+    "virtual_free": "30G"
+  },
+  "gffcompareToAnnotation": {
+    "virtual_free": "10G",
+  },
+  "gffcompareToSirvAnnotation": {
+    "virtual_free": "1G",
+  },
+  "getHCGMintrons": {
+    "virtual_free": "10G",
+  },
+  "getClsSpliceJunctions": {
+    "h_rt": "04:30:00",
+    "virtual_free": "10G"
+  },
+  "getTmSpliceSites": {
+    "h_rt": "04:30:00"
+  },
+  "getCompareClsGencodeSJsStats": {
+    "h_rt": "04:30:00"
+  },
+  "getGffCompareStats": {
+    "h_rt": "04:30:00"
+  },
+  "cageSupportedfivepEnds": {
+    "virtual_free": "15G",
+  },
+  "getReadBiotypeClassification": {
+    "disk": "30G",
+    "h_rt": "16:00:00",
+  },
+  "aggGeneidScores": {
+    "threads": "-pe smp 8"
+  },
+  "plotGeneidScores": {
+    "virtual_free": "35G",
+    "h_rt": "5:30:00"
+  },
+  "getHiSeqMappingStats": {
+    "h_rt": "8:00:00",
+    "queue": "rg-el7,long-sl7",
+  },
+  "mergeTmsWithGencode": {
+    "virtual_free": "10G",
+    "h_rt": "5:00:00"
+  },
+  "mergeCurrentPreviousPhaseTmsWithGencode": {
+    "virtual_free": "10G",
+  },
+  "mergePreviousPhaseTmsWithGencode": {
+    "virtual_free": "10G",
+  },
+  "getGencodeSupportedEnds": {
+    "virtual_free": "30G"
+  },
+  "polyASupportedthreepEnds": {
+    "virtual_free": "15G"
+  },
+  "mergeSizeFracBams": {
+    "virtual_free": "1G",
+  },
+  "mergeBarcodeBams": {
+    "virtual_free": "1G",
+  },
+  "mergeSizeFracAndBarcodeBams": {
+    "virtual_free": "1G",
+  },
+  "mergeAllSeqTechsFracsAndTissuesBams": {
+    "virtual_free": "1G",
+  },
+  "readBamToBed": {
+    "virtual_free": "1G",
+  },
+  "getCurrentPreviousPhaseTmsWithGencodeSupportedEnds": {
+    "virtual_free": "30G",
+  },
+  "getPreviousPhaseTmsWithGencodeSupportedEnds": {
+    "virtual_free": "30G"
+  },
+  "tmergeAll": {
+    "disk": "60G",
+    "h_rt": "12:00:00",
+    "virtual_free": "20G",
+    "queue": "rg-el7,long-sl7",
+  },
+  "getReadProfileMatrix": {
+    "h_rt": "12:00:00",
+    "threads": "-pe smp 6",
+    "queue": "rg-el7,long-sl7",
+    "virtual_free": "15G"
+  },
+  "plotReadProfileMatrix": {
+    "virtual_free": "20G"
+  },
+  "bamqc": {
+    "virtual_free": "25G"
+  }
+}
