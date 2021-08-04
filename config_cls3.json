@@ -1,5 +1,5 @@
 {
-  "FQPATH": "fastqs/",
+  "LR_FASTQDIR": "fastqs/",
   "GENOMESDIR": "/users/rg/jlagarde/genomes/",
   "TARGETSDIR": "targets/",
   "PLOTSDIR": "plots/",
@@ -31,7 +31,6 @@
   "MINIMUM_TMERGE_READ_SUPPORT": [
     "2"
   ],
-  "DEMULTIPLEX": false,
   "USE_MATCHED_ILLUMINA": true,
   "LORDEC_CORRECT": false,
   "PROJECT_NAME": "CLS3",
@@ -40,7 +39,7 @@
   "TRACK_HUB_DIR": "trackHub/",
   "TRACK_HUB_BASE_URL": "https://public-docs.crg.es/rguigo/Data/jlagarde/gencode/trackHubs/CLS3/",
   "BED12_AUTOSQL": "/users/rg/jlagarde/bed12.as",
-  "MATCHED_HISEQ_PATH": "fastqs/hiSeq/",
+  "HISEQ_FASTQDIR": "fastqs/hiSeq/",
   "genomeToCAGEpeaks": {
     "hg38": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
     "mm10": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"

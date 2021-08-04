@@ -105,29 +105,11 @@
     "queue": "rg-el7,long-sl7",
     "virtual_free": "20G"
   },
-  "blastDemultiplex": {
-    "virtual_free": "120G",
-    "h_rt": "6:00:00",
-    "threads": "-pe smp 12"
-  },
   "getIntronMotif": {
     "virtual_free": "15G",
   },
   "getReadsSpliceSites": {
     "virtual_free": "10G",
-  },
-  "processBlastDemultiplex": {
-    "virtual_free": "15G",
-  },
-  "getUndeterminedReads": {
-    "virtual_free": "20G",
-  },
-  "getGeneidScores": {
-    "virtual_free": "2G",
-    "h_rt": "06:00:00"
-  },
-  "getControlGeneidScores": {
-    "virtual_free": "2G",
   },
   "getHiSSStats": {
     "virtual_free": "65G",

@@ -14,8 +14,8 @@ mv -f {config[TMPDIR]}/$uuid/* $(dirname {output})
 
 rule hiSeqReadMapping:
 	input:
-		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz",
-		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz",
+		reads1 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_1.fastq.gz",
+		reads2 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_2.fastq.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/SA",
 #		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	threads: 12
@@ -65,8 +65,8 @@ mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
 rule getHiSeqMappingStats:
 	input:
 		bams = "mappings/hiSeq_{capDesign}.bam",
-		reads1 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_1.fastq.gz",
-		reads2 = config["MATCHED_HISEQ_PATH"] + "hiSeq_{capDesign}_2.fastq.gz",
+		reads1 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_1.fastq.gz",
+		reads2 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_2.fastq.gz",
 	output: config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv"
 	shell:
 		'''

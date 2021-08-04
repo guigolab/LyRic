@@ -1,13 +1,7 @@
-* Dependencies
+# Dependencies
 
 Install Snakemake
 
-gtfToGenePred, genePredToBed
-
-
-# SQANTI3 is required only in 'full' mode
-You should follow these instructions to install SQANTI3: https://github.com/ConesaLab/SQANTI3/wiki/SQANTI3-dependencies-and-installation 
-SQANTI and cDNA_Cupcake should be installed under ~/bin/SQANTI3/ and ~/bin/SQANTI3/cDNA_Cupcake/, respectively.
 
 Using a Snakemake-compatible HPC environment such as SGE/UGE is highly recommended.
 
@@ -29,3 +23,13 @@ chmod a+x utils/*
 
 Customize *config.json and cluster_config.json to your needs
  
+# Input
+
+- `config[SAMPLE_ANNOT]`
+- LR FASTQ files in `config[LR_FASTQDIR]`
+- genomes.fa
+- Illumina FASTQ files in `config[HISEQ_FASTQDIR]` **if required**
+- Reference annotation GTFs in `config[capDesignToAnnotGtf]`  **if required**
+- GTF of targeted regions in `config[TARGETSDIR] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"`  **if required** 
+- TSV containing SIRV info (<transcript_id>{tab}<length>{tab}<concentration> in `config[SIRVinfo]` **if required** 
+- "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
