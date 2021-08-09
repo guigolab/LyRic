@@ -1,6 +1,6 @@
 rule basicFASTQqc:
-	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
-	output: FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
+	input: LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+	output: LR_FASTQDIR + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
 	shell:
 		'''
 
@@ -30,19 +30,19 @@ mv {config[TMPDIR]}/$uuid {output}
 
 #get read lengths for all FASTQ files:
 rule getReadLengthSummary:
-	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+	input: LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
 	output: 
-		reads=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
-		summ=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
+		reads=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
+		summ=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
 	conda: "envs/R_env.yml"
 	params:
 		bc=lambda wildcards: wildcards.barcodes
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\ttissue\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
 
-zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | gzip >> {config[TMPDIR]}/$uuidTmpOut.gz
+zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| gzip >> {config[TMPDIR]}/$uuidTmpOut.gz
 
 echo "
 library(data.table)
@@ -61,7 +61,7 @@ mv {config[TMPDIR]}/$uuidTmpOut.1 {output.summ}
 		'''
 
 rule aggReadLengthSummary:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: 
 		summary=config["STATSDATADIR"] + "all.readlength.summary.tsv"
 	shell:
@@ -72,24 +72,14 @@ tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 
 		'''
-# rule aggSummaryReadLength:
-# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
-# 	output: config["STATSDATADIR"] + "all.readlength.summary.tsv"
-# 	shell:
-# 		'''
-# uuid=$(uuidgen)
-# head -n1 {input[0]} > {config[TMPDIR]}/$uuid
-# tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
-# mv {config[TMPDIR]}/$uuid {output}
-# 		'''
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
+	input: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
+	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
 	conda: "envs/R_env.yml"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	shell:
 		'''
 echo "
@@ -102,14 +92,14 @@ library(ggplotify)
 library(dplyr)
 library(data.table)
 dat<-fread('{input}', header=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
+{params.filterDat[technameFilterString]}
+{params.filterDat[capDesignFilterString]}
+
+{params.filterDat[sizeFracFilterString]}
+{params.filterDat[tissueFilterString]}
+{params.filterDat[substSeqTechString]}
+{params.filterDat[substTissueString]}
+{params.filterDat[graphDimensions]}
 
 wXyPlot = wXyPlot * 1.2
 
@@ -132,7 +122,7 @@ coord_cartesian(xlim=c(0, 3500)) +
 scale_x_continuous(labels=comma, name='Read length (nts)')+
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 wYxPlot = wYxPlot * 1.2
 wYxNoLegendPlot<- wYxPlot - wLegendOnly

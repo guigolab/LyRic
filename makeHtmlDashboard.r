@@ -14,12 +14,11 @@ print(paste("Input: ", inputSampleAnnotation))
 print(paste("Output: ", outputHtml))
 
 library(formattable)
-library(dplyr)
-library(tidyr)
+library(tidyverse)
 library(DT)
 
 concatMetadata <- function(df){
-	return(mutate(df, sample_name=paste(seqTech, capDesign, sizeFrac, tissue, sep='_'), seqTech=NULL, capDesign=NULL, sizeFrac=NULL, tissue=NULL, correctionLevel=NULL))
+	return(mutate(df, sample_name=paste(seqTech, capDesign, sizeFrac, tissue, sep='_'), seqTech=NULL, capDesign=NULL, sizeFrac=NULL, tissue=NULL))
 }
 
 dat <- read.table("Rinput/all.readlength.summary.tsv", header=TRUE, sep='\t')
@@ -248,6 +247,7 @@ dat <- rename(dat, '# HCGM reads' = HCGMreads)
 dat <- rename(dat, '# merged TMs (min. 2 reads)' =mergedTMs)
 dat <- rename(dat, '# TM nts over intergenic regions' = intergenic.x, '% TM nts over intergenic regions' = intergenic.y, '# TM nts over CDS regions'=CDS.x, '% TM nts over CDS regions'=CDS.y, '# TM nts over UTR regions'=UTR.x, '% TM nts over UTR regions'=UTR.y, '# TM nts over exons of noncoding transcripts' =exonOfNCT.x, '% TM nts over exons of noncoding transcripts' =exonOfNCT.y, '# TM nts over exons of pseudogenes' = exonOfPseudo.x, '% TM nts over exons of pseudogenes' = exonOfPseudo.y, '# TM nts over introns' = intron.x, '% TM nts over introns' = intron.y)
 
+write_tsv(dat, 'global_summary_stats.tsv')
 
 tb <- formattable(dat, 
 	list('# reads' = color_tile("#def7e9", "#45ba78"),

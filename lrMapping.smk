@@ -3,21 +3,19 @@
 # mapping of long reads:
 rule readMapping:
 	input:
-		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa",
-		qc = FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt",
+		qc = LR_FASTQDIR + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt",
 
 	threads: 12
 	params:
 		minimap_preset = lambda wildcards: "splice" if (sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "ONT") else "splice:hq" if ( sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "pacBioSI" or sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "pacBioSII") else None
 	output:
-		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
+		bam="mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		bai="mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
 	conda: "envs/minimap2_env.yml"
 	wildcard_constraints:
-		barcodes='(?!allTissues).+',
 		sizeFrac='[0-9-+\.]+',
-		techname='(?!allSeqTechs).+'
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -40,8 +38,8 @@ mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
 		'''
 
 rule makeBigWigs:
-	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
+	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/readMapping/bigWig/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -53,8 +51,8 @@ mv {config[TMPDIR]}/$uuid.bw {output}
 
 
 rule bamqc:
-	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/bamqc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
+	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/readMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
 	shell:
 		'''
  unset DISPLAY
@@ -63,23 +61,23 @@ rule bamqc:
 		'''
 
 rule getBamqcStats:
-	input: "mappings/readMapping/bamqc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv"
+	input: "mappings/readMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
+	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
-qualimapReportToTsv.pl {input}  | cut -f2,3 |grep -v globalErrorRate| sed 's/PerMappedBase//' |awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {config[TMPDIR]}/$uuid
+qualimapReportToTsv.pl {input}  | cut -f2,3 |grep -v globalErrorRate| sed 's/PerMappedBase//' |awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2}}' > {config[TMPDIR]}/$uuid
 
 mv {config[TMPDIR]}/$uuid {output}
 		'''
 
 rule aggBamqcStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: config["STATSDATADIR"] + "all.sequencingError.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\terrorCategory\terrorRate" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\terrorCategory\terrorRate" > {config[TMPDIR]}/$uuid
 cat {input} | sort >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 
@@ -88,10 +86,11 @@ mv {config[TMPDIR]}/$uuid {output}
 rule plotBamqcStats:
 	input: config["STATSDATADIR"] + "all.sequencingError.stats.tsv"
 	output: 
-		allErrors=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"),
-		deletionsOnly=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats")
+		allErrors=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"),
+		deletionsOnly=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats")
+	conda: "envs/R_env.yml"
 	params: 
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	shell:
 		'''
 echo "
@@ -105,27 +104,27 @@ library(ggplotify)
 library(data.table)
 
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
+{params.filterDat[technameFilterString]}
+{params.filterDat[capDesignFilterString]}
+
+{params.filterDat[sizeFracFilterString]}
+{params.filterDat[tissueFilterString]}
+{params.filterDat[substSeqTechString]}
+{params.filterDat[substTissueString]}
+{params.filterDat[graphDimensions]}
 
 
-plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=errorRate, fill=errorCategory)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=errorRate, fill=errorCategory)) +
 geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#bfbfbf', insertions = '#ffa64d', mismatches = '#1a1aff')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
 scale_y_continuous(labels = label_scientific(digits = 1)) +
 
-{params.filterDat[7]}
+{params.filterDat[hideXaxisLabels]}
 {GGPLOT_PUB_QUALITY} + 
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 save_plot('{output.allErrors[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 save_plot('{output.allErrors[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
@@ -147,17 +146,17 @@ save_plot('{output.allErrors[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base
 datDeletionsOnly <- subset(dat, errorCategory=='deletions')
 
 
-plotBase <- \\"p <- ggplot(data=datDeletionsOnly, aes(x=factor(correctionLevel), y=errorRate, fill=errorCategory)) +
+plotBase <- \\"p <- ggplot(data=datDeletionsOnly, aes(x=1, y=errorRate, fill=errorCategory)) +
 geom_bar(stat='identity') + scale_fill_manual(values=c(deletions = '#bfbfbf')) + ylab('# Errors per mapped base') + xlab('') + guides(fill = guide_legend(title='Error class')) +
 scale_y_continuous(labels = label_scientific(digits = 1)) +
 
-{params.filterDat[7]}
+{params.filterDat[hideXaxisLabels]}
 {GGPLOT_PUB_QUALITY} + 
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 save_plot('{output.deletionsOnly[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 save_plot('{output.deletionsOnly[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
@@ -187,11 +186,11 @@ cat $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnl
 
 rule makeBigWigExonicRegions:
 	input:
-		bam= lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		bam= lambda wildcards: expand("mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		annotGff=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
 	conda: "envs/xtools_env.yml"
 	output:
-		"mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
+		"mappings/readMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -208,11 +207,11 @@ mv {config[TMPDIR]}/$uuid.bw {output}
 
 rule setupReadProfileMatrix:
 	input: 
-		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
 		sampleAnnot=config["SAMPLE_ANNOT"]
 	output:
-		colorList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.colors.txt",
-		libraryPrepList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
+		colorList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.colors.txt",
+		libraryPrepList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -242,7 +241,7 @@ write(outTable\$color, '{output.colorList}', ncolumns=nrow(outTable))
 
 " > {output.colorList}.r
 
-echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscript {output.colorList}.r
+echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | Rscript {output.colorList}.r
 
 		'''
 
@@ -250,11 +249,11 @@ echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | sed 's/Corr0_/_/' | Rscr
 rule getReadProfileMatrix:
 	input:
 		annot="annotations/{capDesign}.bed",
-		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
-		libraryPrepList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
+		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		libraryPrepList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
 
 	output: 
-		matrix=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+		matrix=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
 	conda: "envs/xtools_env.yml"
 	threads: 6
 	shell:
@@ -268,11 +267,11 @@ mv {config[TMPDIR]}/$uuid.gz {output.matrix}
 
 rule plotReadProfileMatrix:
 	input: 
-		matrix=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
-		colorList=config["STATSDATADIR"] + "byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.colors.txt"
+		matrix=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+		colorList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.colors.txt"
 	output: 
-		profile=config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png",
-		heatmap=config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png"
+		profile=config["PLOTSDIR"] + "readProfile/byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png",
+		heatmap=config["PLOTSDIR"] + "readProfile/byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -290,11 +289,11 @@ rule plotReadProfileMatrix:
 
 rule getMappingStats:
 	input:
-		bams = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		fastqs = DEMULTIPLEXED_FASTQS + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+		bams = "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		fastqs = DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
 	output: 
-		basic=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",
-		spikeIns=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv"
+		basic=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",
+		spikeIns=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv"
 	shell:
 		'''
 uuidTmpOutB=$(uuidgen)
@@ -303,30 +302,30 @@ totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
 mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
 erccMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep ERCC- | wc -l)
 sirvMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep SIRV | wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOutB
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOutB
 mv {config[TMPDIR]}/$uuidTmpOutB {output.basic}
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$erccMappedReads\t$sirvMappedReads" | awk '{{print $0"\t"$6/$5"\t"$7/$5}}' > {config[TMPDIR]}/$uuidTmpOutS
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$totalReads\t$erccMappedReads\t$sirvMappedReads" | awk '{{print $0"\t"$6/$5"\t"$7/$5}}' > {config[TMPDIR]}/$uuidTmpOutS
 mv {config[TMPDIR]}/$uuidTmpOutS {output.spikeIns}
 
 		'''
 
 rule aggMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: config["STATSDATADIR"] + "all.basic.mapping.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\ttotalReads\tmappedReads\tpercentMappedReads" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\ttotalReads\tmappedReads\tpercentMappedReads" > {config[TMPDIR]}/$uuidTmpOut
+cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
 rule plotMappingStats:
 	input: config["STATSDATADIR"] + "all.basic.mapping.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats")
+	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats")
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -340,14 +339,14 @@ library(gridExtra)
 library(grid)
 library(ggplotify)
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
+{params.filterDat[technameFilterString]}
+{params.filterDat[capDesignFilterString]}
+
+{params.filterDat[sizeFracFilterString]}
+{params.filterDat[tissueFilterString]}
+{params.filterDat[substSeqTechString]}
+{params.filterDat[substTissueString]}
+{params.filterDat[graphDimensions]}
 
 plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percentMappedReads, fill=sizeFrac)) +
 geom_bar(width=0.75,stat='identity', position=position_dodge(width=0.9)) +
@@ -358,7 +357,7 @@ scale_y_continuous(limits = c(0, 1), labels = scales::percent) +
 xlab ('') +
 {GGPLOT_PUB_QUALITY} + theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) + \\"
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
@@ -385,22 +384,22 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule aggSpikeInsMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv",filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: config["STATSDATADIR"] + "all.spikeIns.mapping.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tERCCs\\t"$6"\\t"$8}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tERCCs\\t"$6"\\t"$8}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
 rule plotSpikeInsMappingStats:
 	input: config["STATSDATADIR"] + "all.spikeIns.mapping.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats")
+	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats")
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -414,32 +413,32 @@ library(grid)
 library(ggplotify)
 
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
+{params.filterDat[technameFilterString]}
+{params.filterDat[capDesignFilterString]}
+
+{params.filterDat[sizeFracFilterString]}
+{params.filterDat[tissueFilterString]}
+{params.filterDat[substSeqTechString]}
+{params.filterDat[substTissueString]}
+{params.filterDat[graphDimensions]}
 
 maxY <- max(dat\$percent)
-plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=percent, fill=category)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percent, fill=category)) +
 geom_bar(stat='identity', position=position_dodge()) +
-geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(x = factor(correctionLevel), y = 0, label = paste(sep='',percent(percent),'\\n','(',comma(count),')')), hjust = 0, vjust = 0.5, angle=90) +
+geom_text(position = position_dodge(width = 0.9), size=geom_textSize, aes(y = 0, label = paste(sep='',percent(percent),'\\n','(',comma(count),')')), hjust = 0, vjust = 0.5, angle=90) +
 scale_fill_manual(values=c('ERCCs' = '#e4b5ff', 'SIRVs' = '#5edba9')) +
 ylab('% reads mapped on\\nspike-in sequences') +
 xlab('') +
 guides(fill = guide_legend(title='Spike-in set'))+
 scale_y_continuous(labels=percent)+
 expand_limits(y=c(0,maxY))+
-{params.filterDat[7]}
+{params.filterDat[hideXaxisLabels]}
 {GGPLOT_PUB_QUALITY} + 
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
@@ -464,91 +463,11 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 		'''
 
 
-rule mergeBarcodeBams:
-	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=BARCODES)
-	output: 
-		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam",
-		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bam.bai",
-		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_allTissues.bw"
-	conda: "envs/xtools_env.yml"
-	wildcard_constraints:
-		sizeFrac='[0-9-+\.]+',
-		techname='(?!allSeqTechs).+' #to avoid ambiguity with downstream merging rules
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
-sleep 200s
-samtools index {config[TMPDIR]}/$uuidTmpOut
-
-bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
-
-mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
-mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
-
-		'''
-
-
-rule mergeAllSeqTechsFracsAndTissuesBams:
-	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product_merge, techname=TECHNAMES, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes)
-	output: 
-		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
-		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
-	wildcard_constraints:
-#		techname='allSeqTechs',
-#		sizeFrac='allFracs',
-		barcodes='allTissues',
-		capDesign='|'.join(CAPDESIGNS)
-	conda: "envs/xtools_env.yml"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
-sleep 200s
-samtools index {config[TMPDIR]}/$uuidTmpOut
-
-bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
-
-mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
-mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
-
-		'''
-
-
-rule mergeAllCapDesignsAllSeqTechsFracsAndTissuesBams:
-	input: lambda wildcards: expand("mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_capDesign_product_merge, techname=wildcards.techname, corrLevel=wildcards.corrLevel, capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes)
-	output: 
-		bam="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		bai="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
-		bigwig="mappings/readMapping/bigWig/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bw"
-	wildcard_constraints:
-#		techname='allSeqTechs',
-#		sizeFrac='allFracs',
-		barcodes='allTissues',
-		capDesign='|'.join(MERGEDCAPDESIGNS)
-	conda: "envs/xtools_env.yml"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-samtools merge {config[TMPDIR]}/$uuidTmpOut {input}
-sleep 200s
-samtools index {config[TMPDIR]}/$uuidTmpOut
-
-bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuidTmpOut -o {config[TMPDIR]}/$uuidTmpOut.bw
-
-mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
-mv {config[TMPDIR]}/$uuidTmpOut.bw {output.bigwig}
-
-		'''
 
 
 rule checkOnlyOneHit:
-	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
+	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/readMapping/qc/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -561,8 +480,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule readBamToBed:
-	input: "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "mappings/readBamToBed/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -575,8 +494,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule readBedToGff:
-	input: "mappings/readBamToBed/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
-	output: "mappings/readBedToGff/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
+	input: "mappings/readBamToBed/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	output: "mappings/readBedToGff/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -586,9 +505,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getReadBiotypeClassification:
 	input: 
-		reads="mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		reads="mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		ann="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	output: "mappings/readMapping/reads2biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
+	output: "mappings/readMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -600,23 +519,23 @@ mv  {config[TMPDIR]}/$uuidTmpOut.2 {output}
 		'''
 
 rule getReadToBiotypeBreakdownStats:
-	input: "mappings/readMapping/reads2biotypes/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv"
+	input: "mappings/readMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
+	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv"
 	shell:
 		'''
 totalPairs=$(zcat {input} | wc -l)
-zcat {input} | cut -f2| sort -T {config[TMPDIR]} |uniq -c |ssv2tsv | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} -v tp=$totalPairs '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"$2"\\t"$1"\\t"$1/tp}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' > {output}
+zcat {input} | cut -f2| sort -T {config[TMPDIR]} |uniq -c |ssv2tsv | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.barcodes} -v tp=$totalPairs '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"$2"\\t"$1"\\t"$1/tp}}' > {output}
 
 		'''
 
 
 rule aggReadToBiotypeBreakdownStats:
-	input: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: config["STATSDATADIR"] + "all.readToBiotypeBreakdown.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv  {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -624,10 +543,10 @@ mv  {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule plotReadToBiotypeBreakdownStats:
 	input: config["STATSDATADIR"] + "all.readToBiotypeBreakdown.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats")
+	output: returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats")
 	conda: "envs/R_env.yml"
 	params: 
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	shell:
 		'''
 echo "
@@ -641,28 +560,28 @@ library(ggplotify)
 library(data.table)
 
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
+{params.filterDat[technameFilterString]}
+{params.filterDat[capDesignFilterString]}
+
+{params.filterDat[sizeFracFilterString]}
+{params.filterDat[tissueFilterString]}
+{params.filterDat[substSeqTechString]}
+{params.filterDat[substTissueString]}
+{params.filterDat[graphDimensions]}
 
 dat\$biotype=factor(dat\$biotype, levels=names({simpleBiotypes_Rpalette}), ordered=TRUE)  #otherwise the manual scale is not ordered correctly and "drop=FALSE" (include categories in scale that are absent from data frame) is ignored 
 
-plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=readOverlapsPercent, fill=biotype)) +
+plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=readOverlapsPercent, fill=biotype)) +
 geom_bar(stat='identity') + scale_fill_manual(values={simpleBiotypes_Rpalette}, drop = FALSE) + ylab('% read overlaps') + xlab('') + guides(fill = guide_legend(title='Region/biotype')) +
 scale_y_continuous(labels = scales::percent) + coord_cartesian(ylim=c(0,1)) +
 
-{params.filterDat[7]}
+{params.filterDat[hideXaxisLabels]}
 {GGPLOT_PUB_QUALITY} + 
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
 save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)

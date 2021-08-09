@@ -47,27 +47,9 @@
   "removeIntraPriming": {
     "virtual_free": "25G"
   },
-  "plotMetaTmEndsStats": {
-    "h_rt": "02:00:00",
-    "virtual_free": "30G"
-  },
-  "plotAbsFiveTmEndsStats": {
-    "h_rt": "01:00:00",
-    "virtual_free": "30G"
-  },
   "getGeneReadCoverageStats": {
     "virtual_free": "25G",
     "h_rt": "20:00:00"
-  },
-  "plotAbsThreeTmEndsStats": {
-    "h_rt": "01:00:00",
-    "virtual_free": "30G"
-  },
-  "mergeCurrentPreviousPhaseTmsWithGencodeBiotypes": {
-    "virtual_free": "15G"
-  },
-  "mergePreviousPhaseTmsWithGencodeBiotypes": {
-    "virtual_free": "15G"
   },
   "readMapping": {
     "virtual_free": "40G",
@@ -126,21 +108,6 @@
   "nonAnchoredMergeReadsToBed": {
     "virtual_free": "10G",
   },
-  "mergeTissuesNonAnchoredMergeReads": {
-    "virtual_free": "10G",
-  },
-  "mergeFracsNonAnchoredMergeReads": {
-    "virtual_free": "10G",
-  },
-  "mergeFracsAndTissuesNonAnchoredMergeReads": {
-    "virtual_free": "10G",
-  },
-  "mergeAllSeqTechsFracsAndTissuesNonAnchoredMergeReads": {
-    "virtual_free": "10G",
-  },
-  "mergeAllCapDesignsSeqTechsFracsAndTissuesNonAnchoredMergeReads": {
-    "virtual_free": "10G",
-  },
   "collapseGencode": {
     "virtual_free": "10G",
   },
@@ -154,9 +121,6 @@
   },
   "plotHistTmLengthStats": {
     "virtual_free": "20G"
-  },
-  "compareToPASTestPolyAmapping": {
-    "virtual_free": "30G"
   },
   "gffcompareToAnnotation": {
     "virtual_free": "10G",
@@ -202,38 +166,11 @@
     "virtual_free": "10G",
     "h_rt": "5:00:00"
   },
-  "mergeCurrentPreviousPhaseTmsWithGencode": {
-    "virtual_free": "10G",
-  },
-  "mergePreviousPhaseTmsWithGencode": {
-    "virtual_free": "10G",
-  },
-  "getGencodeSupportedEnds": {
-    "virtual_free": "30G"
-  },
   "polyASupportedthreepEnds": {
     "virtual_free": "15G"
   },
-  "mergeSizeFracBams": {
-    "virtual_free": "1G",
-  },
-  "mergeBarcodeBams": {
-    "virtual_free": "1G",
-  },
-  "mergeSizeFracAndBarcodeBams": {
-    "virtual_free": "1G",
-  },
-  "mergeAllSeqTechsFracsAndTissuesBams": {
-    "virtual_free": "1G",
-  },
   "readBamToBed": {
     "virtual_free": "1G",
-  },
-  "getCurrentPreviousPhaseTmsWithGencodeSupportedEnds": {
-    "virtual_free": "30G",
-  },
-  "getPreviousPhaseTmsWithGencodeSupportedEnds": {
-    "virtual_free": "30G"
   },
   "tmergeAll": {
     "disk": "60G",

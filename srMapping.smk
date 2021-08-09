@@ -22,8 +22,6 @@ rule hiSeqReadMapping:
 	conda: "envs/star_env.yml"
 	output:
 		"mappings/hiSeq_{capDesign}.bam"
-	wildcard_constraints:
-		barcodes='[^(allTissues)][\S]+',
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
