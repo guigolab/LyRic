@@ -3,7 +3,7 @@
 # mapping of long reads:
 rule readMapping:
 	input:
-		reads = lambda wildcards: expand(DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		reads = lambda wildcards: expand(LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa",
 		qc = LR_FASTQDIR + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt",
 
@@ -290,7 +290,7 @@ rule plotReadProfileMatrix:
 rule getMappingStats:
 	input:
 		bams = "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		fastqs = DEMULTIPLEXED_FASTQS + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+		fastqs = LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
 	output: 
 		basic=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",
 		spikeIns=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv"
