@@ -18,11 +18,9 @@
   "SAMPLE_ANNOT": "annotations/samples/sample_annotations.tsv",
   "TMPDIR": "$TMPDIR",
   "exonOverhangTolerance": "8",
-  "capDesignToAnnotGtf": {
-    "HpreCap": "annotations/hs.gencode24+SIRVS.gff",
-    "Hv3": "annotations/hs.gencode24+SIRVS.gff",
-    "MpreCap": "annotations/mm.gencodeM7+SIRVS.gff",
-    "Mv2": "annotations/mm.gencodeM7+SIRVS.gff"
+  "genomeToAnnotGtf": {
+    "hg38": "annotations/hs.gencode24+SIRVS.gff",
+    "mm10": "annotations/mm.gencodeM7+SIRVS.gff"
   },
   "PLOTFORMATS": [
     "pdf",

@@ -17,7 +17,7 @@ rule hiSeqReadMapping:
 		reads1 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_1.fastq.gz",
 		reads2 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_2.fastq.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/SA",
-#		referenceAnnot = lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+#		referenceAnnot = lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	threads: 12
 	conda: "envs/star_env.yml"
 	output:

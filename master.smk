@@ -33,7 +33,7 @@ LR_FASTQDIR=config["LR_FASTQDIR"]
 # which genome build corresponds to to each capture design:
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
 # which gencode annotation GTF correspond to each capture design:
-CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
+GENOMETOANNOTGTF=config["genomeToAnnotGtf"]
 # which CAGE peak BED file corresponds to each genome build:
 GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
 # which ENCODE DHS peak BED file corresponds to each genome build:
@@ -44,11 +44,6 @@ GENOMETOPAS=config["genomeToPAS"]
 DUMMY_DIR="dummy/"
 
 TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
-
-print ("Input LR FASTQs are in: " + LR_FASTQDIR, file=sys.stderr)
-
-
-
 
 
 ENDSUPPORTcategories=["all", "cagePolyASupported"]
@@ -63,25 +58,6 @@ for capD in CAPDESIGNTOGENOME:
 	GENOMETOCAPDESIGNS[genome].append(capD)
 GENOMES=set(GENOMES)
 
-for genome in GENOMETOCAPDESIGNS:
-	mergedCapDString=''
-	capDperGenome=0
-	for capD in sorted(GENOMETOCAPDESIGNS[genome]):
-		if capD.find('preCap') == -1:  #avoid merging pre-capture with post-capture
-			mergedCapDString+=capD
-			capDperGenome+=1
-	if capDperGenome > 1:
-		for capD in GENOMETOCAPDESIGNS[genome]:
-			CAPDESIGNTOANNOTGTF[mergedCapDString]=CAPDESIGNTOANNOTGTF[capD]
-		CAPDESIGNTOGENOME[mergedCapDString]=genome
-
-
-for capD in CAPDESIGNTOGENOME:
-	genome=CAPDESIGNTOGENOME[capD]
-
-print ("Genomes:", file=sys.stderr)
-print (GENOMES, file=sys.stderr)
-# no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 
 SIRVpresent=None
 try:
@@ -101,7 +77,7 @@ CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
 
-
+# no underscores allowed in wildcards, to avoid greedy matching since we use them as separators:
 wildcard_constraints:
  	capDesign = "[^_/]+",
  	sizeFrac = "[^_/]+",
@@ -167,8 +143,6 @@ for comb in itertools.product(TECHNAMESplusBY,CAPDESIGNSplusBY,SIZEFRACS,BARCODE
 
 
 AUTHORIZEDCOMBINATIONS=set(AUTHORIZEDCOMBINATIONS)
-
-pprint(AUTHORIZEDCOMBINATIONS,compact=True, width=1000)
 
 include: "fastqStats.smk"
 include: "lrMapping.smk"
@@ -294,7 +268,7 @@ mv {config[TMPDIR]}/$uuid {output}
 
 rule makeGencodePartition:
 	input:
-		gtf=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
+		gtf=lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	conda: "envs/xtools_env.yml"
 	output: "annotations/{capDesign}.partition.gff"
@@ -314,7 +288,7 @@ fi
 
 
 rule makeSirvGff:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	output: "annotations/{capDesign}.SIRVs.gff"
 	shell:
 		'''
@@ -323,7 +297,7 @@ cat {input} | awk '$1 ~ /SIRV/' | sortgff > {output}
 		'''
 
 rule makeGencodeBed:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	output: "annotations/{capDesign}.bed"
 	shell:
 		'''
@@ -331,7 +305,7 @@ cat {input} | gff2bed_full.pl - |sortbed > {output}
 		'''
 
 rule simplifyGencode:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	output: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
 	shell:
 		'''

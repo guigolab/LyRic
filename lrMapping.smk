@@ -187,7 +187,7 @@ cat $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnl
 rule makeBigWigExonicRegions:
 	input:
 		bam= lambda wildcards: expand("mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
-		annotGff=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+		annotGff=lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	conda: "envs/xtools_env.yml"
 	output:
 		"mappings/readMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw"

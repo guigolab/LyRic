@@ -29,7 +29,7 @@ Customize *config.json and cluster_config.json to your needs
 - LR FASTQ files in `config[LR_FASTQDIR]`
 - genomes.fa
 - Illumina FASTQ files in `config[HISEQ_FASTQDIR]` **if required**
-- Reference annotation GTFs in `config[capDesignToAnnotGtf]`  **if required**
+- Reference annotation GTFs in `config[genomeToAnnotGtf]`  **if required**
 - GTF of targeted regions in `config[TARGETSDIR] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"`  **if required** 
 - TSV containing SIRV info (<transcript_id>{tab}<length>{tab}<concentration> in `config[SIRVinfo]` **if required** 
 - "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"

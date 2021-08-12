@@ -28,7 +28,7 @@ mv {config[TMPDIR]}/$uuid/* $(dirname {output.gff})
 		'''
 		
 rule getGencodeSpliceJunctions:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
+	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	output: "annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list"
 	shell:
 		'''
