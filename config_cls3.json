@@ -4,6 +4,9 @@
   "TARGETSDIR": "targets/",
   "PLOTSDIR": "plots/",
   "STATSDATADIR": "Rinput/",
+  "produceStatPlots": false,
+  "produceTrackHub": false,
+  "produceHtmlStatsTable": false,
   "capDesignToGenome": {
     "HpreCap": "hg38",
     "Hv3": "hg38",

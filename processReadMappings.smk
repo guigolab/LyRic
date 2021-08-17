@@ -364,7 +364,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule nonAnchoredMergeReads:
 	input: "mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
-	output: temp("mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"),
+	output: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff",
 	threads:1
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',

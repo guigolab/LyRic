@@ -7,6 +7,11 @@ import pandas as pd
 from pprint import pprint
 
 
+onsuccess:
+	print("Workflow finished smoothly.")
+
+onerror:
+	print("Workflow finished with errors, see log file.")
 
 #prefix all shell scripts with the following commands:
 shell.prefix('source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; export PATH="$PWD/utils/:$PATH";')
@@ -40,8 +45,7 @@ GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
 GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
 # which polyA signal file corresponds to each genome build:
 GENOMETOPAS=config["genomeToPAS"]
-# where to write dummy files 
-DUMMY_DIR="dummy/"
+
 
 TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
 
@@ -162,58 +166,45 @@ include: "lociEndSupport.smk"
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-		expand("mappings/nonAnchoredMergeReads/colored/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv",
-
-		expand(LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES), # facetted histograms of read length
+		# transcriptome GTFs:
+		expand("mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES) if config['produceStatPlots'] else '/dev/null', # facetted histograms of read length
 		expand(LR_FASTQDIR + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
 		expand("mappings/readMapping/qc/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "intraPriming.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-
-		expand(config["PLOTSDIR"] + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand(config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand ("mappings/clusterPolyAsites/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		
-		
-		
-		
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config["CAPTURE"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='15'),
-
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], filt=READFILTERS) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='13'),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:bySplicingStatus.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='14'),
-		expand(config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats"), filtered_product, techname=TECHNAMESplusBY, capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY), # facetted histograms of read length
-		expand(config["PLOTSDIR"] + "readProfile/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand(config["PLOTSDIR"] + "readProfile/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "intraPriming.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(config["PLOTSDIR"] + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=config["PLOTFORMATS"]) if config['produceStatPlots'] else '/dev/null',
+		expand(config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=config["PLOTFORMATS"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config["CAPTURE"] and config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], filt=READFILTERS) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:bySplicingStatus.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
+		expand(config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats"), filtered_product, techname=TECHNAMESplusBY, capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(config["PLOTSDIR"] + "readProfile/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES) if config['produceStatPlots'] else '/dev/null',
+		expand(config["PLOTSDIR"] + "readProfile/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
 
 ## temporary/intermediate
-		config["STATSDATADIR"] + "all.fastq.timestamps.tsv",
-		config["STATSDATADIR"] + "all.readlength.summary.tsv",
-		expand("annotations/{capDesign}.partition.gff", capDesign=CAPDESIGNS),
-		expand(config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], endSupport=ENDSUPPORTcategories),
+		config["STATSDATADIR"] + "all.fastq.timestamps.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
+		config["STATSDATADIR"] + "all.readlength.summary.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
+		expand(config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceHtmlStatsTable'] else '/dev/null',
+		expand(config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], endSupport=ENDSUPPORTcategories) if config['produceHtmlStatsTable'] else '/dev/null',
 ## temporary
 
 
@@ -221,21 +212,11 @@ rule all:
 		#################
 		### Track hub ###
 		#################
-		config["TRACK_HUB_DIR"] + "hub.txt",
-		config["TRACK_HUB_DIR"] + "genomes.txt",
-		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES),
+		config["TRACK_HUB_DIR"] + "hub.txt" if config['produceTrackHub'] else '/dev/null',
+		config["TRACK_HUB_DIR"] + "genomes.txt" if config['produceTrackHub'] else '/dev/null',
+		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES) if config['produceTrackHub'] else '/dev/null',
 
 
-##
-# "Dummy" rule to skip undesired targets depending on config
-##
-rule dummy:
-	input: "/dev/null"
-	output: DUMMY_DIR + "dummy{number}.txt"
-	shell:
-		'''
-touch {output}
-		'''
 
 
 rule sortIndexGenome:

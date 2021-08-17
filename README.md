@@ -33,3 +33,19 @@ Customize *config.json and cluster_config.json to your needs
 - GTF of targeted regions in `config[TARGETSDIR] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"`  **if required** 
 - TSV containing SIRV info (<transcript_id>{tab}<length>{tab}<concentration> in `config[SIRVinfo]` **if required** 
 - "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
+
+
+# Output
+
+LyRic will produce various output files based on the following Snakemake config values: 
+
+- config['produceStatPlots']: boolean. If true, multiple PNG and PDF plots will be output inside the `./plots/` subdirectory. See relevant section below for more details. 
+- config['produceHtmlStatsTable']: boolean. If true, a detailed HTML table will be produced in the `./html/` subdirectory. See relevant section below for more details.
+- config['produceTrackHub']: boolean. If true, LyRic will generate a UCSC Track Hub in the `./trackHub/` subdirectory. See relevant section below for more details.
+
+If all values are set to false, the workflow will only produce one transcriptome GTF file per input FASTQ file.
+
+### Transcriptome GTF file
+## Plots
+## HTML Stats Table
+## Track Hub
