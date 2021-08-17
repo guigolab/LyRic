@@ -201,6 +201,7 @@ rule all:
 		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, barcodes=BARCODESplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
 
 ## temporary/intermediate
+		config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
 		config["STATSDATADIR"] + "all.fastq.timestamps.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
 		config["STATSDATADIR"] + "all.readlength.summary.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
 		expand(config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceHtmlStatsTable'] else '/dev/null',

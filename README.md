@@ -39,7 +39,7 @@ Customize *config.json and cluster_config.json to your needs
 
 LyRic will produce various output files based on the following Snakemake config values: 
 
-- config['produceStatPlots']: boolean. If true, multiple PNG and PDF plots will be output inside the `./plots/` subdirectory. See relevant section below for more details. 
+- config['produceStatPlots']: boolean. If true, multiple statistics plots in PNG and PDF format will be output inside the `./plots/` subdirectory. See relevant section below for more details. 
 - config['produceHtmlStatsTable']: boolean. If true, a detailed HTML table will be produced in the `./html/` subdirectory. See relevant section below for more details.
 - config['produceTrackHub']: boolean. If true, LyRic will generate a UCSC Track Hub in the `./trackHub/` subdirectory. See relevant section below for more details.
 
