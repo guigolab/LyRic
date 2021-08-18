@@ -45,13 +45,15 @@ GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
 GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
 # which polyA signal file corresponds to each genome build:
 GENOMETOPAS=config["genomeToPAS"]
-
-
+# URL for UCSC Track Hub data files:
 TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
-
-
-ENDSUPPORTcategories=["all", "cagePolyASupported"]
+# 5' and 3' end support categories for transcript models (TMs):
+ENDSUPPORTcategories=["all", "cagePolyASupported"] 
+	# "all" = all TMs (no filter applied)
+	# "cagePolyASupported" = CAGE (5') + PolyA (3') -supported TMs only
+# splicing status categories of TMs:
 TMSPLICEDSTATUScategories=["all", "spliced", "unspliced"]
+
 READFILTERS=['HiSS', 'noFilt']
 
 GENOMES=[]
@@ -115,7 +117,7 @@ sampleAnnotDict = sampleAnnot.to_dict('index')
 
 
 
-AUTHORIZEDCOMBINATIONS = [] #contains combinations of wildcards corresponding to existing FASTQs
+AUTHORIZEDCOMBINATIONS = [] #contains combinations of wildcards corresponding to existing FASTQs or "by*" combinations when relevant
 TECHNAMESplusBY=set(TECHNAMES)
 TECHNAMESplusBY.add("byTech")
 BARCODESplusBY=set(BARCODES)
@@ -123,23 +125,20 @@ BARCODESplusBY.add("byTissue")
 CAPDESIGNSplusBY=set(CAPDESIGNS)
 CAPDESIGNSplusBY.add("byCapDesign")
 
+# Populate AUTHORIZEDCOMBINATIONS:
 for comb in itertools.product(TECHNAMESplusBY,CAPDESIGNSplusBY,SIZEFRACS,BARCODESplusBY):
-	#pprint(comb)
 	if comb[0] == "byTech":
 		filesList=glob.glob(LR_FASTQDIR + "*" + "_" + comb[1] + "_" + comb[2] + "_" + comb[3] + ".fastq.gz")
-		#pprint(filesList)
 		if(len(filesList)>1): #authorize "byTech" combination only if it's relevant
 			authorizeComb(comb)
 
 	elif comb[1] == "byCapDesign":
 		filesList=glob.glob(LR_FASTQDIR + comb[0] + "_" + "*" + "_" + comb[2] + "_" + comb[3] + ".fastq.gz")
-		#pprint(filesList)
-		if(len(filesList)>1):
+		if(len(filesList)>1): #authorize "byCapDesign" combination only if it's relevant
 			authorizeComb(comb)
 	elif comb[3] == "byTissue":
 		filesList=glob.glob(LR_FASTQDIR + comb[0] + "_" + comb[1] + "_" + comb[2] + "_" + "*" + ".fastq.gz")
-		#pprint(filesList)
-		if(len(filesList)>1):
+		if(len(filesList)>1): #authorize "byTissue" combination only if it's relevant
 			authorizeComb(comb)
 	elif(os.path.isfile(LR_FASTQDIR + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or
 	os.path.isfile(LR_FASTQDIR + comb[0] + "_" + comb[1] + "_" + comb[2]  + "_" + comb[3] + ".fastq.gz")):

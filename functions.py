@@ -1,5 +1,5 @@
 
-def authorizeComb(comb):
+def authorizeComb(comb): # populate AUTHORIZEDCOMBINATIONS with relevant combinations of wildcards
 	global AUTHORIZEDCOMBINATIONS
 	AUTHORIZEDCOMBINATIONS.append(
 		(("techname", comb[0]), ("capDesign", comb[1])))
@@ -7,7 +7,7 @@ def authorizeComb(comb):
 		(("techname", comb[0]), ("capDesign", comb[1]), ("sizeFrac", comb[2]), ("barcodes", comb[3])))
 
 
-def returnPlotFilenames(basename):
+def returnPlotFilenames(basename): # produce sets of plot filenames
 	plotsList = []
 	for comb in itertools.product(["legendOnly"], config["PLOTFORMATS"]):
 		plotsList.append(basename + "." + comb[0] + "." + comb[1])
@@ -17,8 +17,7 @@ def returnPlotFilenames(basename):
 	return plotsList
 
 
-def filtered_product(*args):
-	# return combinations of wildcards that correspond to existing combinations in input (i.e. corresponding input FASTQ exists)
+def filtered_product(*args): # return combinations of wildcards that correspond to existing combinations in AUTHORIZEDCOMBINATIONS
 	# args[0]: techname
 	# args[1]: capDesign
 	# args[2]: sizeFrac (optional)
@@ -26,8 +25,6 @@ def filtered_product(*args):
 	# args[>3] are ignored by filter but returned if args[0:3] pass
 
 	found = False
-	#print("NEW ARGS: ")
-	# pprint(args)
 	if len(args) < 2:
 		quit("Error in function filtered_product (wrong number of arguments, shoud be >1).")
 	elif len(args) == 2:
@@ -40,18 +37,10 @@ def filtered_product(*args):
 			if wc_comb[0:4] in AUTHORIZEDCOMBINATIONS:
 				found = True
 				yield(wc_comb)
-			# else:
-			# 	print ("NOT FOUND")
-			# 	pprint(wc_comb)
-
-#	if not found:
-#		return None
-		#pprint("Error in function filtered_product. Args were:", sys.stderr)
-		#pprint((args), sys.stderr)
-		#quit("Error. Could not yield any input file.")
 
 
-def multi_figures(capDesign, sizeFrac, barcodes, techname, splicing_status=None):
+
+def multi_figures(capDesign, sizeFrac, barcodes, techname, splicing_status=None): # return ggplot figure settings as dictionary
 	figure_settings = dict()
 	figure_settings['technameFilterString'] = ''
 	figure_settings['hideXaxisLabels'] = "theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
@@ -143,7 +132,7 @@ wYxNoLegendPlot<- wYxPlot - wLegendOnly
 	return(figure_settings)
 
 
-def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSupport):
+def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSupport): # return string to populate the "subGroup" UCSC Track Hub attributes 
 	techname = (("techname", techname),)
 	capDesign = (("capDesign", capDesign),)
 	sizeFracs = []
