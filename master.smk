@@ -115,8 +115,6 @@ sampleAnnotDict = sampleAnnot.to_dict('index')
 ### inspired by https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
 ###
 
-
-
 AUTHORIZEDCOMBINATIONS = [] #contains combinations of wildcards corresponding to existing FASTQs or "by*" combinations when relevant
 TECHNAMESplusBY=set(TECHNAMES)
 TECHNAMESplusBY.add("byTech")

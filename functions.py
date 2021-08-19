@@ -1,5 +1,8 @@
 
-def authorizeComb(comb): # populate AUTHORIZEDCOMBINATIONS with relevant combinations of wildcards
+def authorizeComb(comb): 
+############################################################################
+### populate AUTHORIZEDCOMBINATIONS with relevant combinations of wildcards
+############################################################################
 	global AUTHORIZEDCOMBINATIONS
 	AUTHORIZEDCOMBINATIONS.append(
 		(("techname", comb[0]), ("capDesign", comb[1])))
@@ -7,7 +10,10 @@ def authorizeComb(comb): # populate AUTHORIZEDCOMBINATIONS with relevant combina
 		(("techname", comb[0]), ("capDesign", comb[1]), ("sizeFrac", comb[2]), ("barcodes", comb[3])))
 
 
-def returnPlotFilenames(basename): # produce sets of plot filenames
+def returnPlotFilenames(basename): 
+###################################
+### produce sets of plot filenames
+###################################
 	plotsList = []
 	for comb in itertools.product(["legendOnly"], config["PLOTFORMATS"]):
 		plotsList.append(basename + "." + comb[0] + "." + comb[1])
@@ -17,29 +23,45 @@ def returnPlotFilenames(basename): # produce sets of plot filenames
 	return plotsList
 
 
-def filtered_product(*args): # return combinations of wildcards that correspond to existing combinations in AUTHORIZEDCOMBINATIONS
+def filtered_product(*args): 
+#####################################################################
+### return combinations of wildcards that correspond to combinations
+### contained in AUTHORIZEDCOMBINATIONS
+#####################################################################
 	# args[0]: techname
 	# args[1]: capDesign
 	# args[2]: sizeFrac (optional)
 	# args[3]: barcodes (optional)
 	# args[>3] are ignored by filter but returned if args[0:3] pass
 
-	found = False
 	if len(args) < 2:
 		quit("Error in function filtered_product (wrong number of arguments, shoud be >1).")
 	elif len(args) == 2:
 		for wc_comb in itertools.product(*args):
 			if wc_comb in AUTHORIZEDCOMBINATIONS:
-				found = True
 				yield(wc_comb)
 	else:
 		for wc_comb in itertools.product(*args):
 			if wc_comb[0:4] in AUTHORIZEDCOMBINATIONS:
-				found = True
 				yield(wc_comb)
 
+def nonPreCapOnly(capDList):
+####################################################
+### return list of non-'preCap' capDesign wildcards.
+### preCap capDesign values are filtered out 
+####################################################
 
-def multi_figures(capDesign, sizeFrac, barcodes, techname, splicing_status=None): # return ggplot figure settings as dictionary
+	auth=[]
+	for capD in capDList:
+		if 'preCap' not in capD[1]:
+			auth.append(capD)
+	yield(auth)
+
+
+def multi_figures(capDesign, sizeFrac, barcodes, techname, splicing_status=None): 
+################################################
+### return ggplot figure settings as dictionary
+################################################
 	figure_settings = dict()
 	figure_settings['technameFilterString'] = ''
 	figure_settings['hideXaxisLabels'] = "theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
@@ -131,7 +153,10 @@ wYxNoLegendPlot<- wYxPlot - wLegendOnly
 	return(figure_settings)
 
 
-def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSupport): # return string to populate the "subGroup" UCSC Track Hub attributes 
+def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSupport): 
+#######################################################################
+### return string to populate the "subGroup" UCSC Track Hub attributes 
+#######################################################################
 	techname = (("techname", techname),)
 	capDesign = (("capDesign", capDesign),)
 	sizeFracs = []
@@ -151,7 +176,7 @@ def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSuppo
 	returnSubGroup2StringData = []
 	returnSubGroup3StringData = []
 	for wc_comb in itertools.product(techname, capDesign, sizeFracs, barCodes, minRS):
-		if wc_comb in AUTHORIZEDCOMBINATIONS:
+		if wc_comb[0:4] in AUTHORIZEDCOMBINATIONS:
 			returnSubGroup1StringData.append(
 				wc_comb[3][1] + "=" + wc_comb[3][1])
 			returnSubGroup2StringData.append(

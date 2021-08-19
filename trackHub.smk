@@ -197,7 +197,7 @@ parent {wildcards.capDesign}
 {params.subGroupString}
 subGroup4 filter Filter {params.viewsString}
 dimensions dimX=sample dimY=filter dimA=sizeFraction dimB=minReadSupport
-filterComposite dimA dimB dimC
+filterComposite dimA dimB
 visibility squish
 " > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -332,9 +332,9 @@ mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 rule catTrackDb:
 	input:
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_SupertrackHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["CAPTURE"] else '/dev/null',
+		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["CAPTURE"] else '/dev/null',
+		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}_{capDesign}_trackDbOutputHeader.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
