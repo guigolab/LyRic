@@ -1,19 +1,18 @@
-if config["CAPTURE"]:
-	rule compareTargetsToTms:
-		input:
-			tms= "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
-			targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
-		conda: "envs/xtools_env.yml"
-		output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
-		shell:
-			'''
+rule compareTargetsToTms:
+	input:
+		tms= "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
+		targetedSegments=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"
+	conda: "envs/xtools_env.yml"
+	output: "mappings/nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"
+	shell:
+		'''
 uuidTmpOut=$(uuidgen)
 
 zcat {input.tms} > {config[TMPDIR]}/$uuidTmpOut.1
 bedtools intersect -wao -a {input.targetedSegments} -b {config[TMPDIR]}/$uuidTmpOut.1 |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
-			'''
+		'''
 
 rule getTargetCoverageStats:
 	input: "mappings/nonAnchoredMergeReads/vsTargets/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz"

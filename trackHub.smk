@@ -49,11 +49,10 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 
-if config["CAPTURE"]:
-	rule makeTrackDbInputHeader:
-		output: temp(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt")
-		shell:
-			'''
+rule makeTrackDbInputHeader:
+	output: temp(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt")
+	shell:
+		'''
 uuidTmpOut=$(uuidgen)
 echo "track {wildcards.capDesign}_input
 compositeTrack on
@@ -66,23 +65,22 @@ visibility dense
 color 110,30,0
 " > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
-			'''
+		'''
 
 
 
 
 
 
-if config["CAPTURE"]:
-	rule makeTrackDbInputTracks:
-		input:
-			gff=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf",
-			genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
-		output:
-			bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{capDesign}_primary_targets.bb",
-			trackDb=temp(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt")
-		shell:
-			'''
+rule makeTrackDbInputTracks:
+	input:
+		gff=config["TARGETSDIR"] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf",
+		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
+	output:
+		bigBed=config["TRACK_HUB_DIR"] + "dataFiles/{capDesign}_primary_targets.bb",
+		trackDb=temp(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt")
+	shell:
+		'''
 uuid=$(uuidgen)
 uuid2=$(uuidgen)
 uuid3=$(uuidgen)
@@ -109,7 +107,7 @@ echo -e "
 " > {config[TMPDIR]}/$uuidTmpOutT
 mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 
-			'''
+		'''
 
 if config["USE_MATCHED_ILLUMINA"]:
 	rule makeTrackDbHiSeqOutputHeader:

@@ -39,7 +39,6 @@ def filtered_product(*args): # return combinations of wildcards that correspond 
 				yield(wc_comb)
 
 
-
 def multi_figures(capDesign, sizeFrac, barcodes, techname, splicing_status=None): # return ggplot figure settings as dictionary
 	figure_settings = dict()
 	figure_settings['technameFilterString'] = ''
