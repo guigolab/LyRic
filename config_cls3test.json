@@ -37,7 +37,7 @@
   "PROJECT_CONTACT_EMAIL": "julien.lagarde@crg.eu",
   "TRACK_HUB_DIR": "trackHub/",
   "TRACK_HUB_BASE_URL": "https://public-docs.crg.es/rguigo/Data/jlagarde/gencode/trackHubs/CLS3test/",
-  "BED12_AUTOSQL": "/users/rg/jlagarde/bed12.as",
+  "BED12_AUTOSQL": "misc/bed12.as",
   "HISEQ_FASTQDIR": "fastqs/hiSeq/",
   "genomeToCAGEpeaks": {
     "hg38": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
