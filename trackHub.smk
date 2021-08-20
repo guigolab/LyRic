@@ -109,11 +109,10 @@ mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 
 		'''
 
-if config["USE_MATCHED_ILLUMINA"]:
-	rule makeTrackDbHiSeqOutputHeader:
-		output: temp(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbHiSeqOutputHeader.txt")
-		shell:
-			'''
+rule makeTrackDbHiSeqOutputHeader:
+	output: temp(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbHiSeqOutputHeader.txt")
+	shell:
+		'''
 uuidTmpOut=$(uuidgen)
 echo "track {wildcards.capDesign}_hiSeq_output
 compositeTrack on
@@ -125,16 +124,15 @@ parent {wildcards.capDesign}
 visibility hide
 " > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
-			'''
+		'''
 
-if config["USE_MATCHED_ILLUMINA"]:
-	rule makeHiSeqBamOutputTracks:
-		input: "mappings/hiSeq_{capDesign}.bam"
-		output:
-			bam=config["TRACK_HUB_DIR"] + "dataFiles/hiSeq_{capDesign}.bam",
-			bai=config["TRACK_HUB_DIR"] + "dataFiles/hiSeq_{capDesign}.bam.bai"
-		shell:
-			'''
+rule makeHiSeqBamOutputTracks:
+	input: "mappings/hiSeq_{capDesign}.bam"
+	output:
+		bam=config["TRACK_HUB_DIR"] + "dataFiles/hiSeq_{capDesign}.bam",
+		bai=config["TRACK_HUB_DIR"] + "dataFiles/hiSeq_{capDesign}.bam.bai"
+	shell:
+		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 samtools view -H {input} > {config[TMPDIR]}/$uuid
@@ -145,18 +143,17 @@ samtools index {config[TMPDIR]}/$uuidTmpOut
 
 mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
 mv {config[TMPDIR]}/$uuidTmpOut.bai  {output.bai}
-			'''
+		'''
 
-if config["USE_MATCHED_ILLUMINA"]:
-	rule makeHiSeqBamOutputTrackDb:
-		input: config["TRACK_HUB_DIR"] + "dataFiles/hiSeq_{capDesign}.bam",
-		output:
-			trackDb=temp(config["TRACK_HUB_DIR"] + "hiSeq_{capDesign}_BamOutput.trackDb.txt")
-		params:
-			track="hiSeq_{capDesign}_BAM" ,
-			shortLabel=config["PROJECT_NAME"] + " Illumina HiSeq ({capDesign}) BAMs"
-		shell:
-			'''
+rule makeHiSeqBamOutputTrackDb:
+	input: config["TRACK_HUB_DIR"] + "dataFiles/hiSeq_{capDesign}.bam",
+	output:
+		trackDb=temp(config["TRACK_HUB_DIR"] + "hiSeq_{capDesign}_BamOutput.trackDb.txt")
+	params:
+		track="hiSeq_{capDesign}_BAM" ,
+		shortLabel=config["PROJECT_NAME"] + " Illumina HiSeq ({capDesign}) BAMs"
+	shell:
+		'''
 uuidTmpOut=$(uuidgen)
 echo -e "
 \ttrack {params.track}
@@ -175,7 +172,7 @@ echo -e "
 " > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
 
-			'''
+		'''
 
 
 rule makeTrackDbTechnameHeader:
@@ -333,7 +330,7 @@ rule catTrackDb:
 	input:
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_SupertrackHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbInputHeader.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
+		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else None,
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{capDesign}_primary_targets.trackDb.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}_{capDesign}_trackDbOutputHeader.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand(config["TRACK_HUB_DIR"] + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
