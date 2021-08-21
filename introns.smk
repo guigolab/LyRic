@@ -1,6 +1,6 @@
 rule makeIntrons:
-	input: "mappings/readBedToGff/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
-	output: "mappings/makeIntrons/{techname}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz"
+	input: "output/mappings/readBedToGff/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
+	output: "output/mappings/makeIntrons/{techname}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -10,11 +10,11 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getIntronMotif:
 	input:
-		introns = "mappings/makeIntrons/{techname}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz",
+		introns = "output/mappings/makeIntrons/{techname}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	output:
-		gff = "mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz",
-		tsv = "mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz"
+		gff = "output/mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.introns.gff.gz",
+		tsv = "output/mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz"
 	conda: "envs/perl_env.yml"
 	shell:
 		'''
@@ -29,7 +29,7 @@ mv {config[TMPDIR]}/$uuid/* $(dirname {output.gff})
 		
 rule getGencodeSpliceJunctions:
 	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
-	output: "annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list"
+	output: "output/annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -39,8 +39,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getClsSpliceJunctions:
-	input:"mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff.gz"
-	output: "mappings/nonAnchoredMergeReads/spliceJunctions/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
+	input:"output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff.gz"
+	output: "output/mappings/mergedReads/spliceJunctions/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -51,9 +51,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getCompareClsGencodeSJsStats:
 	input:
-		gencodeSJs="annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list",
-		clsSJs="mappings/nonAnchoredMergeReads/spliceJunctions/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
-	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
+		gencodeSJs="output/annotations/spliceJunctions/{capDesign}.gencode.spliceJunctions.list",
+		clsSJs="output/mappings/mergedReads/spliceJunctions/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -67,8 +67,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggCompareClsGencodeSJsStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] +"tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
-	output: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" +"tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
+	output: "output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -80,8 +80,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotCompareClsGencodeSJsStats:
-	input: config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats")
+	input: "output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats")
 	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)

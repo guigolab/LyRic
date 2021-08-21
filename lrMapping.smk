@@ -1,18 +1,18 @@
 
 
 # mapping of long reads:
-rule readMapping:
+rule longReadMapping:
 	input:
-		reads = lambda wildcards: expand(LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		reads = lambda wildcards: expand("fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa",
-		qc = LR_FASTQDIR + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt",
+		qc = "output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt",
 
 	threads: 12
 	params:
 		minimap_preset = lambda wildcards: "splice" if (sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "ONT") else "splice:hq" if ( sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "pacBioSI" or sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['seqPlatform'] == "pacBioSII") else None
 	output:
-		bam="mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		bai="mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
+		bam="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		bai="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai",
 	conda: "envs/minimap2_env.yml"
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
@@ -38,8 +38,8 @@ mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
 		'''
 
 rule makeBigWigs:
-	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/bigWig/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw"
+	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "output/mappings/longReadMapping/bigWig/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -51,8 +51,8 @@ mv {config[TMPDIR]}/$uuid.bw {output}
 
 
 rule bamqc:
-	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
+	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "output/mappings/longReadMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
 	shell:
 		'''
  unset DISPLAY
@@ -61,8 +61,8 @@ rule bamqc:
 		'''
 
 rule getBamqcStats:
-	input: "mappings/readMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
-	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv"
+	input: "output/mappings/longReadMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{barcodes}/genome_results.txt"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -72,8 +72,8 @@ mv {config[TMPDIR]}/$uuid {output}
 		'''
 
 rule aggBamqcStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.sequencingError.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.sequencingError.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -84,10 +84,10 @@ mv {config[TMPDIR]}/$uuid {output}
 		'''
 
 rule plotBamqcStats:
-	input: config["STATSDATADIR"] + "all.sequencingError.stats.tsv"
+	input: "output/statsFiles/" + "all.sequencingError.stats.tsv"
 	output: 
-		allErrors=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"),
-		deletionsOnly=returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats")
+		allErrors=returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"),
+		deletionsOnly=returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats")
 	conda: "envs/R_env.yml"
 	params: 
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
@@ -186,11 +186,11 @@ cat $(dirname {output.allErrors[0]})/$(basename {output.allErrors[0]} .legendOnl
 
 rule makeBigWigExonicRegions:
 	input:
-		bam= lambda wildcards: expand("mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
+		bam= lambda wildcards: expand("output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam", filtered_product, techname=wildcards.techname,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac,barcodes=wildcards.barcodes),
 		annotGff=lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	conda: "envs/xtools_env.yml"
 	output:
-		"mappings/readMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw"
+		"output/mappings/longReadMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -207,11 +207,11 @@ mv {config[TMPDIR]}/$uuid.bw {output}
 
 rule setupReadProfileMatrix:
 	input: 
-		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		bw=lambda wildcards: expand("output/mappings/longReadMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
 		sampleAnnot=config["SAMPLE_ANNOT"]
 	output:
-		colorList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.colors.txt",
-		libraryPrepList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
+		colorList="output/statsFiles/" + "byTech_{capDesign}_{sizeFrac}_{barcodes}.colors.txt",
+		libraryPrepList="output/statsFiles/" + "byTech_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -248,12 +248,12 @@ echo {input.bw} | xargs -n1 basename | sed 's/\.bw//' | Rscript {output.colorLis
 
 rule getReadProfileMatrix:
 	input:
-		annot="annotations/{capDesign}.bed",
-		bw=lambda wildcards: expand("mappings/readMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
-		libraryPrepList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
+		annot="output/annotations/{capDesign}.bed",
+		bw=lambda wildcards: expand("output/mappings/longReadMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bw", filtered_product, techname=TECHNAMES,  capDesign=wildcards.capDesign, sizeFrac=wildcards.sizeFrac, barcodes=wildcards.barcodes),
+		libraryPrepList="output/statsFiles/" + "byTech_{capDesign}_{sizeFrac}_{barcodes}.libraryPreps.txt"
 
 	output: 
-		matrix=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+		matrix="output/statsFiles/" + "byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
 	conda: "envs/xtools_env.yml"
 	threads: 6
 	shell:
@@ -267,11 +267,11 @@ mv {config[TMPDIR]}/$uuid.gz {output.matrix}
 
 rule plotReadProfileMatrix:
 	input: 
-		matrix=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
-		colorList=config["STATSDATADIR"] + "byTech_{capDesign}_{sizeFrac}_{barcodes}.colors.txt"
+		matrix="output/statsFiles/" + "byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfileMatrix.tsv.gz",
+		colorList="output/statsFiles/" + "byTech_{capDesign}_{sizeFrac}_{barcodes}.colors.txt"
 	output: 
-		profile=config["PLOTSDIR"] + "readProfile/byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png",
-		heatmap=config["PLOTSDIR"] + "readProfile/byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png"
+		profile="output/plots/" + "readProfile/byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png",
+		heatmap="output/plots/" + "readProfile/byTech_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -289,11 +289,11 @@ rule plotReadProfileMatrix:
 
 rule getMappingStats:
 	input:
-		bams = "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		fastqs = LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+		bams = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		fastqs = "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
 	output: 
-		basic=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",
-		spikeIns=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv"
+		basic="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",
+		spikeIns="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv"
 	shell:
 		'''
 uuidTmpOutB=$(uuidgen)
@@ -310,8 +310,8 @@ mv {config[TMPDIR]}/$uuidTmpOutS {output.spikeIns}
 		'''
 
 rule aggMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.basic.mapping.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.basic.mapping.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -322,8 +322,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotMappingStats:
-	input: config["STATSDATADIR"] + "all.basic.mapping.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats")
+	input: "output/statsFiles/" + "all.basic.mapping.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
@@ -384,8 +384,8 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule aggSpikeInsMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.spikeIns.mapping.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.mapping.spikeIns.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.spikeIns.mapping.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -396,8 +396,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotSpikeInsMappingStats:
-	input: config["STATSDATADIR"] + "all.spikeIns.mapping.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats")
+	input: "output/statsFiles/" + "all.spikeIns.mapping.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
@@ -466,8 +466,8 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule checkOnlyOneHit:
-	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readMapping/qc/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
+	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "output/mappings/longReadMapping/qc/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -480,8 +480,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule readBamToBed:
-	input: "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
-	output: "mappings/readBamToBed/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	output: "output/mappings/readBamToBed/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -494,8 +494,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule readBedToGff:
-	input: "mappings/readBamToBed/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
-	output: "mappings/readBedToGff/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
+	input: "output/mappings/readBamToBed/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bed.gz"
+	output: "output/mappings/readBedToGff/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -505,9 +505,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getReadBiotypeClassification:
 	input: 
-		reads="mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		ann="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	output: "mappings/readMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
+		reads="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		ann="output/annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
+	output: "output/mappings/longReadMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -519,8 +519,8 @@ mv  {config[TMPDIR]}/$uuidTmpOut.2 {output}
 		'''
 
 rule getReadToBiotypeBreakdownStats:
-	input: "mappings/readMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
-	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv"
+	input: "output/mappings/longReadMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{barcodes}.reads2biotypes.tsv.gz"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv"
 	shell:
 		'''
 totalPairs=$(zcat {input} | wc -l)
@@ -530,8 +530,8 @@ zcat {input} | cut -f2| sort -T {config[TMPDIR]} |uniq -c |ssv2tsv | awk -v t={w
 
 
 rule aggReadToBiotypeBreakdownStats:
-	input: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.readToBiotypeBreakdown.stats.tsv"
+	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.readToBiotypeBreakdown.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -542,8 +542,8 @@ mv  {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotReadToBiotypeBreakdownStats:
-	input: config["STATSDATADIR"] + "all.readToBiotypeBreakdown.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats")
+	input: "output/statsFiles/" + "all.readToBiotypeBreakdown.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats")
 	conda: "envs/R_env.yml"
 	params: 
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)

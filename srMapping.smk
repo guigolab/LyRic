@@ -14,27 +14,27 @@ mv -f {config[TMPDIR]}/$uuid/* $(dirname {output})
 
 rule hiSeqReadMapping:
 	input:
-		reads1 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_1.fastq.gz",
-		reads2 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_2.fastq.gz",
+		reads1 = "fastqs/hiSeq/" + "hiSeq_{capDesign}_1.fastq.gz",
+		reads2 = "fastqs/hiSeq/" + "hiSeq_{capDesign}_2.fastq.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + "STARshort_indices/" + CAPDESIGNTOGENOME[wildcards.capDesign] + "/SA",
 #		referenceAnnot = lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
 	threads: 12
 	conda: "envs/star_env.yml"
 	output:
-		"mappings/hiSeq_{capDesign}.bam"
+		"output/mappings/shortReadMappings/hiSeq_{capDesign}.bam"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 
 echoerr "Mapping"
-mkdir -p mappings/STAR/`basename {output}`/
+mkdir -p output/mappings/STAR/`basename {output}`/
 STAR \
 --runThreadN {threads} \
 --readFilesIn {input.reads1} {input.reads2} \
 --genomeDir $(dirname {input.genome}) \
 --readFilesCommand zcat \
 --sjdbOverhang 124 \
---outFileNamePrefix "mappings/STAR/`basename {output}`/" \
+--outFileNamePrefix "output/mappings/STAR/`basename {output}`/" \
 --outStd SAM \
 --genomeLoad NoSharedMemory \
 --outSAMunmapped Within \
@@ -62,10 +62,10 @@ mv {config[TMPDIR]}/$uuidTmpOut.bai {output}.bai
 
 rule getHiSeqMappingStats:
 	input:
-		bams = "mappings/hiSeq_{capDesign}.bam",
-		reads1 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_1.fastq.gz",
-		reads2 = config["HISEQ_FASTQDIR"] + "hiSeq_{capDesign}_2.fastq.gz",
-	output: config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv"
+		bams = "output/mappings/shortReadMappings/hiSeq_{capDesign}.bam",
+		reads1 = "fastqs/hiSeq/" + "hiSeq_{capDesign}_1.fastq.gz",
+		reads2 = "fastqs/hiSeq/" + "hiSeq_{capDesign}_2.fastq.gz",
+	output: "output/statsFiles/" + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -76,8 +76,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggHiSeqMappingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv",capDesign=CAPDESIGNS)
-	output: config["STATSDATADIR"] + "all.hiSeq.mapping.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv",capDesign=CAPDESIGNS)
+	output: "output/statsFiles/" + "all.hiSeq.mapping.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -87,8 +87,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule plotHiSeqMappingStats:
-	input: config["STATSDATADIR"] + "all.hiSeq.mapping.stats.tsv"
-	output: config["PLOTSDIR"] + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}"
+	input: "output/statsFiles/" + "all.hiSeq.mapping.stats.tsv"
+	output: "output/plots/" + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}"
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -119,9 +119,9 @@ cat {output}.r | R --slave
 
 rule getHiSeqCanonicalIntronsList:
 	input:
-		bam="mappings/hiSeq_{capDesign}.bam",
+		bam="output/mappings/shortReadMappings/hiSeq_{capDesign}.bam",
 	threads: 6
-	output: temp("mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.bed")
+	output: temp("output/mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.bed")
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -136,11 +136,11 @@ mv {config[TMPDIR]}/$uuid.hiSeq_{wildcards.capDesign}.bed {output}
 
 rule getHiSeqCanonicalIntronsList2:
 	input:
-		bed="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.bed",
+		bed="output/mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	output:	
-		list="mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list",
-		stats=config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv"
+		list="output/mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list",
+		stats="output/statsFiles/" + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv"
 	conda: "envs/perl_env.yml"
 	
 	shell:
@@ -167,8 +167,8 @@ mv {config[TMPDIR]}/$uuidTmpOutL {output.list}
 		'''
 
 rule aggHiSeqSjStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv",capDesign=CAPDESIGNS)
-	output: config["STATSDATADIR"] + "all.hiSeq.SJs.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv",capDesign=CAPDESIGNS)
+	output: "output/statsFiles/" + "all.hiSeq.SJs.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -177,8 +177,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotHiSeqSjStats:
-	input: config["STATSDATADIR"] + "all.hiSeq.SJs.stats.tsv"
-	output: config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}"
+	input: "output/statsFiles/" + "all.hiSeq.SJs.stats.tsv"
+	output: "output/plots/" + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}"
 	conda: "envs/R_env.yml"
 	shell:
 		'''

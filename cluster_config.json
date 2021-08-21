@@ -30,7 +30,7 @@
   "makeBigWigExonicRegions": {
     "h_rt": "06:00:00"
   },
-  "nonAnchoredMergeUnfilteredSirvReads": {
+  "mergedUnfilteredSirvReads": {
     "h_rt": "05:30:00",
   },
   "plotReadLength": {
@@ -51,7 +51,7 @@
     "virtual_free": "25G",
     "h_rt": "20:00:00"
   },
-  "readMapping": {
+  "longReadMapping": {
     "virtual_free": "40G",
     "h_rt": "20:00:00",
     "threads": "-pe smp 12",
@@ -101,11 +101,11 @@
     "virtual_free": "20G",
     "h_rt": "06:00:00"
   },
-  "nonAnchoredMergeReads": {
+  "mergedReads": {
     "virtual_free": "60G",
     "h_rt": "26:00:00"
   },
-  "nonAnchoredMergeReadsToBed": {
+  "mergedReadsToBed": {
     "virtual_free": "10G",
   },
   "collapseGencode": {

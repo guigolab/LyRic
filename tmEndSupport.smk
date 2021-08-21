@@ -1,6 +1,6 @@
 rule extractPooledTmsFivepEnds:
-	input: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
-	output: "mappings/nonAnchoredMergeReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
+	output: "output/mappings/mergedReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -10,11 +10,11 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule cageSupportedfivepEnds:
 	input:
-		fivePends="mappings/nonAnchoredMergeReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed",
-		tms="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		fivePends="output/mappings/mergedReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed",
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
 		cagePeaks=lambda wildcards: GENOMETOCAGEPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
-	output: "mappings/nonAnchoredMergeReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
+	output: "output/mappings/mergedReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -27,10 +27,10 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule dhsSupportedfivepEnds:
 	input:
-		fivePends="mappings/nonAnchoredMergeReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed",
-		tms="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		fivePends="output/mappings/mergedReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.5pEnds.bed",
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
 		dhsPeaks=lambda wildcards: GENOMETODHSPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
-	output: "mappings/nonAnchoredMergeReads/dhsSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed"
+	output: "output/mappings/mergedReads/dhsSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -43,9 +43,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule plotDhsVsCage5primeComparisonStats:
 	input: 
-		dhs="mappings/nonAnchoredMergeReads/dhsSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed",
-		cage="mappings/nonAnchoredMergeReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
-	output: config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf"
+		dhs="output/mappings/mergedReads/dhsSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed",
+		cage="output/mappings/mergedReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
+	output: "output/plots/" + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf"
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -91,8 +91,8 @@ cat {output}.r | R --slave
 
 
 rule extractPooledTmsThreepEnds:
-	input: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
-	output: "mappings/nonAnchoredMergeReads/3pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.3pEnds.bed"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
+	output: "output/mappings/mergedReads/3pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.3pEnds.bed"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -102,12 +102,12 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule polyASupportedthreepEnds:
 	input:
-		threePends="mappings/nonAnchoredMergeReads/3pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.3pEnds.bed",
-		tms="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
-		polyAsites="mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
+		threePends="output/mappings/mergedReads/3pEnds/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.3pEnds.bed",
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		polyAsites="output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	conda: "envs/xtools_env.yml"
-	output: "mappings/nonAnchoredMergeReads/polyASupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed"
+	output: "output/mappings/mergedReads/polyASupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -121,16 +121,16 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getCagePolyASupport:
 	input:
-		polyA="mappings/nonAnchoredMergeReads/polyASupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed",
-		cage="mappings/nonAnchoredMergeReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed",
-		tms="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
+		polyA="output/mappings/mergedReads/polyASupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed",
+		cage="output/mappings/mergedReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed",
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
 	output:
-		stats=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",
-		FLbed="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.bed",
-		cageOnlyBed="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cageOnlySupported.bed",
-		polyAOnlyBed="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:polyAOnlySupported.bed",
-		noCageNoPolyABed="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:noCageNoPolyASupported.bed",
-		FLgff="mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.gff.gz"
+		stats="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",
+		FLbed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.bed",
+		cageOnlyBed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cageOnlySupported.bed",
+		polyAOnlyBed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:polyAOnlySupported.bed",
+		noCageNoPolyABed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:noCageNoPolyASupported.bed",
+		FLgff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.gff.gz"
 
 	shell:
 		'''
@@ -174,8 +174,8 @@ mv {config[TMPDIR]}/$uuidTmpOutS {output.stats}
 
 
 rule aggCagePolyAStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
-	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	output: "output/statsFiles/" + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -186,8 +186,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotCagePolyAStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats")
+	input: "output/statsFiles/" + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats")
 	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
@@ -248,214 +248,6 @@ save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
 
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
-
-		'''
-
-
-
-rule plotMetaTmEndsStats:
-	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.meta.stats"),
-	conda: "envs/R_env.yml"
-
-	params:
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname, wildcards.splicedStatus)
-	shell:
-		'''
-echo "
-library(ggplot2)
-
-library(cowplot)
-library(plyr)
-library(scales)
-library(gridExtra)
-library(grid)
-library(ggplotify)
-library(data.table)
-dat <- fread('{input}', header=T, sep='\\t')
-{params.filterDat[technameFilterString]}
-{params.filterDat[capDesignFilterString]}
-
-{params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
-{params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
-{params.filterDat[graphDimensions]}
-{params.filterDat[splicingStatusFilterString]}
-
-dat\$end <- factor(dat\$end)
-
-plotBase <- \\"p <- ggplot(dat, aes(x=normDistance, color=end)) +
-stat_density(geom='line', adjust=3) +
-scale_color_manual(values=c('5' = '#009900', '3' = '#800000')) +
-xlab('Normalized distance of read ends to TM\\'s TSS') +
-{GGPLOT_PUB_QUALITY}+ \\"
-
-{params.filterDat[facetPlotSetup]}
-
-save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-
-save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-
-save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-
-
-" > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
-
-cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
-
-
-
-		'''
-
-
-rule plotAbsFiveTmEndsStats:
-	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
-	output:
-		five=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.5p.abs.stats"),
-	params:
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname, wildcards.splicedStatus)
-	conda: "envs/R_env.yml"
-	shell:
-		'''
-
-echo "
-library(ggplot2)
-
-library(cowplot)
-library(scales)
-library(gridExtra)
-library(grid)
-library(ggplotify)
-library(data.table)
-library(dplyr)
-
-dat <- fread('{input}', header=T, sep='\\t')
-{params.filterDat[technameFilterString]}
-{params.filterDat[capDesignFilterString]}
-
-{params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
-{params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
-{params.filterDat[graphDimensions]}
-{params.filterDat[splicingStatusFilterString]}
-
-dat <- subset(dat, end==5)
-
-dat\$end <- factor(dat\$end)
-summaryStatsFive = transform(summarise(group_by(dat,seqTech, sizeFrac, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
-
-
-plotBase <- \\"p <- ggplot(dat, aes(x=distance)) +
-geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
-scale_fill_manual(values=c('5' = '#009900'), name='End', labels =c('5' = '5´')) +
-xlab('Distance of read ends\\nto TM´s TSS (mature RNA nts)') +
-geom_text(data = summaryStatsFive, aes(label = Label, x = 0, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
-coord_cartesian(xlim=c(0, 2000)) +
-{GGPLOT_PUB_QUALITY}+ \\"
-
-{params.filterDat[facetPlotSetup]}
-
-save_plot('{output.five[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output.five[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-
-save_plot('{output.five[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output.five[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-
-save_plot('{output.five[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.five[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output.five[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output.five[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output.five[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output.five[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-
-" > $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r
-
-cat $(dirname {output.five[0]})/$(basename {output.five[0]} .5p.abs.stats.legendOnly.png).r | R --slave
-
-
-		'''
-
-
-rule plotAbsThreeTmEndsStats:
-	input: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
-	output:
-		three=returnPlotFilenames(config["PLOTSDIR"] + "TmEndsStats.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.TmEndsStats.3p.abs.stats"),
-	conda: "envs/R_env.yml"
-	params:
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname, wildcards.splicedStatus)
-	shell:
-		'''
-
-echo "
-library(ggplot2)
-
-library(cowplot)
-library(scales)
-library(gridExtra)
-library(grid)
-library(ggplotify)
-library(data.table)
-library(dplyr)
-
-dat <- fread('{input}', header=T, sep='\\t')
-{params.filterDat[technameFilterString]}
-{params.filterDat[capDesignFilterString]}
-
-{params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
-{params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
-{params.filterDat[graphDimensions]}
-{params.filterDat[splicingStatusFilterString]}
-
-dat <- subset(dat, end==3)
-dat\$end <- factor(dat\$end)
-
-summaryStatsThree = transform(summarise(group_by(dat,seqTech, sizeFrac, tissue), Label = paste0('N= ', comma(length(distance)), '\\n', 'Median= ', comma(median(distance)))))
-
-
-plotBase <- \\"p <- ggplot(dat, aes(x=distance)) +
-geom_histogram(aes(y=..density..,fill=end), binwidth=50) +
-scale_fill_manual(values=c('3' = '#800000'), name='End', labels =c('3' = '3´')) +
-xlab('Distance of read ends\\n to TM´s 3´ end (mature RNA nts)') +
-geom_text(data = summaryStatsThree, aes(label = Label, x = -Inf, y = Inf), hjust=0, vjust=1,  size=geom_textSize) +
-coord_cartesian(xlim=c(-2000, 0)) +
-{GGPLOT_PUB_QUALITY}+ \\"
-
-{params.filterDat[facetPlotSetup]}
-
-save_plot('{output.three[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output.three[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-
-save_plot('{output.three[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output.three[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-
-save_plot('{output.three[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.three[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output.three[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output.three[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output.three[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output.three[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-
-" > $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r
-
-cat $(dirname {output.three[0]})/$(basename {output.three[0]} .5p.abs.stats.legendOnly.png).r | R --slave
-
 
 		'''
 

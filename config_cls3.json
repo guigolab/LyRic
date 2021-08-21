@@ -1,5 +1,5 @@
 {
-  "LR_FASTQDIR": "fastqs/",
+  ""fastqs/"": "fastqs/",
   "GENOMESDIR": "/users/rg/jlagarde/genomes/",
   "TARGETSDIR": "targets/",
   "PLOTSDIR": "plots/",

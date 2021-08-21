@@ -26,11 +26,11 @@ Customize *config.json and cluster_config.json to your needs
 # Input
 
 - `config[SAMPLE_ANNOT]`
-- LR FASTQ files in `config[LR_FASTQDIR]`
+- `capDesignToTargetsGff`: non-overlapping targeted regions (only for RNA capture samples), labelled by target type using the `gene_type` GFF attribute **if required** 
+- LR FASTQ files in `config["fastqs/"]`
 - genomes.fa
 - Illumina FASTQ files in `config[HISEQ_FASTQDIR]` **if required**
 - Reference annotation GTFs in `config[genomeToAnnotGtf]`  **if required**
-- GTF of targeted regions in `config[TARGETSDIR] + "{capDesign}_primary_targets.exons.reduced.gene_type.segments.gtf"`  **if required** 
 - TSV containing SIRV info (<transcript_id>{tab}<length>{tab}<concentration> in `config[SIRVinfo]` **if required** 
 - "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
 - The `{capDesign}` wildcard of samples that didn't undergo targeted RNA capture should match the following regex: `\S+preCap$`

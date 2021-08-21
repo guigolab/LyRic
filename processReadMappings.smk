@@ -1,10 +1,10 @@
 rule integratePolyaAndSjInfo:
 	input:
-		polyA = "mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		SJs = "mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz"
+		polyA = "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		SJs = "output/mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz"
 	output:
-		strandInfo="mappings/integratePolyaAndSjInfo/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv",
-		wrongPolyAs="mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
+		strandInfo="output/mappings/integratePolyaAndSjInfo/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv",
+		wrongPolyAs="output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -24,9 +24,9 @@ mv {config[TMPDIR]}/$uuidTmpOutS {output.strandInfo}
 
 rule removeWrongPolyAs:
 	input:
-		polyA="mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
-		wrongPolyAs="mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
-	output: "mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+		polyA="output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed",
+		wrongPolyAs="output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.wrongPolyAs.list"
+	output: "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -36,9 +36,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule strandGffs:
 	input:
-		gff = "mappings/readBedToGff/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz",
-		strandInfo = "mappings/integratePolyaAndSjInfo/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv"
-	output: "mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
+		gff = "output/mappings/readBedToGff/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gff.gz",
+		strandInfo = "output/mappings/integratePolyaAndSjInfo/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyA+SJ.strandInfo.tsv"
+	output: "output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -50,11 +50,11 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 rule removeIntraPriming:
 	input: 
-		strandedGff="mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
+		strandedGff="output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	output: 
-		list="mappings/intraPriming/{techname}_{capDesign}_{sizeFrac}_{barcodes}.list",
-		stats=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats.tsv"
+		list="output/mappings/intraPriming/{techname}_{capDesign}_{sizeFrac}_{barcodes}.list",
+		stats="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats.tsv"
 	conda: "envs/perl_env.yml"
 	shell:
 		'''
@@ -79,8 +79,8 @@ rm {config[TMPDIR]}/$uuid*
 		'''
 
 rule aggIntraPrimingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.intraPriming.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.intraPriming.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -90,8 +90,8 @@ mv {config[TMPDIR]}/$uuid {output}
 		'''
 
 rule plotIntraPrimingStats:
-	input: config["STATSDATADIR"] + "all.intraPriming.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "intraPriming.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats")
+	input: "output/statsFiles/" + "all.intraPriming.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "intraPriming.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
@@ -154,16 +154,16 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule highConfidenceReads:
 	input:
-		transcriptStrandInfo = "mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz",
-		strandedReads = "mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
-		bam = "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		intraPriming="mappings/intraPriming/{techname}_{capDesign}_{sizeFrac}_{barcodes}.list"
+		transcriptStrandInfo = "output/mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{barcodes}.transcripts.tsv.gz",
+		strandedReads = "output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz",
+		bam = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		intraPriming="output/mappings/intraPriming/{techname}_{capDesign}_{sizeFrac}_{barcodes}.list"
 	params: 
 		minSJsPhredScore = lambda wildcards: sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['filter_SJ_Qscore']
 
 	output:
-		gff="mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz",
-		stats=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.highConfSplicedReads.stats.tsv"
+		gff="output/mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz",
+		stats="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.highConfSplicedReads.stats.tsv"
 	shell:
 		'''
 uuidTmpOutG=$(uuidgen)
@@ -204,8 +204,8 @@ mv {config[TMPDIR]}/$uuidTmpOutG {output.gff}
 		'''
 
 rule aggHighConfSplicedReadsStats:
-	input: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.highConfSplicedReads.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv"
+	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.highConfSplicedReads.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.highConfSplicedReads.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -216,8 +216,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule getHCGMintrons:
-	input: "mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
-	output: temp("mappings/highConfidenceReads/introns/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv")
+	input: "output/mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+	output: temp("output/mappings/highConfidenceReads/introns/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -228,12 +228,12 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getHiSeqSupportedHCGMs:
 	input:
-		hiSeqIntrons=lambda wildcards: "mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['use_matched_HiSeq'] else "/dev/null",
-		lrIntrons="mappings/highConfidenceReads/introns/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv",
-		hcgmGTF= "mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
+		hiSeqIntrons=lambda wildcards: "output/mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['use_matched_HiSeq'] else "/dev/null",
+		lrIntrons="output/mappings/highConfidenceReads/introns/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.introns.tsv",
+		hcgmGTF= "output/mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.strandedHCGMs.gff.gz"
 	params:
 		useHiSeq = lambda wildcards: 'pleasedo' if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.barcodes]['use_matched_HiSeq'] else 'donot'
-	output:"mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
+	output:"output/mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
 	shell:
 		'''
 
@@ -255,9 +255,9 @@ fi
 
 rule getHiSSStats:
 	input:
-		reads = "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		HiSSGTF="mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
-	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.tsv"
+		reads = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		HiSSGTF="output/mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.tsv"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -284,8 +284,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule aggHiSSStats:
-	input: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.HiSS.stats.tsv"
+	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.HiSS.stats.tsv"
 
 	shell:
 		'''
@@ -297,8 +297,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotAllHiSSStats:
-	input: config["STATSDATADIR"] + "all.HiSS.stats.tsv"
-	output:  returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats")
+	input: "output/statsFiles/" + "all.HiSS.stats.tsv"
+	output:  returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
@@ -362,9 +362,9 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 
-rule nonAnchoredMergeReads:
-	input: "mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
-	output: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff",
+rule mergedReads:
+	input: "output/mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz"
+	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff",
 	threads:1
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
@@ -375,9 +375,9 @@ zcat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
-rule nonAnchoredMergeUnfilteredSirvReads:
-	input: "mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
-	output: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.noFilt.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
+rule mergedUnfilteredSirvReads:
+	input: "output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.stranded.gff.gz"
+	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.noFilt.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
 	threads:1
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
@@ -394,8 +394,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule splitTmsBySplicedStatus:
-	input: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"
-	output: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"
+	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
 	params:
 		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
 	shell:
@@ -411,9 +411,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 
-rule nonAnchoredMergeReadsToBed:
-	input: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
-	output: temp("mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed")
+rule mergedReadsToBed:
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
+	output: temp("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -424,8 +424,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule getTmStats:
-	input: "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff.gz"
-	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff.gz"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 
 	shell:
 		'''
@@ -435,8 +435,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggTmStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport)
-	output: config["STATSDATADIR"] + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport)
+	output: "output/statsFiles/" + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -451,9 +451,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getMergingStats:
 	input:
-		hcgms = "mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz",
-		pooledMerged = "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
-	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats.tsv"
+		hcgms = "output/mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.gff.gz",
+		pooledMerged = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -466,9 +466,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule aggMergingStats:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
 
-	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.merged.stats.tsv"
+	output: "output/statsFiles/" + "all.min{minReadSupport}reads.merged.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -478,8 +478,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
 rule plotMergingStats:
-	input:  config["STATSDATADIR"] + "all.min{minReadSupport}reads.merged.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats")
+	input:  "output/statsFiles/" + "all.min{minReadSupport}reads.merged.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
@@ -546,9 +546,9 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule aggTmLengthStats:
 	input:
-		all=lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:all.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport),
-		fl=lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
-	output: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
+		all=lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:all.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport),
+		fl=lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=wildcards.minReadSupport)
+	output: "output/statsFiles/" + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -560,8 +560,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggHistTmLengthSummaryStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
-	output: summary=config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv"
+	input: "output/statsFiles/" + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
+	output: summary="output/statsFiles/" + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv"
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -583,9 +583,9 @@ mv {config[TMPDIR]}/$uuid {output.summary}
 
 
 rule plotHistTmLengthStats:
-	input: config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
+	input: "output/statsFiles/" + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
 	output: 
-		hist=returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats")
+		hist=returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname, wildcards.splicedStatus)
 	conda: "envs/R_env.yml"
@@ -669,13 +669,13 @@ cat $(dirname {output.hist[0]})/$(basename {output.hist[0]} .legendOnly.png).r |
 
 rule getGeneReadCoverageStats:
 	input: 
-		gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-		bam = "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		tmerge = "mappings/nonAnchoredMergeReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min2reads.splicing_status:all.endSupport:all.gff.gz",
+		gencode="output/annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
+		bam = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		tmerge = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min2reads.splicing_status:all.endSupport:all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: 
-		gencode="mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gencode.coverage.tsv",
-		tmerge="mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.coverage.tsv"
+		gencode="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{barcodes}.gencode.coverage.tsv",
+		tmerge="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.coverage.tsv"
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
 	conda: "envs/xtools_env.yml"
@@ -702,9 +702,9 @@ mv {config[TMPDIR]}/$uuid.4 {output.tmerge}
 		'''
 
 rule aggGeneReadCoverageStats:
-	input: lambda wildcards: expand("mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.coverage.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand("output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.coverage.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: 
-		config["STATSDATADIR"] + "all.tmerge.GeneReadCoverage.stats.tsv"
+		"output/statsFiles/" + "all.tmerge.GeneReadCoverage.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -715,8 +715,8 @@ mv {config[TMPDIR]}/$uuid {output}
 		'''
 
 rule plotGeneReadCoverageStats:
-	input: config["STATSDATADIR"] + "all.tmerge.GeneReadCoverage.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats")
+	input: "output/statsFiles/" + "all.tmerge.GeneReadCoverage.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"

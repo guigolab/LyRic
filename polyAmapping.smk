@@ -3,11 +3,11 @@
 
 rule polyAmapping:
 	input:
-		reads = "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		reads = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	params:
 		minAcontent=0.8
-	output: "mappings/polyAmapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
+	output: "output/mappings/polyAmapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
 	conda: "envs/perl_env.yml"
 	shell:
 		'''
@@ -19,8 +19,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule removePolyAERCCs:
-	input: "mappings/polyAmapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
-	output: temp("mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed")
+	input: "output/mappings/polyAmapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
+	output: temp("output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -29,8 +29,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getPolyAreadsList:
-	input: "mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
+	input: "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "output/mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -40,9 +40,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule getPolyAreadsStats:
 	input:
-		mappedReads= "mappings/readMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		polyAreads = "mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
-	output: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv"
+		mappedReads= "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		polyAreads = "output/mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -54,8 +54,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggPolyAreadsStats:
-	input: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
-	output: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
+	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	output: "output/statsFiles/" + "all.polyAreads.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -66,8 +66,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule plotAllPolyAreadsStats:
-	input: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats")
+	input: "output/statsFiles/" + "all.polyAreads.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
 	conda: "envs/R_env.yml"
@@ -131,8 +131,8 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule clusterPolyAsites:
-	input: "mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/clusterPolyAsites/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed"
+	input: "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
+	output: "output/mappings/clusterPolyAsites/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
@@ -142,9 +142,9 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 rule makePolyABigWigs:
 	input:
-		sites = "mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
+		sites = "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
-	output: "mappings/makePolyABigWigs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
+	output: "output/mappings/makePolyABigWigs/{techname}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''

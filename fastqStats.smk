@@ -1,6 +1,6 @@
 rule basicFASTQqc:
-	input: LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
-	output: LR_FASTQDIR + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
+	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+	output: "output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
 	shell:
 		'''
 
@@ -14,9 +14,9 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 		'''
 
 rule fastqTimestamps:
-	input: expand(LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: expand("fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 
-	output: config["STATSDATADIR"] + "all.fastq.timestamps.tsv"
+	output: "output/statsFiles/" + "all.fastq.timestamps.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -30,10 +30,10 @@ mv {config[TMPDIR]}/$uuid {output}
 
 #get read lengths for all FASTQ files:
 rule getReadLengthSummary:
-	input: LR_FASTQDIR + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
 	output: 
-		reads=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
-		summ=config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
+		reads="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
+		summ="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
 	conda: "envs/R_env.yml"
 	params:
 		bc=lambda wildcards: wildcards.barcodes
@@ -61,9 +61,9 @@ mv {config[TMPDIR]}/$uuidTmpOut.1 {output.summ}
 		'''
 
 rule aggReadLengthSummary:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
 	output: 
-		summary=config["STATSDATADIR"] + "all.readlength.summary.tsv"
+		summary="output/statsFiles/" + "all.readlength.summary.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -75,8 +75,8 @@ mv {config[TMPDIR]}/$uuid {output}
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
+	input: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
+	output: returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
 	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
