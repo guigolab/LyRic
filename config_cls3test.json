@@ -28,9 +28,6 @@
     "hg38": "annotations/hs.gencode24+SIRVS.gff",
     "mm10": "annotations/mm.gencodeM7+SIRVS.gff"
   },
-  "PLOTFORMATS": [
-    "png", "pdf"
-  ],
   "MINIMUM_TMERGE_READ_SUPPORT": [
     "2"
   ],

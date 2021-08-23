@@ -91,13 +91,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -264,13 +257,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -353,13 +339,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -484,13 +463,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -566,13 +538,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -710,17 +675,6 @@ save_plot('{output.bySS[2]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output.bySS[3]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output.bySS[4]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.bySS[5]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output.bySS[6]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output.bySS[7]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
-
-save_plot('{output.bySS[8]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.bySS[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-
-
-
 
 plotBase <- \\"p <- ggplot(datAll, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
 geom_abline(intercept=0, alpha=0.09, size=lineSize) +
@@ -769,14 +723,6 @@ save_plot('{output.all[2]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output.all[3]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output.all[4]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.all[5]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output.all[6]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output.all[7]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
-
-save_plot('{output.all[8]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output.all[9]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
 
 " > $(dirname {output.all[0]})/$(basename {output[0]} .legendOnly.png).r
 
@@ -1012,13 +958,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -1134,13 +1073,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -1240,13 +1172,6 @@ save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r

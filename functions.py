@@ -15,9 +15,9 @@ def returnPlotFilenames(basename):
 ### produce sets of plot filenames
 ###################################
 	plotsList = []
-	for comb in itertools.product(["legendOnly"], config["PLOTFORMATS"]):
+	for comb in itertools.product(["legendOnly"], plotFormat):
 		plotsList.append(basename + "." + comb[0] + "." + comb[1])
-	for comb in itertools.product(["xy", "yx"], ["wLegend", "woLegend"], config["PLOTFORMATS"]):
+	for comb in itertools.product(["xy", "yx"], ["wLegend", "woLegend"], plotFormat):
 		plotsList.append(basename + "." +
 						 comb[0] + "." + comb[1] + "." + comb[2])
 	return plotsList

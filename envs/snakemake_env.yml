@@ -103,12 +103,12 @@ dependencies:
   - libedit=3.1.20191231
   - libev=4.33
   - libffi=3.3
-  - libgcc-ng=9.3.0
+  - libgcc-ng=11.1.0
   - libgd=2.3.2
   - libgfortran-ng=9.3.0
   - libgfortran5=9.3.0
   - libglib=2.68.3
-  - libgomp=9.3.0
+  - libgomp=11.1.0
   - libiconv=1.16
   - liblapack=3.9.0
   - libnghttp2=1.43.0
@@ -196,8 +196,8 @@ dependencies:
   - slacker=0.14.0
   - smart_open=5.1.0
   - smmap=3.0.5
-  - snakemake=6.5.3
-  - snakemake-minimal=6.5.3
+  - snakemake=6.7.0
+  - snakemake-minimal=6.7.0
   - sqlite=3.36.0
   - stone=3.2.1
   - stopit=1.1.2
