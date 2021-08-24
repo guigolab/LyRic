@@ -7,7 +7,7 @@ def authorizeComb(comb):
 	AUTHORIZEDCOMBINATIONS.append(
 		(("techname", comb[0]), ("capDesign", comb[1])))
 	AUTHORIZEDCOMBINATIONS.append(
-		(("techname", comb[0]), ("capDesign", comb[1]), ("sizeFrac", comb[2]), ("barcodes", comb[3])))
+		(("techname", comb[0]), ("capDesign", comb[1]), ("sizeFrac", comb[2]), ("sampleRep", comb[3])))
 
 
 def returnPlotFilenames(basename): 
@@ -31,7 +31,7 @@ def filtered_product(*args):
 	# args[0]: techname
 	# args[1]: capDesign
 	# args[2]: sizeFrac (optional)
-	# args[3]: barcodes (optional)
+	# args[3]: sampleRep (optional)
 	# args[>3] are ignored by filter but returned if args[0:3] pass
 
 	if len(args) < 2:
@@ -58,7 +58,7 @@ def nonPreCapOnly(capDList):
 	yield(auth)
 
 
-def multi_figures(capDesign, sizeFrac, barcodes, techname, splicing_status=None): 
+def multi_figures(capDesign, sizeFrac, sampleRep, techname, splicing_status=None): 
 ################################################
 ### return ggplot figure settings as dictionary
 ################################################
@@ -66,7 +66,7 @@ def multi_figures(capDesign, sizeFrac, barcodes, techname, splicing_status=None)
 	figure_settings['technameFilterString'] = ''
 	figure_settings['hideXaxisLabels'] = "theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
 	removeFacetLabels = ''
-	if techname not in ('byTech') and capDesign not in ('byCapDesign') and barcodes not in ('byTissue'):
+	if techname not in ('byTech') and capDesign not in ('byCapDesign') and sampleRep not in ('byTissue'):
 		removeFacetLabels = """
 plotFacetXy <- parse(text =paste(plotFacetXy, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
 plotFacetYx <- parse(text=paste(plotFacetYx, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
@@ -147,13 +147,13 @@ wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 	figure_settings['sizeFracFilterString'] += "dat <- subset(dat, sizeFrac=='" + \
 		sizeFrac + "')\n"
-	if barcodes not in ('byTissue'):
+	if sampleRep not in ('byTissue'):
 		figure_settings['tissueFilterString'] += "dat <- subset(dat, tissue=='" + \
-			barcodes + "')\n"
+			sampleRep + "')\n"
 	return(figure_settings)
 
 
-def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSupport): 
+def trackHubSubGroupString(techname, capDesign, sizeFrac, sampleRep, minReadSupport): 
 #######################################################################
 ### return string to populate the "subGroup" UCSC Track Hub attributes 
 #######################################################################
@@ -162,9 +162,9 @@ def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSuppo
 	sizeFracs = []
 	for sizeF in sizeFrac:
 		sizeFracs.append(("sizeFrac", sizeF))
-	barCodes = []
-	for barC in barcodes:
-		barCodes.append(("barcodes", barC))
+	sampleReps = []
+	for sampleR in sampleRep:
+		sampleReps.append(("sampleRep", sampleR))
 	minRS = []
 	for minReadSupport in minReadSupport:
 		minRS.append(("minReadSupport", minReadSupport))
@@ -175,7 +175,7 @@ def trackHubSubGroupString(techname, capDesign, sizeFrac, barcodes, minReadSuppo
 	returnSubGroup1StringData = []
 	returnSubGroup2StringData = []
 	returnSubGroup3StringData = []
-	for wc_comb in itertools.product(techname, capDesign, sizeFracs, barCodes, minRS):
+	for wc_comb in itertools.product(techname, capDesign, sizeFracs, sampleReps, minRS):
 		if wc_comb[0:4] in AUTHORIZEDCOMBINATIONS:
 			returnSubGroup1StringData.append(
 				wc_comb[3][1] + "=" + wc_comb[3][1])

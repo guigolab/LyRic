@@ -177,7 +177,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
 
 rule makeTrackDbTechnameHeader:
 	params:
-		subGroupString=lambda wildcards: trackHubSubGroupString(wildcards.techname, wildcards.capDesign, SIZEFRACS,BARCODES, config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		subGroupString=lambda wildcards: trackHubSubGroupString(wildcards.techname, wildcards.capDesign, SIZEFRACS,SAMPLEREPS, config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		viewsString="allTMs=All_TMs flTMs=Full-length_TMs BAMs=BAMs"
 	output: temp("output/trackHub/" + "{techname}_{capDesign}_trackDbOutputHeader.txt")
 	shell:
@@ -201,10 +201,10 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule makeBamOutputTracks:
-	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam"
 	output:
-		bam="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		bai="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam.bai"
+		bam="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
+		bai="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.bai"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -221,18 +221,18 @@ mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
 
 
 rule makeBamOutputTrackDb:
-	input: "output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{barcodes}.bam"
+	input: "output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam"
 	output:
-		trackDb=temp("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_BamOutput.trackDb.txt")
+		trackDb=temp("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_BamOutput.trackDb.txt")
 
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "
-\ttrack {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_BAM
+\ttrack {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}_BAM
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {input})
-\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} BAMs
-\tlongLabel {config[PROJECT_NAME]} BAM (read alignments) (Protocol: {wildcards.techname}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes})
+\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.sampleRep} BAMs
+\tlongLabel {config[PROJECT_NAME]} BAM (read alignments) (Protocol: {wildcards.techname}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.sampleRep})
 \ttype bam
 \tbamColorMode gray
 \tbamGrayMode aliQual
@@ -241,7 +241,7 @@ echo -e "
 \talwaysZero on
 \tmaxHeightPixels 100:35:11
 \tparent {wildcards.techname}_{wildcards.capDesign}_output
-\tsubGroups filter=BAMs sample={wildcards.barcodes} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} 
+\tsubGroups filter=BAMs sample={wildcards.sampleRep} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} 
 
 " > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
@@ -254,13 +254,13 @@ mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
 
 rule makeTmergeOutputTracks:
 	input:
-		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
-		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
+		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
-		bigBed="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.bb",
-		gff="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.gff.gz",
-		trackDb=temp("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_TmergeOutput.min{minReadSupport}reads.trackDb.txt")
+		bigBed="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.bb",
+		gff="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.gff.gz",
+		trackDb=temp("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_TmergeOutput.min{minReadSupport}reads.trackDb.txt")
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -272,15 +272,15 @@ bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {config[TMPDI
 mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
 cp -f {input.gff} {output.gff}
 echo -e "
-\ttrack {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_{wildcards.minReadSupport}_TMs
+\ttrack {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}_{wildcards.minReadSupport}_TMs
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {output.bigBed})
-\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} min{wildcards.minReadSupport}reads TMs
-\tlongLabel {config[PROJECT_NAME]} Transcript models (Protocol: {wildcards.techname}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes}, Min. read support per TM: {wildcards.minReadSupport})
+\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.sampleRep} min{wildcards.minReadSupport}reads TMs
+\tlongLabel {config[PROJECT_NAME]} Transcript models (Protocol: {wildcards.techname}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.sampleRep}, Min. read support per TM: {wildcards.minReadSupport})
 \ttype bigBed 12
 \titemRgb on
 \tsearchIndex name
 \tparent {wildcards.techname}_{wildcards.capDesign}_output
-\tsubGroups filter=allTMs sample={wildcards.barcodes} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} minReadSupport={wildcards.minReadSupport}
+\tsubGroups filter=allTMs sample={wildcards.sampleRep} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} minReadSupport={wildcards.minReadSupport}
 
 " > {config[TMPDIR]}/$uuidTmpOutT
 mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
@@ -289,13 +289,13 @@ mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 
 rule makeFLTmergeOutputTracks:
 	input:
-		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.bed",
-		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.gff.gz",
+		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.bed",
+		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
-		bigBed="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{barcodes}_FL.tmerge.min{minReadSupport}reads.bb",
-		gff="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{barcodes}_FL.tmerge.min{minReadSupport}reads.gff.gz",
-		trackDb=temp("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt")
+		bigBed="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FL.tmerge.min{minReadSupport}reads.bb",
+		gff="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FL.tmerge.min{minReadSupport}reads.gff.gz",
+		trackDb=temp("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt")
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -308,15 +308,15 @@ mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
 cp -f {input.gff} {output.gff}
 
 echo -e "
-\ttrack {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.barcodes}_{wildcards.minReadSupport}_FL_TMs
+\ttrack {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}_{wildcards.minReadSupport}_FL_TMs
 \tbigDataUrl {TRACK_HUB_DATA_URL}$(basename {output.bigBed})
-\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.barcodes} min{wildcards.minReadSupport}reads FL TMs
-\tlongLabel {config[PROJECT_NAME]} Full-length transcript models (Protocol: {wildcards.techname}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.barcodes}, Min. read support per TM: {wildcards.minReadSupport})
+\tshortLabel {config[PROJECT_NAME]} {wildcards.techname} {wildcards.capDesign} {wildcards.sizeFrac} {wildcards.sampleRep} min{wildcards.minReadSupport}reads FL TMs
+\tlongLabel {config[PROJECT_NAME]} Full-length transcript models (Protocol: {wildcards.techname}, Capture design: {wildcards.capDesign}, Size fraction: {wildcards.sizeFrac}, Sample: {wildcards.sampleRep}, Min. read support per TM: {wildcards.minReadSupport})
 \ttype bigBed 12
 \titemRgb on
 \tsearchIndex name
 \tparent {wildcards.techname}_{wildcards.capDesign}_output
-\tsubGroups filter=flTMs sample={wildcards.barcodes} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} minReadSupport={wildcards.minReadSupport}
+\tsubGroups filter=flTMs sample={wildcards.sampleRep} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} minReadSupport={wildcards.minReadSupport}
 
 " > {config[TMPDIR]}/$uuidTmpOutT
 mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
@@ -333,9 +333,9 @@ rule catTrackDb:
 		lambda wildcards: expand("output/trackHub/" + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else None,
 		lambda wildcards: expand("output/trackHub/" + "{capDesign}_primary_targets.trackDb.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_trackDbOutputHeader.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}_BamOutput.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, barcodes=BARCODES),
+		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_BamOutput.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
 		lambda wildcards: expand("output/trackHub/" + "hiSeq_{capDesign}_BamOutput.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else None
 	output:
 		"output/trackHub/" + "{genome}/trackDb.txt"

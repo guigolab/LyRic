@@ -1,6 +1,6 @@
 rule basicFASTQqc:
-	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
-	output: "output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
+	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"
+	output: "output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt"
 	shell:
 		'''
 
@@ -14,7 +14,7 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 		'''
 
 rule fastqTimestamps:
-	input: expand("fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: expand("fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
 
 	output: "output/statsFiles/" + "all.fastq.timestamps.tsv"
 	shell:
@@ -30,13 +30,13 @@ mv {config[TMPDIR]}/$uuid {output}
 
 #get read lengths for all FASTQ files:
 rule getReadLengthSummary:
-	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"
 	output: 
-		reads="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
-		summ="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
+		reads="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlength.tsv.gz",
+		summ="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlengthSummary.tsv"
 	conda: "envs/R_env.yml"
 	params:
-		bc=lambda wildcards: wildcards.barcodes
+		bc=lambda wildcards: wildcards.sampleRep
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -61,7 +61,7 @@ mv {config[TMPDIR]}/$uuidTmpOut.1 {output.summ}
 		'''
 
 rule aggReadLengthSummary:
-	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
 	output: 
 		summary="output/statsFiles/" + "all.readlength.summary.tsv"
 	shell:
@@ -75,11 +75,11 @@ mv {config[TMPDIR]}/$uuid {output}
 
 # plot histograms with R:
 rule plotReadLength:
-	input: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
-	output: returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
+	input: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlength.tsv.gz"
+	output: returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats")
 	conda: "envs/R_env.yml"
 	params:
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
 	shell:
 		'''
 echo "
@@ -128,12 +128,12 @@ wYxPlot = wYxPlot * 1.2
 wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[2]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[3]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
 
-save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[4]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
