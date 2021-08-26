@@ -35,7 +35,7 @@ rule aggTargetCoverageStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | grep -v erccSpikein | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
@@ -62,9 +62,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 
@@ -201,7 +201,7 @@ rule aggGffCompareSirvStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tlevel\tmetric\tvalue" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tlevel\tmetric\tvalue" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -231,9 +231,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 plotBase <- \\"p <- ggplot(dat, aes(x=level, y=value)) +
@@ -286,7 +286,7 @@ rule aggSirvDetectionStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tSIRVid\tlength\tconcentration\tdetectionStatus" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tSIRVid\tlength\tconcentration\tdetectionStatus" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -317,9 +317,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 
@@ -406,7 +406,7 @@ rule aggGffCompareGencodeSnPrStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tlevel\tmetric\tvalue" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tlevel\tmetric\tvalue" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -436,9 +436,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 hXyPlot = hXyPlot +1
@@ -479,7 +479,7 @@ rule aggGffCompareStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
@@ -507,9 +507,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 
@@ -569,7 +569,7 @@ rule aggTmVsGencodeLengthStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tsplicingStatus\tlen\tref_match_len" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tsplicingStatus\tlen\tref_match_len" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -605,9 +605,9 @@ dat\$ref_match_len <- as.numeric(dat\$ref_match_len)
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 datAll <- subset(dat, splicingStatus=='all')
@@ -874,7 +874,7 @@ rule aggNovelIntergenicLociQcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\ttissue\\ttotal\\tcountMono\\tcountRepeats\\tminLengthAllTms\\tmedianLengthAllTms\\tmaxLengthAllTms\\tminLengthMonoTms\\tmedianLengthMonoTms\\tmaxLengthMonoTms\\tminLengthSplicedTms\\tmedianLengthSplicedTms\\tmaxLengthSplicedTms\\tpercentMono\\tpercentRepeats" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\ttotal\\tcountMono\\tcountRepeats\\tminLengthAllTms\\tmedianLengthAllTms\\tmaxLengthAllTms\\tminLengthMonoTms\\tmedianLengthMonoTms\\tmaxLengthMonoTms\\tminLengthSplicedTms\\tmedianLengthSplicedTms\\tmaxLengthSplicedTms\\tpercentMono\\tpercentRepeats" > {config[TMPDIR]}/$uuid
 cat {input}  | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 
@@ -901,7 +901,7 @@ rule aggNovelIntergenicLociStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | awk '{{if ($5!=0) print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t"($5-$6)/$5; else print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t0\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t0"}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
@@ -930,9 +930,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('intronic', 'intergenic')))
@@ -1020,7 +1020,7 @@ rule aggAnnotatedGeneDetectionStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuid
 cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tflGenes\\t"$6"\\t"$8"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonFlGenes\\t"$7"\\t"$9}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 
@@ -1048,9 +1048,9 @@ dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('flGenes', 'nonF
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=1, y=count, fill=category)) +
@@ -1111,7 +1111,7 @@ rule aggNtCoverageByGenomePartition:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\ttissue\\tsplicingStatus\\tpartition\\tnt_coverage_count\\tnt_coverage_percent" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tsplicingStatus\\tpartition\\tnt_coverage_count\\tnt_coverage_percent" > {config[TMPDIR]}/$uuid
 cat {input} | sort >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 
@@ -1140,9 +1140,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 dat <- filter(dat, splicingStatus=='all')

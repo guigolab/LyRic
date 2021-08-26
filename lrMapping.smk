@@ -77,7 +77,7 @@ rule aggBamqcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\terrorCategory\terrorRate" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\terrorCategory\terrorRate" > {config[TMPDIR]}/$uuid
 cat {input} | sort >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 
@@ -108,9 +108,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 
@@ -299,7 +299,7 @@ rule aggMappingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\ttotalReads\tmappedReads\tpercentMappedReads" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tmappedReads\tpercentMappedReads" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -327,9 +327,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percentMappedReads, fill=sizeFrac)) +
@@ -366,7 +366,7 @@ rule aggSpikeInsMappingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tERCCs\\t"$6"\\t"$8}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -394,9 +394,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 maxY <- max(dat\$percent)
@@ -505,7 +505,7 @@ rule aggReadToBiotypeBreakdownStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv  {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -534,9 +534,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 dat\$biotype=factor(dat\$biotype, levels=names({simpleBiotypes_Rpalette}), ordered=TRUE)  #otherwise the manual scale is not ordered correctly and "drop=FALSE" (include categories in scale that are absent from data frame) is ignored 

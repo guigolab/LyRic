@@ -40,7 +40,7 @@ rule getReadLengthSummary:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\ttissue\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
 
 zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| gzip >> {config[TMPDIR]}/$uuidTmpOut.gz
 
@@ -49,7 +49,7 @@ library(data.table)
 library(tidyverse)
 dat<-fread('{config[TMPDIR]}/$uuidTmpOut.gz', header=T, sep='\\t')
 dat %>%
-  group_by(seqTech, sizeFrac, capDesign, tissue) %>%
+  group_by(seqTech, sizeFrac, capDesign, sampleRep) %>%
   summarise(n=n(), median=median(length), mean=mean(length), max=max(length)) -> datSumm
 
 write_tsv(datSumm, '{config[TMPDIR]}/$uuidTmpOut.1')
@@ -79,7 +79,7 @@ rule plotReadLength:
 	output: returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats")
 	conda: "envs/R_env.yml"
 	params:
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname),
 	shell:
 		'''
 echo "
@@ -96,16 +96,16 @@ dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 wXyPlot = wXyPlot * 1.2
 
 dat\$sizeFrac_f=factor(dat\$sizeFrac, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
 dat %>%
-  group_by(seqTech, sizeFrac_f, capDesign, tissue) %>%
+  group_by(seqTech, sizeFrac_f, capDesign, sampleRep) %>%
   summarise(n=n(), med=median(length)) -> datSumm
 
 

@@ -66,7 +66,7 @@ def multi_figures(capDesign, sizeFrac, sampleRep, techname, splicing_status=None
 	figure_settings['technameFilterString'] = ''
 	figure_settings['hideXaxisLabels'] = "theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
 	removeFacetLabels = ''
-	if techname not in ('byTech') and capDesign not in ('byCapDesign') and sampleRep not in ('byTissue'):
+	if techname not in ('byTech') and capDesign not in ('byCapDesign') and sampleRep not in ('bySampleRep'):
 		removeFacetLabels = """
 plotFacetXy <- parse(text =paste(plotFacetXy, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
 plotFacetYx <- parse(text=paste(plotFacetYx, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
@@ -88,14 +88,14 @@ plotFacetYx <- parse(text=paste(plotFacetYx, \\" + theme(strip.text.x = element_
 dat\$seqTech <- gsub(':$', '', dat\$seqTech)
 dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
 """
-	figure_settings['substTissueString'] = "dat\$tissue <- gsub('" + \
-		capDesign + "_', '', dat\$tissue)\n"
+	figure_settings['substSampleRepString'] = "dat\$sampleRep <- gsub('" + \
+		capDesign + "_', '', dat\$sampleRep)\n"
 	figure_settings['capDesignFilterString'] = ''
 	figure_settings['sizeFracFilterString'] = ''
-	figure_settings['tissueFilterString'] = ''
+	figure_settings['sampleRepFilterString'] = ''
 	figure_settings['graphDimensions'] = """
 
-horizCats <- length(unique(dat\$capDesign)) * length(unique(dat\$tissue))
+horizCats <- length(unique(dat\$capDesign)) * length(unique(dat\$sampleRep))
 vertCats <- length(unique(dat\$seqTech))
 
 wXyPlot = (horizCats * 0.9) +1.7
@@ -109,8 +109,8 @@ minorLineSize=lineSize/2
 
 """
 	figure_settings['facetPlotSetup'] = f"""
-plotFacetXy <- parse(text =paste(plotBase, \\"facet_grid( seqTech ~ capDesign + tissue, scales='free_y')\\"))
-plotFacetYx <- parse(text=paste(plotBase, \\"facet_grid( capDesign + tissue ~ seqTech, scales='free_y')\\"))
+plotFacetXy <- parse(text =paste(plotBase, \\"facet_grid( seqTech ~ capDesign + sampleRep, scales='free_y')\\"))
+plotFacetYx <- parse(text=paste(plotBase, \\"facet_grid( capDesign + sampleRep ~ seqTech, scales='free_y')\\"))
 {removeFacetLabels}
 pXy <- eval(plotFacetXy)
 pYx <- eval(plotFacetYx)
@@ -147,8 +147,8 @@ wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 	figure_settings['sizeFracFilterString'] += "dat <- subset(dat, sizeFrac=='" + \
 		sizeFrac + "')\n"
-	if sampleRep not in ('byTissue'):
-		figure_settings['tissueFilterString'] += "dat <- subset(dat, tissue=='" + \
+	if sampleRep not in ('bySampleRep'):
+		figure_settings['sampleRepFilterString'] += "dat <- subset(dat, sampleRep=='" + \
 			sampleRep + "')\n"
 	return(figure_settings)
 

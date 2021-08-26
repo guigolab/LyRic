@@ -18,7 +18,7 @@ library(tidyverse)
 library(DT)
 
 concatMetadata <- function(df){
-	return(mutate(df, sample_name=paste(seqTech, capDesign, sizeFrac, tissue, sep='_'), seqTech=NULL, capDesign=NULL, sizeFrac=NULL, tissue=NULL))
+	return(mutate(df, sample_name=paste(seqTech, capDesign, sizeFrac, sampleRep, sep='_'), seqTech=NULL, capDesign=NULL, sizeFrac=NULL, sampleRep=NULL))
 }
 
 dat <- read.table("Rinput/all.readlength.summary.tsv", header=TRUE, sep='\t')
@@ -148,7 +148,7 @@ dat <- relocate(dat, '% spliced HCGMs', .after='% HCGM reads')
 dat <- relocate(dat, date_sequenced, .after=sample_name)
 dat <- relocate(dat, seqPlatform, .after=seqCenter)
 dat <- relocate(dat, species, .after=seqPlatform)
-dat <- relocate(dat, tissue, .after=species)
+dat <- relocate(dat, sampleRep, .after=species)
 dat <- relocate(dat, biosample_id, .after=sample_name)
 dat <- relocate(dat, reverse_transcriptase, .after=libraryPrep)
 dat <- mutate(dat, 'merge rate' = mergedTMs / HCGMreads)
@@ -298,7 +298,7 @@ tb <- formattable(dat,
 #write(htmlString, file='html/test.html')
 
 
-tbDt <- as.datatable(tb[order(tb$tissue), ], extensions = c('Buttons','ColReorder','FixedColumns', 'FixedHeader', 'KeyTable','RowGroup', 'Select', 'SearchPanes'), 
+tbDt <- as.datatable(tb[order(tb$sampleRep), ], extensions = c('Buttons','ColReorder','FixedColumns', 'FixedHeader', 'KeyTable','RowGroup', 'Select', 'SearchPanes'), 
 rownames=FALSE, 
 selection='none',
 options= list(

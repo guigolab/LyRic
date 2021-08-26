@@ -84,7 +84,7 @@ rule aggIntraPrimingStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\ttotalReads\tintraPrimed\tpercentIntraPrimed" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tintraPrimed\tpercentIntraPrimed" > {config[TMPDIR]}/$uuid
 cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 		'''
@@ -111,9 +111,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=percentIntraPrimed, fill=sizeFrac)) +
@@ -202,7 +202,7 @@ rule aggHighConfSplicedReadsStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\ttotalSplicedReads\tcanonSjReads\tnoFishySjReads\tnoFishyCanonSjReads" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalSplicedReads\tcanonSjReads\tnoFishySjReads\tnoFishyCanonSjReads" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
@@ -283,7 +283,7 @@ rule aggHiSSStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-mono\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-spliced\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonHCGM-mono\\t"$7"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonHCGM-spliced\\t"$8}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -311,9 +311,9 @@ dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('HCGM-mono', 'HC
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 plotBase <- \\"p <- ggplot(dat[order(dat\$category), ], aes(x=1, y=count, fill=category)) +
@@ -426,7 +426,7 @@ rule aggTmStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tspliced\tcontains_count\tend\tdistance\tnormDistance" | gzip > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tspliced\tcontains_count\tend\tdistance\tnormDistance" | gzip > {config[TMPDIR]}/$uuidTmpOut
 
 zcat {input} | perl -F"\\t" -slane '@ara=split(",", $F[8]); @arb=split(",", $F[9]); @arc=split(",", $F[10]), @ard=split(",", $F[11]); for ($i=0; $i<=$#ara; $i++){{$threepMinusDist=-$ara[$i];print  "$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t3\\t$threepMinusDist\\t$arc[$i]\\n$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t5\\t$arb[$i]\\t$ard[$i]"}}' | sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
@@ -458,7 +458,7 @@ rule aggMergingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGMreads\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tmergedTMs\\t"$6}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -485,9 +485,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 
@@ -531,7 +531,7 @@ rule aggTmLengthStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\ttranscript_id\tspliced\tmature_RNA_length\tcategory" |gzip> {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttranscript_id\tspliced\tmature_RNA_length\tcategory" |gzip> {config[TMPDIR]}/$uuidTmpOut
 
 zcat {input.all} |cut -f1-7| awk '{{print $0"\\tCLS_TMs"}}' |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
 zcat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
@@ -552,7 +552,7 @@ library(tidyverse)
 library(data.table)
 dat<-fread('{input}', header=T, sep='\\t')
 dat %>%
-  group_by(seqTech, sizeFrac, capDesign, tissue, category) %>%
+  group_by(seqTech, sizeFrac, capDesign, sampleRep, category) %>%
   summarise(med=median(mature_RNA_length), max=max(mature_RNA_length)) -> datSumm
 write_tsv(datSumm, '{config[TMPDIR]}/$uuid')
 " | R --slave
@@ -586,16 +586,16 @@ dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 {params.filterDat[splicingStatusFilterString]}
 
 wXyPlot = wXyPlot * 1.2
 
 dat %>%
-  group_by(seqTech, sizeFrac, capDesign, tissue, category) %>%
+  group_by(seqTech, sizeFrac, capDesign, sampleRep, category) %>%
   summarise(med=median(mature_RNA_length)) -> datSumm
 
 summaryStats = transform(datSumm, LabelM = comma(round(med, digits = 0))) 
@@ -680,7 +680,7 @@ rule aggGeneReadCoverageStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\ttissue\\tgene_id\\treadCount" > {config[TMPDIR]}/$uuid
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tgene_id\\treadCount" > {config[TMPDIR]}/$uuid
 cat {input} | cut -f1-4,8,9   >> {config[TMPDIR]}/$uuid
 mv {config[TMPDIR]}/$uuid {output}
 
@@ -711,20 +711,20 @@ dat<-fread('{input}', header=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 dat <- arrange(dat, desc(readCount))
-group_by(dat, seqTech, capDesign, sizeFrac, tissue) %>% mutate(rank=row_number()) -> dat
+group_by(dat, seqTech, capDesign, sizeFrac, sampleRep) %>% mutate(rank=row_number()) -> dat
 mutate(dat, rank=row_number()) -> dat
 dat <- mutate(dat, cumSum=cumsum(readCount))
 dat <- mutate(dat, cumProp=cumSum/sum(readCount))
 filter(dat, rank==10)  -> cumPropTop10Genes
 
 
-plotBase <- \\"p <- ggplot(dat, aes(x = rank, y = cumProp)) + geom_line(size=lineSize) + scale_x_log10() + ylim(0,1)+ geom_segment(data = cumPropTop10Genes, aes(x=10,xend=10,y=0,yend=cumProp), color='firebrick3',size=lineSize) + geom_segment(data = cumPropTop10Genes, aes(x=0,xend=10,y=cumProp,yend=cumProp,color='Contribution\\nof top 10 genes'),size=lineSize) + labs(y='Proportion of total mapped reads', x='# genes (ranked by expression)', color='') + scale_color_manual(values = c('Contribution\nof top 10 genes' = 'firebrick3')) + facet_grid( seqTech ~ capDesign + tissue) + geom_rect(data = cumPropTop10Genes, aes(xmin=0,xmax=10,ymin=0,ymax=cumProp),fill='firebrick3', alpha=0.3, size=0) +
+plotBase <- \\"p <- ggplot(dat, aes(x = rank, y = cumProp)) + geom_line(size=lineSize) + scale_x_log10() + ylim(0,1)+ geom_segment(data = cumPropTop10Genes, aes(x=10,xend=10,y=0,yend=cumProp), color='firebrick3',size=lineSize) + geom_segment(data = cumPropTop10Genes, aes(x=0,xend=10,y=cumProp,yend=cumProp,color='Contribution\\nof top 10 genes'),size=lineSize) + labs(y='Proportion of total mapped reads', x='# genes (ranked by expression)', color='') + scale_color_manual(values = c('Contribution\nof top 10 genes' = 'firebrick3')) + facet_grid( seqTech ~ capDesign + sampleRep) + geom_rect(data = cumPropTop10Genes, aes(xmin=0,xmax=10,ymin=0,ymax=cumProp),fill='firebrick3', alpha=0.3, size=0) +
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
 

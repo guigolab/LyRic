@@ -21,7 +21,7 @@ include: "functions.py"
 # consistent ggplot2 theme across R plots:
 GGPLOT_PUB_QUALITY="theme(axis.text= element_text(size=themeSize*1.8), axis.ticks = element_line(size=lineSize), axis.line = element_line(colour = '#595959', size=lineSize), axis.title=element_text(size = themeSize*2), panel.grid.major = element_line(colour='#d9d9d9', size=lineSize),panel.grid.minor = element_line(colour='#e6e6e6', size=minorLineSize),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'), legend.key.size=unit(0.5,'line'), legend.title=element_text(size=themeSize*1.2), legend.text=element_text(size=themeSize), strip.text = element_text(size = themeSize))"
 
-#list of stat plot formats to generate (only one is supported for the moment):
+#list of stat plot formats to generate (only one format at a time is supported):
 plotFormat=['png',]
 # color sizeFracs:
 sizeFrac_Rpalette="c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')"
@@ -123,7 +123,7 @@ AUTHORIZEDCOMBINATIONS = [] #contains combinations of wildcards corresponding to
 TECHNAMESplusBY=set(TECHNAMES)
 TECHNAMESplusBY.add("byTech")
 SAMPLEREPSplusBY=set(SAMPLEREPS)
-SAMPLEREPSplusBY.add("byTissue")
+SAMPLEREPSplusBY.add("bySampleRep")
 CAPDESIGNSplusBY=set(CAPDESIGNS)
 CAPDESIGNSplusBY.add("byCapDesign")
 
@@ -138,9 +138,9 @@ for comb in itertools.product(TECHNAMESplusBY,CAPDESIGNSplusBY,SIZEFRACS,SAMPLER
 		filesList=glob.glob("fastqs/" + comb[0] + "_" + "*" + "_" + comb[2] + "_" + comb[3] + ".fastq.gz")
 		if(len(filesList)>1): #authorize "byCapDesign" combination only if it's relevant
 			authorizeComb(comb)
-	elif comb[3] == "byTissue":
+	elif comb[3] == "bySampleRep":
 		filesList=glob.glob("fastqs/" + comb[0] + "_" + comb[1] + "_" + comb[2] + "_" + "*" + ".fastq.gz")
-		if(len(filesList)>1): #authorize "byTissue" combination only if it's relevant
+		if(len(filesList)>1): #authorize "bySampleRep" combination only if it's relevant
 			authorizeComb(comb)
 	elif(os.path.isfile("fastqs/" + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or
 	os.path.isfile("fastqs/" + comb[0] + "_" + comb[1] + "_" + comb[2]  + "_" + comb[3] + ".fastq.gz")):

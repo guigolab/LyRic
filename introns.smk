@@ -72,7 +72,7 @@ rule aggCompareClsGencodeSJsStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
 cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
@@ -103,9 +103,9 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[capDesignFilterString]}
 
 {params.filterDat[sizeFracFilterString]}
-{params.filterDat[tissueFilterString]}
+{params.filterDat[sampleRepFilterString]}
 {params.filterDat[substSeqTechString]}
-{params.filterDat[substTissueString]}
+{params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
 dat\$category<-factor(dat\$category, ordered=TRUE, levels=rev(c('common', 'novel')))
