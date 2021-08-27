@@ -109,6 +109,32 @@ for sample_name in SAMPLES:
 	assert len(sampleRow) < 2, "Duplicate found for sample " + sample_name + " in " + config['SAMPLE_ANNOT']
 	assert len(sampleRow) > 0, "Sample " + sample_name + " not found in " + config['SAMPLE_ANNOT']
 
+#drop rows of sampleAnnot whose sample_name are not in SAMPLES list:
+sampleAnnot = sampleAnnot[sampleAnnot['sample_name'].isin(SAMPLES)]
+
+##########################################################################
+### Make mapping dict of sampleRep group ID (a sample, most of the times)
+### to list of sampleReps belonging to this group.
+### config['sampleRepGroupBy'] contains the list of attributes to group
+### sampleReps on. These attributes are column names in the sample
+### annotation file (config['SAMPLE_ANNOT'])
+##########################################################################
+
+# group samples contained in sampleAnnot by attributes listed in config['sampleRepGroupBy']
+sampleRepGroups=sampleAnnot.groupby(config['sampleRepGroupBy'])
+# initialize dict that will contain mapping of sampleRep group ID to list of sampleReps belonging to this group:
+sampleRepGroupIdToSampleReps={} 
+# populate sampleRepGroupIdToSampleReps:
+for key, item in sampleRepGroups:
+	# remove spaces from group identifiers, because they will serve as file basenames
+	sampleRepGroupId='_'.join(key).replace(' ', '')
+	# assign list of sample_names (dict value) to sampleRepGroupId (dict key)
+ 	sampleRepGroupIdToSampleReps[sampleRepGroupId]=item['sample_name'].to_list() 
+################
+### Done!
+################
+
+#convert sampleAnnot to dict to facilitate later access
 sampleAnnot.set_index('sample_name', inplace=True)
 sampleAnnotDict = sampleAnnot.to_dict('index')
 
@@ -168,6 +194,7 @@ rule all:
 	input:
 		# transcriptome GTFs:
 		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.endSupport:all.gff", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		expand(returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null', # facetted histograms of read length
 		expand("output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),

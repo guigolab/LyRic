@@ -361,6 +361,17 @@ zcat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
+rule mergedReadsGroupedSampleReps:
+	input: getMergedSampleReps
+	output: "output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.endSupport:all.gff"
+	shell:
+		'''
+uuidTmpOut=$(uuidgen)
+cat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport 1 --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
+mv {config[TMPDIR]}/$uuidTmpOut {output}
+
+		'''
+
 rule mergedUnfilteredSirvReads:
 	input: "output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.stranded.gff.gz"
 	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.noFilt.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",

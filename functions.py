@@ -189,3 +189,13 @@ def trackHubSubGroupString(techname, capDesign, sizeFrac, sampleRep, minReadSupp
 	returnSubGroup3StringData = set(returnSubGroup3StringData)
 
 	return(returnSubGroup1String + " " + " ".join(sorted(returnSubGroup1StringData)) + "\n" + returnSubGroup2String + " " + " ".join(sorted(returnSubGroup2StringData)) + "\n" + returnSubGroup3String + " " + " ".join(sorted(returnSubGroup3StringData)))
+
+
+def getMergedSampleReps(wildcards):
+#######################################################################
+### return list of input files to merge into grouped samples
+#######################################################################
+	inputFiles=[]
+	for comb in itertools.product(sampleRepGroupIdToSampleReps[wildcards.groupedSampleRepBasename], wildcards.minReadSupport):
+		inputFiles.append("output/mappings/mergedReads/" + comb[0] + ".HiSS.tmerge.min" + comb[1] + "reads.endSupport:all.gff")
+	return(inputFiles)

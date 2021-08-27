@@ -27,7 +27,14 @@ Customize *config.json and cluster_config.json to your needs
 
 - `config[SAMPLE_ANNOT]`
 - `capDesignToTargetsGff`: non-overlapping targeted regions (only for RNA capture samples), labelled by target type using the `gene_type` GFF attribute **if required** 
-- LR FASTQ files in `config["fastqs/"]`
+- LR FASTQ files in "fastqs/" subdirectory
+	- File naming scheme for LR FASTQ files: `"fastqs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"` where:
+		- `{techname}`
+		- `{capDesign}`
+		- `{sizeFrac}`
+		- `{sampleRep}` should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the 'tissue' column of the corresponding row in the `config[SAMPLE_ANNOT]` sample annotation file. `\d{2}Rep\d+` is there to identify multiple replicates of the same experiments.
+
+	
 - genomes.fa
 - Illumina FASTQ files in `config[HISEQ_FASTQDIR]` **if required**
 - Reference annotation GTFs in `config[genomeToAnnotGtf]`  **if required**
