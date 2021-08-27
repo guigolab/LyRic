@@ -367,7 +367,7 @@ rule mergedReadsGroupedSampleReps:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport 1 --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
+cat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport 1 --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
