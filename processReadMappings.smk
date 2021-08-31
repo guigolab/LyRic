@@ -351,7 +351,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule mergedReads:
 	input: "output/mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.gff.gz"
-	output: temp("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"),
+	output: temp("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport-all.gff"),
 	threads:1
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
@@ -364,7 +364,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule mergedUnfilteredSirvReads:
 	input: "output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.stranded.gff.gz"
-	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.noFilt.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
+	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.noFilt.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
 	threads:1
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
@@ -381,8 +381,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule splitTmsBySplicedStatus:
-	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"
-	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport-all.gff"
+	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-all.gff.gz"
 	params:
 		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
 	shell:
@@ -395,7 +395,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 rule catMergedReadsForGroupedSampleReps:
 	input: getMergedSampleReps
-	output: temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff")
+	output: temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff")
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -404,10 +404,10 @@ mv {config[TMPDIR]}/$uuid {output}
 		'''
 
 rule mergedReadsGroupedSampleReps:
-	input: "output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+	input: "output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff"
 	output: 
-		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
-		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.readsToTm.tsv.gz"
+		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
+		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -430,8 +430,8 @@ mv {config[TMPDIR]}/$uuid.tsv.gz {output.readToTmTsv}
 
 
 rule mergedReadsToBed:
-	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
-	output: temp("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed")
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz"
+	output: temp("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -442,8 +442,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 
 rule getTmStats:
-	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.gff.gz"
-	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.gff.gz"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.TmStats.stats.tsv.gz"
 
 	shell:
 		'''
@@ -453,8 +453,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule aggTmStats:
-	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport)
-	output: "output/statsFiles/" + "all.{capDesign}.min{minReadSupport}.endSupport:{endSupport}.TmStats.stats.tsv.gz"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport, endSupport=wildcards.endSupport)
+	output: "output/statsFiles/" + "all.{capDesign}.min{minReadSupport}.endSupport-{endSupport}.TmStats.stats.tsv.gz"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -470,7 +470,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule getMergingStats:
 	input:
 		hcgms = "output/mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.gff.gz",
-		pooledMerged = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz"
+		pooledMerged = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz"
 	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.merged.stats.tsv"
 	shell:
 		'''
@@ -557,8 +557,8 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule aggTmLengthStats:
 	input:
-		all=lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:all.endSupport:all.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport),
-		fl=lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
+		all=lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-all.endSupport-all.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport),
+		fl=lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-all.endSupport-cagePolyASupported.TmStats.stats.tsv.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
 	output: "output/statsFiles/" + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
 	shell:
 		'''
@@ -596,7 +596,7 @@ mv {config[TMPDIR]}/$uuid {output.summary}
 rule plotHistTmLengthStats:
 	input: "output/statsFiles/" + "all.min{minReadSupport}reads.matureRNALength.stats.tsv.gz"
 	output: 
-		hist=returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats")
+		hist=returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.matureRNALength.hist.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname, wildcards.splicedStatus)
 	conda: "envs/R_env.yml"
@@ -675,7 +675,7 @@ rule getGeneReadCoverageStats:
 	input: 
 		gencode="output/annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		bam = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
-		tmerge = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min2reads.splicing_status:all.endSupport:all.gff.gz",
+		tmerge = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min2reads.splicing_status-all.endSupport-all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: 
 		gencode="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.gencode.coverage.tsv",

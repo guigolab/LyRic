@@ -254,8 +254,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
 
 rule makeTmergeOutputTracks:
 	input:
-		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
-		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
+		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed",
+		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
 		bigBed="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.bb",
@@ -289,8 +289,8 @@ mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
 
 rule makeFLTmergeOutputTracks:
 	input:
-		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.bed",
-		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:cagePolyASupported.gff.gz",
+		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-cagePolyASupported.bed",
+		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-cagePolyASupported.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
 		bigBed="output/trackHub/" + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FL.tmerge.min{minReadSupport}reads.bb",

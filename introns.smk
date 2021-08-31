@@ -39,7 +39,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule getClsSpliceJunctions:
-	input:"output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:spliced.endSupport:all.gff.gz"
+	input:"output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-spliced.endSupport-all.gff.gz"
 	output: "output/mappings/mergedReads/spliceJunctions/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.spliceJunctions.list"
 	shell:
 		'''

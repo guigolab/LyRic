@@ -59,14 +59,14 @@ sirvAccuracyStats <- spread(select(sirvAccuracyStats, -level), metric, value)
 sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV Tx Sn' = 'Sn')
 sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV Tx Pr' = 'Pr')
 
-cagePolyASupportStats <- read.table('Rinput/all.min2reads.splicing_status:all.cagePolyASupport.stats.tsv', header=TRUE, sep='\t')
+cagePolyASupportStats <- read.table('Rinput/all.min2reads.splicing_status-all.cagePolyASupport.stats.tsv', header=TRUE, sep='\t')
 cagePolyASupportStats <- select(cagePolyASupportStats, -count)
 cagePolyASupportStats <- spread(cagePolyASupportStats, category, percent)
 cagePolyASupportStats <- select(cagePolyASupportStats, -cageOnly, -noCageNoPolyA, -polyAOnly)
 cagePolyASupportStats <- concatMetadata(cagePolyASupportStats)
 cagePolyASupportStats <- rename(cagePolyASupportStats, '% FL TMs' = cageAndPolyA)
 
-novelLociStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:all.novelLoci.stats.tsv', header=TRUE, sep='\t')
+novelLociStats <- read.table('Rinput/all.tmerge.min2reads.endSupport-all.novelLoci.stats.tsv', header=TRUE, sep='\t')
 novelLociStats <- concatMetadata(novelLociStats)
 novelLociStats <- select(novelLociStats, -percent)
 novelLociStats <- spread(novelLociStats, category, count)
@@ -75,7 +75,7 @@ novelLociStats <- mutate(novelLociStats, 'novelLoci'=novelIntergenicLoci+novelIn
 novelLociStats <- mutate(novelLociStats, percentIntergenicNovelLoci=novelIntergenicLoci/novelLoci)
 novelLociStats <- select(novelLociStats, -novelIntergenicLoci, -novelIntronicLoci)
 
-novelFlLociStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:cagePolyASupported.novelLoci.stats.tsv', header=TRUE, sep='\t')
+novelFlLociStats <- read.table('Rinput/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.stats.tsv', header=TRUE, sep='\t')
 novelFlLociStats <- concatMetadata(novelFlLociStats)
 novelFlLociStats <- select(novelFlLociStats, -percent)
 novelFlLociStats <- spread(novelFlLociStats, category, count)
@@ -83,14 +83,14 @@ novelFlLociStats <- rename(novelFlLociStats, 'novelIntergenicFlLoci'=intergenic,
 novelFlLociStats <- mutate(novelFlLociStats, 'novelFlLoci'=novelIntergenicFlLoci+novelIntronicFlLoci)
 novelFlLociStats <- select(novelFlLociStats, -novelIntergenicFlLoci, -novelIntronicFlLoci)
 
-novelLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:all.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
+novelLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport-all.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
 novelLociQcStats <- concatMetadata(novelLociQcStats)
 novelLociQcStats <- mutate(novelLociQcStats, countSpliced=total-countMono, percentSpliced=1-percentMono)
 novelLociQcStats <- select(novelLociQcStats, -total, -minLengthAllTms, -minLengthMonoTms, -minLengthSplicedTms, -countMono, -percentMono)
 novelLociQcStats <- relocate(novelLociQcStats, percentSpliced, .after=countSpliced)
 novelLociQcStats <- relocate(novelLociQcStats, percentRepeats, .after=countRepeats)
 
-novelFlLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:cagePolyASupported.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
+novelFlLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
 novelFlLociQcStats <- concatMetadata(novelFlLociQcStats)
 novelFlLociQcStats <- mutate(novelFlLociQcStats, countSpliced=total-countMono, percentSpliced=1-percentMono)
 novelFlLociQcStats <- select(novelFlLociQcStats, -total, -minLengthAllTms, -minLengthMonoTms, -minLengthSplicedTms, -countMono, -percentMono)
@@ -99,7 +99,7 @@ novelFlLociQcStats <- relocate(novelFlLociQcStats, percentRepeats, .after=countR
 novelFlLociQcStats <- rename(novelFlLociQcStats, countFlLociSpliced=countSpliced, '% FL spliced novel loci'=percentSpliced, '# FL novel loci on repeats'=countRepeats, '% FL novel loci on repeats'=percentRepeats, 'median length all TMs (FL novel loci)'=medianLengthAllTms, 'max length all TMs (FL novel loci)'=maxLengthAllTms, 'median length monoexonic TMs (FL novel loci)'=medianLengthMonoTms, 'max length monoexonic TMs (FL novel loci)'=maxLengthMonoTms, 'median length spliced TMs (FL novel loci)'=medianLengthSplicedTms, 'max length spliced TMs (FL novel loci)'=maxLengthSplicedTms)
 
 
-ntCoverageStats <- read.table("Rinput/all.tmerge.min2reads.endSupport:all.vs.ntCoverageByGenomePartition.stats.tsv", header=TRUE, sep='\t')
+ntCoverageStats <- read.table("Rinput/all.tmerge.min2reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv", header=TRUE, sep='\t')
 ntCoverageStats <- concatMetadata(ntCoverageStats)
 ntCoverageStats <- filter(ntCoverageStats, splicingStatus=="all")
 ntCoverageStats <- select(ntCoverageStats, -splicingStatus)

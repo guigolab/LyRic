@@ -1,5 +1,5 @@
 rule extractPooledTmsFivepEnds:
-	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed"
 	output: "output/mappings/mergedReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.5pEnds.bed"
 	shell:
 		'''
@@ -11,7 +11,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule cageSupportedfivepEnds:
 	input:
 		fivePends="output/mappings/mergedReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.5pEnds.bed",
-		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed",
 		cagePeaks=lambda wildcards: GENOMETOCAGEPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: "output/mappings/mergedReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed"
@@ -28,7 +28,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule dhsSupportedfivepEnds:
 	input:
 		fivePends="output/mappings/mergedReads/5pEnds/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.5pEnds.bed",
-		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed",
 		dhsPeaks=lambda wildcards: GENOMETODHSPEAKS[CAPDESIGNTOGENOME[wildcards.capDesign]],
 	output: "output/mappings/mergedReads/dhsSupported/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed"
 	conda: "envs/xtools_env.yml"
@@ -91,7 +91,7 @@ cat {output}.r | R --slave
 
 
 rule extractPooledTmsThreepEnds:
-	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed"
+	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed"
 	output: "output/mappings/mergedReads/3pEnds/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.3pEnds.bed"
 	shell:
 		'''
@@ -103,7 +103,7 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 rule polyASupportedthreepEnds:
 	input:
 		threePends="output/mappings/mergedReads/3pEnds/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.3pEnds.bed",
-		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:all.bed",
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed",
 		polyAsites="output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	conda: "envs/xtools_env.yml"
@@ -123,14 +123,14 @@ rule getCagePolyASupport:
 	input:
 		polyA="output/mappings/mergedReads/polyASupported/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed",
 		cage="output/mappings/mergedReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed",
-		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:all.gff.gz"
+		tms="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-all.gff.gz"
 	output:
-		stats="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",
-		FLbed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.bed",
-		cageOnlyBed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cageOnlySupported.bed",
-		polyAOnlyBed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:polyAOnlySupported.bed",
-		noCageNoPolyABed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:noCageNoPolyASupported.bed",
-		FLgff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:cagePolyASupported.gff.gz"
+		stats="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats.tsv",
+		FLbed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-cagePolyASupported.bed",
+		cageOnlyBed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-cageOnlySupported.bed",
+		polyAOnlyBed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-polyAOnlySupported.bed",
+		noCageNoPolyABed="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-noCageNoPolyASupported.bed",
+		FLgff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-cagePolyASupported.gff.gz"
 
 	shell:
 		'''
@@ -174,8 +174,8 @@ mv {config[TMPDIR]}/$uuidTmpOutS {output.stats}
 
 
 rule aggCagePolyAStats:
-	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
-	output: "output/statsFiles/" + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
+	output: "output/statsFiles/" + "all.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -186,8 +186,8 @@ mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
 rule plotCagePolyAStats:
-	input: "output/statsFiles/" + "all.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats.tsv"
-	output: returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats")
+	input: "output/statsFiles/" + "all.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats")
 	conda: "envs/R_env.yml"
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
