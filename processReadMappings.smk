@@ -223,6 +223,7 @@ rule getHiSeqSupportedHCGMs:
 	input:
 		hiSeqIntrons=lambda wildcards: "output/mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list" if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.sampleRep]['use_matched_HiSeq'] else "/dev/null",
 		lrIntrons="output/mappings/highConfidenceReads/introns/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.strandedHCGMs.introns.tsv",
+# HCGM: high-confidence genome mappings
 		hcgmGTF= "output/mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.strandedHCGMs.gff.gz"
 	params:
 		useHiSeq = lambda wildcards: 'pleasedo' if sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.sampleRep]['use_matched_HiSeq'] else 'donot'
@@ -350,7 +351,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 rule mergedReads:
 	input: "output/mappings/highConfidenceReads/HiSS/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.gff.gz"
-	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff",
+	output: temp("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff"),
 	threads:1
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
@@ -359,17 +360,6 @@ rule mergedReads:
 uuidTmpOut=$(uuidgen)
 zcat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport {wildcards.minReadSupport} --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
-		'''
-
-rule mergedReadsGroupedSampleReps:
-	input: getMergedSampleReps
-	output: "output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.endSupport:all.gff"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-cat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport 1 --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
-
 		'''
 
 rule mergedUnfilteredSirvReads:
@@ -402,6 +392,37 @@ cat {input} {params.grepSpliced} | gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 
+
+rule catMergedReadsForGroupedSampleReps:
+	input: getMergedSampleReps
+	output: temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff")
+	shell:
+		'''
+uuid=$(uuidgen)
+zcat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n > {config[TMPDIR]}/$uuid
+mv {config[TMPDIR]}/$uuid {output}
+		'''
+
+rule mergedReadsGroupedSampleReps:
+	input: "output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff"
+	output: 
+		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz",
+		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.readsToTm.tsv.gz"
+	shell:
+		'''
+uuid=$(uuidgen)
+cat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport 1 --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid.gff
+
+echo -e "read_id\ttranscript_id" > {config[TMPDIR]}/$uuid.tsv
+
+tmergeRecoverSampleRepReadIds.pl {input} {config[TMPDIR]}/$uuid.gff | sort -T $TMPDIR | uniq >> {config[TMPDIR]}/$uuid.tsv
+
+gzip {config[TMPDIR]}/$uuid.tsv
+gzip {config[TMPDIR]}/$uuid.gff
+mv {config[TMPDIR]}/$uuid.gff.gz {output.gff}
+mv {config[TMPDIR]}/$uuid.tsv.gz {output.readToTmTsv}
+
+		'''
 
 
 

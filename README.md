@@ -29,8 +29,11 @@ Customize *config.json and cluster_config.json to your needs
 - `capDesignToTargetsGff`: non-overlapping targeted regions (only for RNA capture samples), labelled by target type using the `gene_type` GFF attribute **if required** 
 - LR FASTQ files in "fastqs/" subdirectory
 	- File naming scheme for LR FASTQ files: `"fastqs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"` where:
-		- `{techname}`
-		- `{capDesign}`
+		- `{techname}` is made up of the following subfields, separated by a hyphen (`-`): 
+			- \<sequencing technology\>: *e.g.* `ont`, `pacBio`
+			- \<sequencing center\>: *e.g.* `Crg`, `Cshl`
+			- \<library preparation protocol\>: *e.g.* `SmartSeq2`, `CapTrap`
+		- `{capDesign}`: for sample names that didn't undergo targeted RNA capture, this field should match the following regex: `\S+preCap$`. For captured samples, this field should match the name of the capture design, which is up to the user.
 		- `{sizeFrac}`
 		- `{sampleRep}` should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the 'tissue' column of the corresponding row in the `config[SAMPLE_ANNOT]` sample annotation file. `\d{2}Rep\d+` is there to identify multiple replicates of the same experiments.
 
@@ -40,7 +43,6 @@ Customize *config.json and cluster_config.json to your needs
 - Reference annotation GTFs in `config[genomeToAnnotGtf]`  **if required**
 - TSV containing SIRV info (<transcript_id>{tab}<length>{tab}<concentration> in `config[SIRVinfo]` **if required** 
 - "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
-- The `{capDesign}` wildcard of samples that didn't undergo targeted RNA capture should match the following regex: `\S+preCap$`
 
 
 # Output
@@ -57,3 +59,34 @@ If all values are set to false, the workflow will only produce one transcriptome
 ## Plots
 ## HTML Stats Table
 ## Track Hub
+
+# Glossary / Abbreviations
+
+- **HCGM**: 
+
+	(produced by snakemake rule `highConfidenceReads`).
+	
+	**H**igh-**C**onfidence **G**enome **M**appings. Filtered read-to-genome mappings characterized by:
+
+	- only canonical introns (*if read is **spliced***)
+	- no suspicious introns possibly arising from RT template switching ("*RT-facts*") (*if read is **spliced***)
+	- minimum average sequencing quality of `filter_SJ_Qscore` on the read sequence around all their splice junctions. `filter_SJ_Qscore` is set on a per-sample basis in the corresponding column of the sample annotation file (`config[SAMPLE_ANNOT]`) (*if read is **spliced***)
+	- a detectable, clipped polyA tail on the read (*if read is **unspliced***)
+
+- **HiSS**: 
+
+	(produced by Snakemake rule `getHiSeqSupportedHCGMs`).
+
+	**Hi**-**S**eq-**S**upported read mappings. Those correspond to HCGMs (see above) that have all their splice junctions supported by at least one split read in the corresponding matched HiSeq sample, **if `use_matched_HiSeq` is set to `true`** for the corresponding sample in the sample annotation file (`config[SAMPLE_ANNOT]`). If `use_matched_HiSeq` is `false`, HiSS reads are exactly equivalent to HCGMs.
+
+- **TM**:
+
+	(produced by rules `mergedReads` and `mergedReadsGroupedSampleReps` ).
+
+	**T**ranscript **M**odel. The evidence-based model of an RNA transcript represented as the genomic coordinates of its intron-exon structure. A gene model contains a set of exon-overlapping TMs.
+
+
+
+...
+
+

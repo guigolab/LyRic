@@ -85,8 +85,7 @@ plotFacetYx <- parse(text=paste(plotFacetYx, \\" + theme(strip.text.x = element_
 		figure_settings['technameFilterString'] = "dat <- subset(dat, seqTech=='" + \
 			techname + "')\n"
 	figure_settings['substSeqTechString'] = """
-dat\$seqTech <- gsub(':$', '', dat\$seqTech)
-dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
+dat\$seqTech <- gsub('-', '\\n', dat\$seqTech)
 """
 	figure_settings['substSampleRepString'] = "dat\$sampleRep <- gsub('" + \
 		capDesign + "_', '', dat\$sampleRep)\n"
@@ -197,5 +196,5 @@ def getMergedSampleReps(wildcards):
 #######################################################################
 	inputFiles=[]
 	for comb in itertools.product(sampleRepGroupIdToSampleReps[wildcards.groupedSampleRepBasename], wildcards.minReadSupport):
-		inputFiles.append("output/mappings/mergedReads/" + comb[0] + ".HiSS.tmerge.min" + comb[1] + "reads.endSupport:all.gff")
+		inputFiles.append("output/mappings/mergedReads/" + comb[0] + ".HiSS.tmerge.min" + comb[1] + "reads.splicing_status:all.endSupport:all.gff.gz")
 	return(inputFiles)

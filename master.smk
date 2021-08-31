@@ -192,9 +192,12 @@ include: "trackHub.smk"
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
-		# transcriptome GTFs:
+		# transcriptome GTFs (per sampleRep):
 		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.endSupport:all.gff", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		# transcriptome GTFs (per grouped sampleReps)
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status:all.endSupport:all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),		
 		expand(returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null', # facetted histograms of read length
 		expand("output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
