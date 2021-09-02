@@ -482,8 +482,6 @@ rule getReadBiotypeClassification:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-
-
 bedtools intersect -split -wao -bed -a {input.reads} -b {input.ann} |perl -lane '$line=$_; $gid="NA"; $gt="nonExonic"; if($line=~/gene_id \"(\S+)\";/){{$gid=$1}}; if ($line=~/gene_type \"(\S+)\";/){{$gt=$1}}; print "$F[3]\\t$gid\\t$gt\\t$F[-1]"'|cut -f1,3|sort -T {config[TMPDIR]} |uniq | gzip > {config[TMPDIR]}/$uuidTmpOut.2
 mv  {config[TMPDIR]}/$uuidTmpOut.2 {output}
 		'''

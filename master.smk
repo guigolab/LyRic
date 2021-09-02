@@ -21,7 +21,7 @@ include: "functions.py"
 # consistent ggplot2 theme across R plots:
 GGPLOT_PUB_QUALITY="theme(axis.text= element_text(size=themeSize*1.8), axis.ticks = element_line(size=lineSize), axis.line = element_line(colour = '#595959', size=lineSize), axis.title=element_text(size = themeSize*2), panel.grid.major = element_line(colour='#d9d9d9', size=lineSize),panel.grid.minor = element_line(colour='#e6e6e6', size=minorLineSize),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'), legend.key.size=unit(0.5,'line'), legend.title=element_text(size=themeSize*1.2), legend.text=element_text(size=themeSize), strip.text = element_text(size = themeSize))"
 
-#list of stat plot formats to generate (only one format at a time is supported):
+#list of stat plot formats to generate (currently only one format at a time is supported):
 plotFormat=['png',]
 # color sizeFracs:
 sizeFrac_Rpalette="c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')"
@@ -138,12 +138,17 @@ for key, item in sampleRepGroups:
 sampleAnnot.set_index('sample_name', inplace=True)
 sampleAnnotDict = sampleAnnot.to_dict('index')
 
+# extract unique list of sub-projects in sampleAnnot (values in 'project' column) to generate separate, filtered HTML stats reports:
+subProjects = set(sampleAnnot['project'])
+# 'None' to create an HTML report without filter:
+subProjects.add('ALL')
 
 
-########################
+###################################################################################
 ### make list of authorized wildcard combinations
-### inspired by https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
-###
+### inspired by 
+### https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
+###################################################################################
 
 AUTHORIZEDCOMBINATIONS = [] #contains combinations of wildcards corresponding to existing FASTQs or "by*" combinations when relevant
 TECHNAMESplusBY=set(TECHNAMES)
@@ -193,7 +198,7 @@ include: "trackHub.smk"
 rule all:
 	input:
 		# transcriptome GTFs (per sampleRep):
-		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport-all.gff", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		# transcriptome GTFs (per grouped sampleReps)
 		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
 		# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
@@ -230,14 +235,10 @@ rule all:
 		expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
 
-## temporary/intermediate
-		"output/statsFiles/" + "all.highConfSplicedReads.stats.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
-		"output/statsFiles/" + "all.fastq.timestamps.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
-		"output/statsFiles/" + "all.readlength.summary.tsv" if config['produceHtmlStatsTable'] else '/dev/null',
-		expand("output/statsFiles/" + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceHtmlStatsTable'] else '/dev/null',
-		expand("output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.qc.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], endSupport=ENDSUPPORTcategories) if config['produceHtmlStatsTable'] else '/dev/null',
-## temporary
-
+		# one summary HTML table per subProject, plus one overall:
+		expand("output/html/summary_table_{subProject}.html", subProject=subProjects) if config['produceHtmlStatsTable'] else '/dev/null',
+		# same contents as the HTML summary table, but in TSV format
+		expand("output/html/summary_table_{subProject}.tsv", subProject=subProjects) if config['produceHtmlStatsTable'] else '/dev/null',
 
 
 		#################
@@ -342,4 +343,41 @@ bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |
 mergeToRef.pl {input} {config[TMPDIR]}/$uuidL | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
+		'''
+
+
+
+rule filterSampleAnnot:
+	input: config['SAMPLE_ANNOT']
+	output: temp("output/tmp/{subProject}_samples.tsv")
+	run:
+		if wildcards.subProject == 'ALL':
+			sampleAnnot.to_csv(output[0], sep="\t")
+		else:
+			sampleAnnotFiltered=sampleAnnot[sampleAnnot.project == wildcards.subProject]
+			sampleAnnotFiltered.to_csv(output[0], sep="\t")
+
+rule makeHtmlSummaryDashboard:
+	input:
+		sampleAnnotationFile="output/tmp/{subProject}_samples.tsv",
+		allFastqTimeStamps="output/statsFiles/all.fastq.timestamps.tsv",
+		allReadLengths="output/statsFiles/all.readlength.summary.tsv",
+		allBasicMappingStats="output/statsFiles/all.basic.mapping.stats.tsv",
+		allHissStats="output/statsFiles/all.HiSS.stats.tsv",
+		allMergedStats="output/statsFiles/all.min2reads.merged.stats.tsv",
+		allMatureRnaLengthStats="output/statsFiles/all.min2reads.matureRNALengthSummary.stats.tsv",
+		allTmergeVsSirvStats="output/statsFiles/all.HiSS.tmerge.min2reads.vs.SIRVs.stats.tsv",
+		allCagePolyASupportStats="output/statsFiles/all.min2reads.splicing_status-all.cagePolyASupport.stats.tsv",
+		allNovelLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.stats.tsv",
+		allNovelFlLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.stats.tsv",
+		allNovelLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.qc.stats.tsv",
+		allNovelFlLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv",
+		allNtCoverageStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv",
+	conda: "envs/R_env.yml"
+	output:
+		"output/html/summary_table_{subProject}.html",
+		"output/html/summary_table_{subProject}.tsv"
+	shell:
+		'''
+./LyRic/makeHtmlDashboard.r {output[0]} {input.sampleAnnotationFile} {input.allFastqTimeStamps} {input.allReadLengths} {input.allBasicMappingStats} {input.allHissStats} {input.allMergedStats} {input.allMatureRnaLengthStats} {input.allTmergeVsSirvStats} {input.allCagePolyASupportStats} {input.allNovelLociStats} {input.allNovelFlLociStats} {input.allNovelLociQcStats} {input.allNovelFlLociQcStats} {input.allNtCoverageStats}
 		'''
