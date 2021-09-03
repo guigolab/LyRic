@@ -1,9 +1,9 @@
-LyRic is a full-featured, automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
+LyRic is a flexible, full-featured, automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
 
-- a set of high-quality RNA Transcript Models (TMs) mapped onto a genome sequence, based on Long-Read (LR) sequencing data (*e.g.* from the ONT or PacBio platforms)
+- a set of high-quality RNA Transcript Models (TMs) mapped onto a genome sequence, based on Long-Read (LR) sequencing data. It is platform-agnostic, *i.e.* it can deal with data coming from both the ONT and PacBio platforms
 - various summary statistics plots and analysis results that describe the input and output data in details
 - an interactive HTML table reporting statistics for each input sample, enabling easy and intuitive sample-to-sample comparison 
-- a [UCSC Track Hub](http://genome.cse.ucsc.edu/goldenPath/help/hgTrackHubHelp.html) to display output TMs as well as various other tracks produced by LyRic.
+- a [UCSC Track Hub](http://genome.cse.ucsc.edu/goldenPath/help/hgTrackHubHelp.html) to display output TMs, as well as various other tracks produced by LyRic.
 
 # Dependencies
 
@@ -20,11 +20,11 @@ Please install those as a prerequisite.
 
 Note that using a Snakemake-compatible HPC environment such as SGE/UGE is highly recommended.
 
-1. `cd` to the directory where you intend to run the LyRic workflow.
+1. `cd` to the directory where you intend to run the LyRic workflow (referred to as the **working directory** below).
 
 2. Clone LyRic Snakefiles:
 
-	`git clone https://github.com/julienlag/LyRic.git ./`
+	`git clone https://github.com/julienlag/LyRic.git ./LyRic`
 
 3. Clone relevant conda environments into `envs/`:
 
@@ -34,9 +34,6 @@ Note that using a Snakemake-compatible HPC environment such as SGE/UGE is highly
 
 	`git clone https://github.com/julienlag/utils.git utils/`
 
-	and make them executable:
-	
-	`chmod a+x utils/*`
 
 5. Customize the `*config.json` and `cluster_config.json` files according to your needs
 
@@ -45,40 +42,96 @@ All paths mentioned below are relative to the working directory.
 # Execution
 
 
-An example bash script launching LyRic in [cluster/DRMAA mode](https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html?highlight=drmaa#cluster-execution) is provided ('`run_snakemake_EXAMPLE.sh`'). It should be moved to your working directory and executed from there.
+An example bash script launching LyRic in [cluster/DRMAA mode](https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html?highlight=drmaa#cluster-execution) is provided ('`run_snakemake_EXAMPLE.sh`'), together with its accompanying workflow configuration (`config_EXAMPLE.json`) and cluster configuration (`cluster_config.json`) files. Note that you will need to customize these config files manually before your first LyRic run. Once this is done, make sure you're in your working directory and issue the following command to run LyRic:
+
+`./LyRic/run_snakemake_EXAMPLE.sh`
 
 Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/stable/executing/cli.html) for more advanced usage.
 
 # Input
 
-- **LR FASTQ files**:
-	- Must be placed inside the `fastqs/` subdirectory
-	- File naming scheme: `"fastqs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"` (no spaces or special characters allowed) where:
-		- `{techname}` is made up of the following subfields, separated by a hyphen (`-`): 
-			- \<sequencing technology\>: *e.g.* `ont`, `pacBio`
-			- \<sequencing center\>: *e.g.* `Crg`, `Cshl`
-			- \<library preparation protocol\>: *e.g.* `SmartSeq2`, `CapTrap`
-		- `{capDesign}`: for sample names that didn't undergo targeted RNA capture, this field should match the following regex: `\S+preCap$`. For captured samples, this field should match the name of the capture design (up to the user but preferably a short string).
-		- `{sizeFrac}`: the RNA/cDNA size fraction the file corresponds to. If no size fractionation was performed, should be `0+`.
-		- `{sampleRep}` should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the `tissue` column of the corresponding row in the sample annotation file (see below). The `\d{2}Rep\d+` suffix identifies multiple replicates of the same experiment.
+## Mandatory 
 
-- **Sample annotation file**: This tab-separated file contains all metadata associated to each sample/input LR FASTQ file. Its path is controlled by Snakemake config value `config[SAMPLE_ANNOT]`. A mock sample annotation file, named `sample_annotations_EXAMPLE.tsv` is included in this repo. 
+- **LR FASTQ files**
+	- Must be placed inside the `fastqs/` subdirectory
+	- File naming scheme: **`"fastqs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"`** (no spaces or special characters allowed) where:
+		- **`{techname}`** can be made up of one or more subfields, separated by a hyphen (`-`), *e.g.*: 
+			- `<sequencing technology>`: *e.g.* '`ont`', '`pacBio`'
+			- `<sequencing center>`: *e.g.* '`Crg`', '`Cshl`'
+			- `<library preparation protocol>`: *e.g.* '`SmartSeq2`', '`CapTrap`'
+		- **`{capDesign}`**: for sample names that didn't undergo targeted RNA capture, this field should match the following regex: `\S+preCap$`. For captured samples, this field should match the name of the capture design (up to the user but preferably a short string).
+		- **`{sizeFrac}`**: the RNA/cDNA size fraction the file corresponds to. If no size fractionation was performed, should be `0+`.
+		- **`{sampleRep}`** should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the `tissue` column of the corresponding row in the sample annotation file (see below). The `\d{2}Rep\d+` suffix identifies multiple replicates of the same experiment.
+
+- **Sample annotation file**:
+
+	This tab-separated file contains all metadata associated to each sample/input LR FASTQ file, as well as some customizable, sample-specific LyRic run parameters. Its path is controlled by Snakemake config variable `SAMPLE_ANNOT`. A mock sample annotation file, named `sample_annotations_EXAMPLE.tsv` is included in this repo. 
 
 	The contents of each column should me mostly self-explanatory, except:
 
-	- `sample_name` (string): should match the basename of the corresponding LR FASTQ file and should be globally unique.
-	- `cellFrac` (string): the cell fraction, *e.g.* `Cytoplasm`, `Nucleus` or `Total` (*i.e.* whole-cell extract with no cell fractionation)
-	- `cappedSpikeIns` (boolean): `True` if ERCC and/or SIRV spike-ins were artificially 5'-m7G-capped before their incorporation into the library, `False` otherwise
-	- `use_matched_HiSeq` (boolean): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below).
-	- `project` (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
-	- `filter_SJ_Qscore` (integer): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Recommended values: `10` for ONT, `30` for PacBio HiFi reads.
+	- **`cappedSpikeIns`** (boolean): `True` if the corresponding sample contains ERCC and/or SIRV spike-ins that were artificially 5'-m7G-capped before their incorporation into the library, `False` otherwise.
+	- **`cellFrac`** (string): the cell fraction, *e.g.* `Cytoplasm`, `Nucleus` or `Total` (*i.e.* whole-cell extract with no cell fractionation)
+	- **`filter_SJ_Qscore`** (integer): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Recommended values: `10` for ONT, `30` for PacBio HiFi reads.
+	- **`project`** (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
+	- **`sample_name`** (string): should match the basename of the corresponding LR FASTQ file and should be globally unique.
+	- **`use_matched_HiSeq`** (boolean): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below).
 	
-- genomes.fa
-- Illumina FASTQ files in `config[HISEQ_FASTQDIR]` **if required**
+- **Genome sequences** 
+	
+	To map RNA sequencing reads against. One genome assembly per file, in (multi-)FASTA format. See description of config variable `GENOMESDIR` below for more details.
+
+## Optional
+
+- **Short-read Illumina FASTQ files**
+
+	If present, short reads contained in these files will be used to confirm splice junctions present in the LR FASTQ files.
+
+	Only needed if config variable `USE_MATCHED_ILLUMINA` is `True`. 
+
+
 - Reference annotation GTFs in `config[genomeToAnnotGtf]`  **if required**
 - TSV containing SIRV info (<transcript_id>{tab}<length>{tab}<concentration> in `config[SIRVinfo]` **if required** 
 - "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
 - `config[capDesignToTargetsGff]`: non-overlapping targeted regions (only for RNA capture samples), labelled by target type using the `gene_type` GFF attribute **if required** 
+
+# Workflow configuration variables
+
+The following config variables are user-customizable. These can be set either via a config file (Snakemake's `--configfile FILE` option) or directly via command line options (`--config [KEY=VALUE [KEY=VALUE ...]]]`). See [Snakemake's CLI's documentation](https://snakemake.readthedocs.io/en/stable/executing/cli.html) for more details.
+
+## Mandatory
+
+- **`capDesignToCapDesign`**
+- **`capDesignToGenome`** (dictionary/JSON object): ***key***: capture design identifier (`{capDesign}`); ***value***: corresponding genome assembly identifier (*e.g.* `hg38`, `mm10`)
+
+- **`CAPTURE`**
+
+- **`GENOMESDIR`** (string): The path to the directory containing the genome multifastas to map the sequencing reads against. In it, there should be one genome file per species, whose name should match values in `capDesignToGenome{}` object (e.g. '`hg38.fa`' and '`mm10.fa`')
+
+- **`produceHtmlStatsTable`**
+- **`produceStatPlots`**
+- **`produceTrackHub`**
+- **`SAMPLE_ANNOT`**
+- **`sampleRepGroupBy`**
+- **`PROJECT_NAME`** for track hub + job name
+
+- **`USE_MATCHED_ILLUMINA`** (boolean)
+
+
+## Optional
+
+
+- **`capDesignToTargetsGff`** (dictionary/JSON object): ***key***: capture design identifier (`{capDesign}`); ***value***: path to non-overlapping capture-targeted regions in `{capDesign}`, in GFF format. Only needed if config variable `CAPTURE` is `True`.
+
+- **`genomeToAnnotGtf`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding gene annotation file, in GTF format (*e.g.* gencode v24 GTF). Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
+
+- **`genomeToCAGEpeaks`**
+- **`genomeToDHSpeaks`**
+- **`PROJECT_CONTACT_EMAIL`**
+- **`PROJECT_LONG_NAME`**
+- **`REPEATMASKER_DIR`** (string): 
+- **`SIRVinfo`**
+- **`TRACK_HUB_BASE_URL`**
+
 
 
 # Output
@@ -104,6 +157,8 @@ For each interactive HTML summary stats table, an accompanying TSV file with the
 ## Track Hub
 
 - `config['produceTrackHub']`: boolean. If true, LyRic will generate a UCSC Track Hub in the `./trackHub/` subdirectory. 
+
+
 
 # Glossary / Abbreviations
 

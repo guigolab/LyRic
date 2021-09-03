@@ -812,7 +812,7 @@ mv {TMPDIR}/$uuid2.bed {output.locusBed}
 rule getNovelIntergenicLociQcStats:
 	input:
 		tmergeGencode="output/mappings/mergedReads/mergeToRef/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.+gencode.loci.refmerged.gff.gz",
-		repeats= lambda wildcards: "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
+		repeats= lambda wildcards: config['REPEATMASKER_DIR'] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
 	conda: "envs/Redtools_env.yml"
 	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.qc.stats.tsv"
 	shell:

@@ -9,7 +9,6 @@
     "out": "{workflow.basedir}/qsub_logs/",
     "project": "prj006070",
     "threads": "",
-    "node": "!node-hp0105rg.linux.crg.es",
     "disk": "2G"
   },
   "makeStarIndex": {

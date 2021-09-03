@@ -36,10 +36,10 @@
     "mm10": "annotations/mm.gencodeM7+SIRVS.gff"
   },
   "USE_MATCHED_ILLUMINA": true,
-  "PROJECT_NAME": "CLS3",
-  "PROJECT_LONG_NAME": "GENCODE CLS Phase 3",
+  "PROJECT_NAME": "CLS3test",
+  "PROJECT_LONG_NAME": "GENCODE CLS Phase 3 test",
   "PROJECT_CONTACT_EMAIL": "julien.lagarde@crg.eu",
-  "TRACK_HUB_BASE_URL": "https://public-docs.crg.es/rguigo/Data/jlagarde/gencode/trackHubs/CLS3/",
+  "TRACK_HUB_BASE_URL": "https://public-docs.crg.es/rguigo/Data/jlagarde/gencode/trackHubs/CLS3test/",
   "genomeToCAGEpeaks": {
     "hg38": "annotations/cage/hg38_fair+new_CAGE_peaks_phase1and2.bed",
     "mm10": "annotations/cage/mm10_fair+new_CAGE_peaks_phase1and2.bed"
