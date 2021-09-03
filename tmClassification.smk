@@ -8,9 +8,9 @@ rule compareTargetsToTms:
 		'''
 uuidTmpOut=$(uuidgen)
 
-zcat {input.tms} > {config[TMPDIR]}/$uuidTmpOut.1
-bedtools intersect -wao -a {input.targetedSegments} -b {config[TMPDIR]}/$uuidTmpOut.1 |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input.tms} > {TMPDIR}/$uuidTmpOut.1
+bedtools intersect -wao -a {input.targetedSegments} -b {TMPDIR}/$uuidTmpOut.1 |gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -20,13 +20,13 @@ rule getTargetCoverageStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-for type in `zcat {input} | extractGffAttributeValue.pl gene_type | sort -T {config[TMPDIR]} |uniq`; do
-all=$(zcat {input} | fgrep "gene_type \\"$type\\";" | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
-detected=$(zcat {input} | fgrep "gene_type \\"$type\\";" | awk '$NF>0' | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
+for type in `zcat {input} | extractGffAttributeValue.pl gene_type | sort -T {TMPDIR} |uniq`; do
+all=$(zcat {input} | fgrep "gene_type \\"$type\\";" | extractGffAttributeValue.pl transcript_id | sort -T {TMPDIR} |uniq|wc -l)
+detected=$(zcat {input} | fgrep "gene_type \\"$type\\";" | awk '$NF>0' | extractGffAttributeValue.pl transcript_id | sort -T {TMPDIR} |uniq|wc -l)
 let undetected=$all-$detected || true
 echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$type\t$all\t$detected" | awk '{{print $0"\t"$7/$6}}'
-done > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+done > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule aggTargetCoverageStats:
@@ -35,9 +35,9 @@ rule aggTargetCoverageStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | grep -v erccSpikein | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttargetType\ttotalTargets\tdetectedTargets\tpercentDetectedTargets" > {TMPDIR}/$uuidTmpOut
+cat {input} | grep -v erccSpikein | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule plotTargetCoverageStats:
@@ -115,8 +115,8 @@ pref=$(basename {output.standard} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
 uuid=$(uuidgen)
 outdir="$PWD/$(dirname {output.standard})"
-zcat {input.tm} > {config[TMPDIR]}/$uuid
-cd {config[TMPDIR]}
+zcat {input.tm} > {TMPDIR}/$uuid
+cd {TMPDIR}
 gffcompare -o ${{uuid}}PREF -r $annotFullPath $uuid
 cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
 
@@ -153,8 +153,8 @@ pref=$(basename {output} .simple.tsv)
 annotFullPath=$(fullpath {input.annot})
 uuid=$(uuidgen)
 outdir="$PWD/$(dirname {output})"
-zcat {input.tm} | awk '$1 ~ /SIRV/ ' > {config[TMPDIR]}/$uuid
-cd {config[TMPDIR]}
+zcat {input.tm} | awk '$1 ~ /SIRV/ ' > {TMPDIR}/$uuid
+cd {TMPDIR}
 gffcompare -o ${{uuid}}PREF -r $annotFullPath $uuid
 cat ${{uuid}}PREF.tracking | simplifyGffCompareClasses.pl - > ${{uuid}}PREF.simple.tsv
 mv ${{uuid}}PREF.simple.tsv $outdir/$(basename {output})
@@ -177,21 +177,21 @@ uuid=$(uuidgen)
 file=$(dirname {input})/$(basename {input} .simple.tsv)
 for level in `echo Baselevel Exonlevel Intronchainlevel Intronlevel Locuslevel Transcriptlevel`; do
 
-cat $file |grep "level:" > {config[TMPDIR]}/$uuid || true
+cat $file |grep "level:" > {TMPDIR}/$uuid || true
 SnDEFAULT=0
 SpDEFAULT='NA'
 
-Sn=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2`
+Sn=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2`
 Sn=${{Sn:-$SnDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
 
 
-Sp=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3`
+Sp=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3`
 Sp=${{Sp:-$SpDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
 
 
 echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$level\t$Sn\t$Sp";
-done |sed 's/level//g' > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+done |sed 's/level//g' > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -201,9 +201,9 @@ rule aggGffCompareSirvStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tlevel\tmetric\tvalue" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tlevel\tmetric\tvalue" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -274,9 +274,9 @@ if SIRVpresent:
 			'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-sirvDetectionStats.pl {input.sirvInfo} $(dirname {input.gffC})/$(basename {input.gffC} .simple.tsv).refmap > {config[TMPDIR]}/$uuid
-cat {config[TMPDIR]}/$uuid | while read id l c ca; do echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$id\t$l\t$c\t$ca"; done > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+sirvDetectionStats.pl {input.sirvInfo} $(dirname {input.gffC})/$(basename {input.gffC} .simple.tsv).refmap > {TMPDIR}/$uuid
+cat {TMPDIR}/$uuid | while read id l c ca; do echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$id\t$l\t$c\t$ca"; done > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 			'''
 
@@ -286,9 +286,9 @@ rule aggSirvDetectionStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tSIRVid\tlength\tconcentration\tdetectionStatus" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tSIRVid\tlength\tconcentration\tdetectionStatus" > {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -358,8 +358,8 @@ rule colorBedAccordingToGffCompare:
 	shell:
 			'''
 uuidTmpOut=$(uuidgen)
-colorNovelTxBed.pl {input.classes} {input.tm} > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+colorNovelTxBed.pl {input.classes} {input.tm} > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 			'''
 
@@ -370,8 +370,8 @@ rule getGffCompareStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} |cut -f2 | sort -T {config[TMPDIR]} |uniq -c | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} |cut -f2 | sort -T {TMPDIR} |uniq -c | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print s"\t"c"\t"si"\t"b"\t"$2"\t"$1}}' > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getGffCompareGencodeSnPrStats:
@@ -383,20 +383,20 @@ uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 file=$(dirname {input})/$(basename {input} .simple.tsv)
 for level in `echo Baselevel Exonlevel Intronchainlevel Intronlevel Locuslevel Transcriptlevel`; do
-cat $file |grep "level:" > {config[TMPDIR]}/$uuid || true
+cat $file |grep "level:" > {TMPDIR}/$uuid || true
 SnDEFAULT=0
 SpDEFAULT='NA'
 
 
-Sn=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2` 
+Sn=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2` 
 Sn=${{Sn:-$SnDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
 
-Sp=`cat {config[TMPDIR]}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3` 
+Sp=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3` 
 Sp=${{Sp:-$SpDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
 
 echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$level\t$Sn\t$Sp";
-done |sed 's/level//g' > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+done |sed 's/level//g' > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -406,9 +406,9 @@ rule aggGffCompareGencodeSnPrStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tlevel\tmetric\tvalue" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tlevel\tmetric\tvalue" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -479,9 +479,9 @@ rule aggGffCompareStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {TMPDIR}/$uuidTmpOut
+cat {input} >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule plotGffCompareStats:
@@ -556,9 +556,9 @@ rule getTmVsGencodeLengthStats:
 		'''
 uuid=$(uuidgen)
 file="$(dirname {input})/$(basename {input} .simple.tsv).tmap"
-tail -n+2 $file | awk '$3=="c" || $3=="="' | cut -f10,12 > {config[TMPDIR]}/$uuid
-cat {config[TMPDIR]}/$uuid | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} -v sp={wildcards.splicedStatus} '{{print s"\t"c"\t"si"\t"b"\t"sp"\t"$0}}'  > {config[TMPDIR]}/$uuid.TmpOut
-mv {config[TMPDIR]}/$uuid.TmpOut {output}
+tail -n+2 $file | awk '$3=="c" || $3=="="' | cut -f10,12 > {TMPDIR}/$uuid
+cat {TMPDIR}/$uuid | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} -v sp={wildcards.splicedStatus} '{{print s"\t"c"\t"si"\t"b"\t"sp"\t"$0}}'  > {TMPDIR}/$uuid.TmpOut
+mv {TMPDIR}/$uuid.TmpOut {output}
 
 		'''
 
@@ -569,9 +569,9 @@ rule aggTmVsGencodeLengthStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tsplicingStatus\tlen\tref_match_len" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tsplicingStatus\tlen\tref_match_len" > {TMPDIR}/$uuidTmpOut
+cat {input} >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -743,8 +743,8 @@ rule mergeTmsWithGencode:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat -f {input.annot} {input.tm}  | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat -f {input.annot} {input.tm}  | skipcomments | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule makeClsGencodeLoci:
@@ -756,11 +756,11 @@ rule makeClsGencodeLoci:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-zcat {input} > {config[TMPDIR]}/$uuid
+zcat {input} > {TMPDIR}/$uuid
 
 
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | gzip> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -774,9 +774,9 @@ rule mergeWithRef:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-zcat  {input.clsGencode} > {config[TMPDIR]}/$uuid
-mergeToRef.pl {input.gencode} {config[TMPDIR]}/$uuid | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat  {input.clsGencode} > {TMPDIR}/$uuid
+mergeToRef.pl {input.gencode} {TMPDIR}/$uuid | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getNovelIntergenicLoci:
@@ -795,18 +795,18 @@ uuid3=$(uuidgen)
 uuid4=$(uuidgen)
 uuid5=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid1
-zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid4
-cat {config[TMPDIR]}/$uuid4 | extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2
+cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid1
+zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {TMPDIR}/$uuid4
+cat {TMPDIR}/$uuid4 | extract_locus_coords.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid2
 
 
 
-bedtools intersect -v -a {config[TMPDIR]}/$uuid2 -b {config[TMPDIR]}/$uuid1 > {config[TMPDIR]}/$uuid5
-cat {config[TMPDIR]}/$uuid5 |awk '$1 !~ /ERCC/' |cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid3
-zcat {input.tmergeGencode}| tgrep -F -w -f {config[TMPDIR]}/$uuid3 - |gzip > {config[TMPDIR]}/$uuidTmpOut
-zcat {config[TMPDIR]}/$uuidTmpOut |  extract_locus_coords.pl - | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid2.bed
-mv {config[TMPDIR]}/$uuidTmpOut {output.gtf}
-mv {config[TMPDIR]}/$uuid2.bed {output.locusBed}
+bedtools intersect -v -a {TMPDIR}/$uuid2 -b {TMPDIR}/$uuid1 > {TMPDIR}/$uuid5
+cat {TMPDIR}/$uuid5 |awk '$1 !~ /ERCC/' |cut -f4 | sort -T {TMPDIR} |uniq > {TMPDIR}/$uuid3
+zcat {input.tmergeGencode}| tgrep -F -w -f {TMPDIR}/$uuid3 - |gzip > {TMPDIR}/$uuidTmpOut
+zcat {TMPDIR}/$uuidTmpOut |  extract_locus_coords.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid2.bed
+mv {TMPDIR}/$uuidTmpOut {output.gtf}
+mv {TMPDIR}/$uuid2.bed {output.locusBed}
 		'''
 
 rule getNovelIntergenicLociQcStats:
@@ -820,51 +820,51 @@ rule getNovelIntergenicLociQcStats:
 uuid=$(uuidgen)
 
 # extract transcript models from novel genes
-zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {config[TMPDIR]}/$uuid
+zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {TMPDIR}/$uuid
 # extract gene_ids from novel genes and make a list of those
-cat {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.genes.list
+cat {TMPDIR}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {TMPDIR}/$uuid.genes.list
 
 # extract bed12 file of transcript models (TMs) from novel genes
-cat {config[TMPDIR]}/$uuid | gff2bed_full.pl - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid.bed
+cat {TMPDIR}/$uuid | gff2bed_full.pl - |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n > {TMPDIR}/$uuid.bed
 
 ############## spliced vs monoexonic novel genes:
 
 # extract spliced TMs from bed12 file
-cat {config[TMPDIR]}/$uuid.bed | awk '$10>1' | cut -f4 | sort -T {config[TMPDIR]} |uniq >  {config[TMPDIR]}/$uuid.spliced.transcripts.list
+cat {TMPDIR}/$uuid.bed | awk '$10>1' | cut -f4 | sort -T {TMPDIR} |uniq >  {TMPDIR}/$uuid.spliced.transcripts.list
 
 # extract gene_ids of spliced TMs
-tgrep -F -w -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.spliced.genes.list
+tgrep -F -w -f {TMPDIR}/$uuid.spliced.transcripts.list {TMPDIR}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {TMPDIR}/$uuid.spliced.genes.list
 
-total=$(cat {config[TMPDIR]}/$uuid.genes.list |wc -l)
-spliced=$(cat {config[TMPDIR]}/$uuid.spliced.genes.list  |wc -l)
+total=$(cat {TMPDIR}/$uuid.genes.list |wc -l)
+spliced=$(cat {TMPDIR}/$uuid.spliced.genes.list  |wc -l)
 let mono=$total-$spliced || true
 
 ############## length statistics
 
-cat {config[TMPDIR]}/$uuid.bed | bed12ToTranscriptLength.pl - > {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp
-tgrep -F -w -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp |cut -f2 > {config[TMPDIR]}/$uuid.stats.splicedtranscripts.tsv
-tgrep -F -w -v -f {config[TMPDIR]}/$uuid.spliced.transcripts.list {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 > {config[TMPDIR]}/$uuid.stats.monotranscripts.tsv
-cat {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 >{config[TMPDIR]}/$uuid.stats.alltranscripts.tsv
+cat {TMPDIR}/$uuid.bed | bed12ToTranscriptLength.pl - > {TMPDIR}/$uuid.stats.alltranscripts.tsv.tmp
+tgrep -F -w -f {TMPDIR}/$uuid.spliced.transcripts.list {TMPDIR}/$uuid.stats.alltranscripts.tsv.tmp |cut -f2 > {TMPDIR}/$uuid.stats.splicedtranscripts.tsv
+tgrep -F -w -v -f {TMPDIR}/$uuid.spliced.transcripts.list {TMPDIR}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 > {TMPDIR}/$uuid.stats.monotranscripts.tsv
+cat {TMPDIR}/$uuid.stats.alltranscripts.tsv.tmp | cut -f2 >{TMPDIR}/$uuid.stats.alltranscripts.tsv
 
 
 
 #use of readarray: see https://www.baeldung.com/linux/reading-output-into-array
 
-readarray -t lengthStatsAll < <(minMedMaxStats.r {config[TMPDIR]}/$uuid.stats.alltranscripts.tsv)
-readarray -t lengthStatsMono < <(minMedMaxStats.r {config[TMPDIR]}/$uuid.stats.monotranscripts.tsv)
-readarray -t lenthStatsSpliced < <(minMedMaxStats.r {config[TMPDIR]}/$uuid.stats.splicedtranscripts.tsv)
+readarray -t lengthStatsAll < <(minMedMaxStats.r {TMPDIR}/$uuid.stats.alltranscripts.tsv)
+readarray -t lengthStatsMono < <(minMedMaxStats.r {TMPDIR}/$uuid.stats.monotranscripts.tsv)
+readarray -t lenthStatsSpliced < <(minMedMaxStats.r {TMPDIR}/$uuid.stats.splicedtranscripts.tsv)
 
 
 ########### repeatmasked regions:
 
-bedtools intersect -split -u -a {config[TMPDIR]}/$uuid.bed -b {input.repeats} | cut -f4 | sort|uniq > {config[TMPDIR]}/$uuid.repeats.transcripts.list
-tgrep -F -w -f {config[TMPDIR]}/$uuid.repeats.transcripts.list {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {config[TMPDIR]}/$uuid.repeats.genes.list
+bedtools intersect -split -u -a {TMPDIR}/$uuid.bed -b {input.repeats} | cut -f4 | sort|uniq > {TMPDIR}/$uuid.repeats.transcripts.list
+tgrep -F -w -f {TMPDIR}/$uuid.repeats.transcripts.list {TMPDIR}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {TMPDIR}/$uuid.repeats.genes.list
 
-repeats=$(cat {config[TMPDIR]}/$uuid.repeats.genes.list| wc -l)
+repeats=$(cat {TMPDIR}/$uuid.repeats.genes.list| wc -l)
 
 ############ write output
-echo -e "{wildcards.techname}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.sampleRep}\\t$total\\t$mono\\t$repeats\\t${{lengthStatsAll[*]}}\\t${{lengthStatsMono[*]}}\\t${{lenthStatsSpliced[*]}}" | ssv2tsv| awk '{{if ($5!=0) print $0"\t"$6/$5"\t"$7/$5; else print $0"\tNA\tNA"}}' > {config[TMPDIR]}/$uuid.1
-mv {config[TMPDIR]}/$uuid.1 {output}
+echo -e "{wildcards.techname}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.sampleRep}\\t$total\\t$mono\\t$repeats\\t${{lengthStatsAll[*]}}\\t${{lengthStatsMono[*]}}\\t${{lenthStatsSpliced[*]}}" | ssv2tsv| awk '{{if ($5!=0) print $0"\t"$6/$5"\t"$7/$5; else print $0"\tNA\tNA"}}' > {TMPDIR}/$uuid.1
+mv {TMPDIR}/$uuid.1 {output}
 
 		'''
 
@@ -874,9 +874,9 @@ rule aggNovelIntergenicLociQcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\ttotal\\tcountMono\\tcountRepeats\\tminLengthAllTms\\tmedianLengthAllTms\\tmaxLengthAllTms\\tminLengthMonoTms\\tmedianLengthMonoTms\\tmaxLengthMonoTms\\tminLengthSplicedTms\\tmedianLengthSplicedTms\\tmaxLengthSplicedTms\\tpercentMono\\tpercentRepeats" > {config[TMPDIR]}/$uuid
-cat {input}  | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\ttotal\\tcountMono\\tcountRepeats\\tminLengthAllTms\\tmedianLengthAllTms\\tmaxLengthAllTms\\tminLengthMonoTms\\tmedianLengthMonoTms\\tmaxLengthMonoTms\\tminLengthSplicedTms\\tmedianLengthSplicedTms\\tmaxLengthSplicedTms\\tpercentMono\\tpercentRepeats" > {TMPDIR}/$uuid
+cat {input}  | sort -T {TMPDIR}  >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 
@@ -888,10 +888,10 @@ rule getNovelIntergenicLociStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-totalNovel=$(zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' |extractGffAttributeValue.pl gene_id | sort -T {config[TMPDIR]} | uniq | wc -l)
-interg=$(zcat {input.intergenic} | extractGffAttributeValue.pl gene_id | sort -T {config[TMPDIR]} | uniq | wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalNovel\t$interg"  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+totalNovel=$(zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' |extractGffAttributeValue.pl gene_id | sort -T {TMPDIR} | uniq | wc -l)
+interg=$(zcat {input.intergenic} | extractGffAttributeValue.pl gene_id | sort -T {TMPDIR} | uniq | wc -l)
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalNovel\t$interg"  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -901,9 +901,9 @@ rule aggNovelIntergenicLociStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{if ($5!=0) print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t"($5-$6)/$5; else print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t0\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t0"}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{if ($5!=0) print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t"($5-$6)/$5; else print $1"\\t"$2"\\t"$3"\\t"$4"\\tintergenic\\t"$6"\\t0\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tintronic\\t"$5-$6"\\t0"}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
@@ -986,14 +986,14 @@ for file in `ls {input.tm} | grep -v AlzhBrain`; do
 bn=$(basename $file .HiSS.tmerge.min{wildcards.minReadSupport}reads.splicing_status-{wildcards.splicedStatus}.endSupport-{wildcards.endSupport}.gff.gz )
 
 zcat $file | perl -sne '$_=~s/transcript_id \"(\S+)\"/transcript_id \"=$var=$1\"/g; print' -- -var=$bn
-done > {config[TMPDIR]}/$uuid
-echo -e "transcript_id\tspliced\tflrpm\trpm" > {config[TMPDIR]}/$uuidTmpOutQ
-cat {config[TMPDIR]}/$uuid | extractGffAttributeValue.pl transcript_id spliced flrpm rpm | sort|uniq >> {config[TMPDIR]}/$uuidTmpOutQ
-countDups=$(cat {config[TMPDIR]}/$uuidTmpOutQ |cut -f1 |sort|uniq -d |wc -l)
+done > {TMPDIR}/$uuid
+echo -e "transcript_id\tspliced\tflrpm\trpm" > {TMPDIR}/$uuidTmpOutQ
+cat {TMPDIR}/$uuid | extractGffAttributeValue.pl transcript_id spliced flrpm rpm | sort|uniq >> {TMPDIR}/$uuidTmpOutQ
+countDups=$(cat {TMPDIR}/$uuidTmpOutQ |cut -f1 |sort|uniq -d |wc -l)
 if [ $countDups -gt 0 ]; then echoerr "$countDups duplicates found"; exit 1; fi;
-cat {config[TMPDIR]}/$uuid  | skipcomments | sort -T {config[TMPDIR]} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOutT
-cat {config[TMPDIR]}/$uuidTmpOutT | gzip > {output.tm}
-mv {config[TMPDIR]}/$uuidTmpOutQ {output.quant}
+cat {TMPDIR}/$uuid  | skipcomments | sort -T {TMPDIR} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOutT
+cat {TMPDIR}/$uuidTmpOutT | gzip > {output.tm}
+mv {TMPDIR}/$uuidTmpOutQ {output.quant}
 
 		'''
 
@@ -1010,8 +1010,8 @@ file="$(dirname {input})/$(basename {input} .simple.tsv).tmap"
 totalGenes=$(tail -n+2 $file |cut -f1 | awk '$1!="-"'|sort|uniq|wc -l)
 flGenes=$(tail -n+2 $file | awk '$3=="="' |cut -f1 |sort|uniq|wc -l)
 let nonFlGenes=$totalGenes-$flGenes || true
-echo -e "{wildcards.techname}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.sampleRep}\\t$totalGenes\\t$flGenes\\t$nonFlGenes" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5}}'> {config[TMPDIR]}/$uuid.TmpOut
-mv {config[TMPDIR]}/$uuid.TmpOut {output}
+echo -e "{wildcards.techname}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.sampleRep}\\t$totalGenes\\t$flGenes\\t$nonFlGenes" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5}}'> {TMPDIR}/$uuid.TmpOut
+mv {TMPDIR}/$uuid.TmpOut {output}
 
 		'''
 rule aggAnnotatedGeneDetectionStats:
@@ -1020,9 +1020,9 @@ rule aggAnnotatedGeneDetectionStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuid
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tflGenes\\t"$6"\\t"$8"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonFlGenes\\t"$7"\\t"$9}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuid
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tflGenes\\t"$6"\\t"$8"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonFlGenes\\t"$7"\\t"$9}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 
@@ -1093,16 +1093,16 @@ rule getNtCoverageByGenomePartition:
 
 
 uuid=$(uuidgen)
-zcat {input.tm} | bedtools merge -i stdin > {config[TMPDIR]}/$uuid.tmp.tm.bed
-bedtools coverage -a {input.gencodePart} -b {config[TMPDIR]}/$uuid.tmp.tm.bed  > {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv
+zcat {input.tm} | bedtools merge -i stdin > {TMPDIR}/$uuid.tmp.tm.bed
+bedtools coverage -a {input.gencodePart} -b {TMPDIR}/$uuid.tmp.tm.bed  > {TMPDIR}/$uuid.tmp.tm.cov.bedtsv
 
-totalNts=$(cat {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv | awk '{{print $(NF-2)}}' | sum.sh)
+totalNts=$(cat {TMPDIR}/$uuid.tmp.tm.cov.bedtsv | awk '{{print $(NF-2)}}' | sum.sh)
 
-for flag in `cat {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv | extractGffAttributeValue.pl region_flag|sort|uniq`; do 
-nts=$(cat {config[TMPDIR]}/$uuid.tmp.tm.cov.bedtsv |fgrep "region_flag \\"$flag\\";" | awk '{{print $(NF-2)}}'|sum.sh)
-echo -e "{wildcards.techname}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.sampleRep}\\t{wildcards.splicedStatus}\\t$flag\\t$nts" | awk -v t=$totalNts '{{print $0"\\t"$7/t}}'; done  > {config[TMPDIR]}/$uuid.tmp.tm.cov.stats.tsv
+for flag in `cat {TMPDIR}/$uuid.tmp.tm.cov.bedtsv | extractGffAttributeValue.pl region_flag|sort|uniq`; do 
+nts=$(cat {TMPDIR}/$uuid.tmp.tm.cov.bedtsv |fgrep "region_flag \\"$flag\\";" | awk '{{print $(NF-2)}}'|sum.sh)
+echo -e "{wildcards.techname}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.sampleRep}\\t{wildcards.splicedStatus}\\t$flag\\t$nts" | awk -v t=$totalNts '{{print $0"\\t"$7/t}}'; done  > {TMPDIR}/$uuid.tmp.tm.cov.stats.tsv
 
-mv {config[TMPDIR]}/$uuid.tmp.tm.cov.stats.tsv {output}
+mv {TMPDIR}/$uuid.tmp.tm.cov.stats.tsv {output}
 		'''
 
 rule aggNtCoverageByGenomePartition:
@@ -1111,9 +1111,9 @@ rule aggNtCoverageByGenomePartition:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tsplicingStatus\\tpartition\\tnt_coverage_count\\tnt_coverage_percent" > {config[TMPDIR]}/$uuid
-cat {input} | sort >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tsplicingStatus\\tpartition\\tnt_coverage_count\\tnt_coverage_percent" > {TMPDIR}/$uuid
+cat {input} | sort >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 

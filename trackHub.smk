@@ -8,8 +8,8 @@ shortLabel {config[PROJECT_LONG_NAME]}
 longLabel {config[PROJECT_LONG_NAME]}
 genomesFile genomes.txt
 email {config[PROJECT_CONTACT_EMAIL]}
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -20,8 +20,8 @@ rule make_genomestxt:
 uuidTmpOut=$(uuidgen)
 echo "genome {wildcards.genome}
 trackDb {wildcards.genome}/trackDb.txt
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule agg_genomestxt:
@@ -30,8 +30,8 @@ rule agg_genomestxt:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule makeCapDesignSupertrackHeader:
@@ -44,8 +44,8 @@ superTrack on show
 shortLabel {config[PROJECT_NAME]} {wildcards.capDesign} design
 longLabel {config[PROJECT_NAME]} {wildcards.capDesign} capture design
 visibility full
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -63,8 +63,8 @@ priority 9
 parent {wildcards.capDesign}
 visibility dense
 color 110,30,0
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
@@ -86,12 +86,12 @@ uuid2=$(uuidgen)
 uuid3=$(uuidgen)
 uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
-cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}  |uniq > {config[TMPDIR]}/$uuid2
+cat {input.genome} | cut -f1 | sort -T {TMPDIR}  |uniq > {TMPDIR}/$uuid2
 
-cat {input.gff} | grep -P "^chr" | grep -v "chrIS" |gff2bed_full.pl -|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid3
-join  -j1 {config[TMPDIR]}/$uuid2 {config[TMPDIR]}/$uuid3 |ssv2tsv > {config[TMPDIR]}/$uuid
-bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
-mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
+cat {input.gff} | grep -P "^chr" | grep -v "chrIS" |gff2bed_full.pl -|sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid3
+join  -j1 {TMPDIR}/$uuid2 {TMPDIR}/$uuid3 |ssv2tsv > {TMPDIR}/$uuid
+bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
+mv {TMPDIR}/$uuidTmpOutB {output.bigBed}
 
 echo -e "
 \ttrack {wildcards.capDesign}_targets
@@ -104,8 +104,8 @@ echo -e "
 \tparent {wildcards.capDesign}_input
 \tvisibility dense
 
-" > {config[TMPDIR]}/$uuidTmpOutT
-mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
+" > {TMPDIR}/$uuidTmpOutT
+mv {TMPDIR}/$uuidTmpOutT {output.trackDb}
 
 		'''
 
@@ -122,8 +122,8 @@ longLabel {config[PROJECT_NAME]} {wildcards.capDesign} Illumina HiSeq sequencing
 priority 9
 parent {wildcards.capDesign}
 visibility hide
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule makeHiSeqBamOutputTracks:
@@ -135,14 +135,14 @@ rule makeHiSeqBamOutputTracks:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-samtools view -H {input} > {config[TMPDIR]}/$uuid
-samtools view {input} | grep -P "\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
-samtools view -b {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuidTmpOut
+samtools view -H {input} > {TMPDIR}/$uuid
+samtools view {input} | grep -P "\tchr" | grep -v "chrIS" >> {TMPDIR}/$uuid
+samtools view -b {TMPDIR}/$uuid > {TMPDIR}/$uuidTmpOut
 sleep 200s
-samtools index {config[TMPDIR]}/$uuidTmpOut
+samtools index {TMPDIR}/$uuidTmpOut
 
-mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
-mv {config[TMPDIR]}/$uuidTmpOut.bai  {output.bai}
+mv {TMPDIR}/$uuidTmpOut {output.bam}
+mv {TMPDIR}/$uuidTmpOut.bai  {output.bai}
 		'''
 
 rule makeHiSeqBamOutputTrackDb:
@@ -169,15 +169,15 @@ echo -e "
 \tmaxHeightPixels 100:35:11
 \tparent {wildcards.capDesign}_hiSeq_output
 
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output.trackDb}
 
 		'''
 
 
 rule makeTrackDbTechnameHeader:
 	params:
-		subGroupString=lambda wildcards: trackHubSubGroupString(wildcards.techname, wildcards.capDesign, SIZEFRACS,SAMPLEREPS, config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		subGroupString=lambda wildcards: trackHubSubGroupString(wildcards.techname, wildcards.capDesign, SIZEFRACS,SAMPLEREPS, MINIMUM_TMERGE_READ_SUPPORT),
 		viewsString="allTMs=All_TMs flTMs=Full-length_TMs BAMs=BAMs"
 	output: temp("output/trackHub/" + "{techname}_{capDesign}_trackDbOutputHeader.txt")
 	shell:
@@ -196,8 +196,8 @@ subGroup4 filter Filter {params.viewsString}
 dimensions dimX=sample dimY=filter dimA=sizeFraction dimB=minReadSupport
 filterComposite dimA dimB
 visibility squish
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule makeBamOutputTracks:
@@ -209,13 +209,13 @@ rule makeBamOutputTracks:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-samtools view -H {input} > {config[TMPDIR]}/$uuid
-samtools view {input} | grep -P "\\tchr" | grep -v "chrIS" >> {config[TMPDIR]}/$uuid
-samtools view -b {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuidTmpOut
+samtools view -H {input} > {TMPDIR}/$uuid
+samtools view {input} | grep -P "\\tchr" | grep -v "chrIS" >> {TMPDIR}/$uuid
+samtools view -b {TMPDIR}/$uuid > {TMPDIR}/$uuidTmpOut
 sleep 200s
-samtools index {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
+samtools index {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output.bam}
+mv {TMPDIR}/$uuidTmpOut.bai {output.bai}
 
 		'''
 
@@ -243,8 +243,8 @@ echo -e "
 \tparent {wildcards.techname}_{wildcards.capDesign}_output
 \tsubGroups filter=BAMs sample={wildcards.sampleRep} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} 
 
-" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output.trackDb}
+" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output.trackDb}
 
 		'''
 
@@ -267,9 +267,9 @@ uuid=$(uuidgen)
 uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 
-cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {config[TMPDIR]}/$uuid
-bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
-mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
+cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {TMPDIR}/$uuid
+bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
+mv {TMPDIR}/$uuidTmpOutB {output.bigBed}
 cp -f {input.gff} {output.gff}
 echo -e "
 \ttrack {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}_{wildcards.minReadSupport}_TMs
@@ -282,8 +282,8 @@ echo -e "
 \tparent {wildcards.techname}_{wildcards.capDesign}_output
 \tsubGroups filter=allTMs sample={wildcards.sampleRep} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} minReadSupport={wildcards.minReadSupport}
 
-" > {config[TMPDIR]}/$uuidTmpOutT
-mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
+" > {TMPDIR}/$uuidTmpOutT
+mv {TMPDIR}/$uuidTmpOutT {output.trackDb}
 
 		'''
 
@@ -302,9 +302,9 @@ uuid=$(uuidgen)
 uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 
-cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {config[TMPDIR]}/$uuid
-bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {config[TMPDIR]}/$uuid {input.genome} {config[TMPDIR]}/$uuidTmpOutB
-mv {config[TMPDIR]}/$uuidTmpOutB {output.bigBed}
+cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {TMPDIR}/$uuid
+bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
+mv {TMPDIR}/$uuidTmpOutB {output.bigBed}
 cp -f {input.gff} {output.gff}
 
 echo -e "
@@ -318,8 +318,8 @@ echo -e "
 \tparent {wildcards.techname}_{wildcards.capDesign}_output
 \tsubGroups filter=flTMs sample={wildcards.sampleRep} protocol={wildcards.techname} sizeFraction={wildcards.sizeFrac} minReadSupport={wildcards.minReadSupport}
 
-" > {config[TMPDIR]}/$uuidTmpOutT
-mv {config[TMPDIR]}/$uuidTmpOutT {output.trackDb}
+" > {TMPDIR}/$uuidTmpOutT
+mv {TMPDIR}/$uuidTmpOutT {output.trackDb}
 
 		'''
 
@@ -333,8 +333,8 @@ rule catTrackDb:
 		lambda wildcards: expand("output/trackHub/" + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else None,
 		lambda wildcards: expand("output/trackHub/" + "{capDesign}_primary_targets.trackDb.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_trackDbOutputHeader.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
+		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_BamOutput.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
 		lambda wildcards: expand("output/trackHub/" + "hiSeq_{capDesign}_BamOutput.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else None
 	output:
@@ -342,6 +342,6 @@ rule catTrackDb:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''

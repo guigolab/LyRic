@@ -14,8 +14,8 @@ rule polyAmapping:
 uuidTmpOut=$(uuidgen)
 
 
-samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  |gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule removePolyAERCCs:
@@ -24,8 +24,8 @@ rule removePolyAERCCs:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | fgrep -v ERCC > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | fgrep -v ERCC > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getPolyAreadsList:
@@ -34,8 +34,8 @@ rule getPolyAreadsList:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} | cut -f4 | sort -T {TMPDIR} |uniq > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getPolyAreadsStats:
@@ -46,10 +46,10 @@ rule getPolyAreadsStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
+mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort -T {TMPDIR} |uniq|wc -l)
 polyA=$(cat {input.polyAreads} | wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -59,9 +59,9 @@ rule aggPolyAreadsStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6"\\t"$6/$5}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6"\\t"$6/$5}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
@@ -130,8 +130,8 @@ rule clusterPolyAsites:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 rule makePolyABigWigs:
 	input:
@@ -143,11 +143,11 @@ rule makePolyABigWigs:
 		'''
 tmpIn=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-cat {input.sites} | grep -P "^chr" | grep -v "chrIS" > {config[TMPDIR]}/$tmpIn
+cat {input.sites} | grep -P "^chr" | grep -v "chrIS" > {TMPDIR}/$tmpIn
 
 
-bedtools genomecov -strand {wildcards.strand} -split -bg -i {config[TMPDIR]}/$tmpIn -g {input.genome} > {config[TMPDIR]}/$uuidTmpOut.bedgraph
-bedGraphToBigWig {config[TMPDIR]}/$uuidTmpOut.bedgraph {input.genome} {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+bedtools genomecov -strand {wildcards.strand} -split -bg -i {TMPDIR}/$tmpIn -g {input.genome} > {TMPDIR}/$uuidTmpOut.bedgraph
+bedGraphToBigWig {TMPDIR}/$uuidTmpOut.bedgraph {input.genome} {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''

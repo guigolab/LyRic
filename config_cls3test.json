@@ -31,15 +31,10 @@
 	],
   "CAPTURE": true,
   "SAMPLE_ANNOT": "annotations/samples/sample_annotations.tsv",
-  "TMPDIR": "$TMPDIR",
-  "exonOverhangTolerance": "8",
   "genomeToAnnotGtf": {
     "hg38": "annotations/hs.gencode24+SIRVS.gff",
     "mm10": "annotations/mm.gencodeM7+SIRVS.gff"
   },
-  "MINIMUM_TMERGE_READ_SUPPORT": [
-    "2"
-  ],
   "USE_MATCHED_ILLUMINA": true,
   "PROJECT_NAME": "CLS3test",
   "PROJECT_LONG_NAME": "GENCODE CLS Phase 3 test",

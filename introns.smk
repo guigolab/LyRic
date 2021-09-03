@@ -4,8 +4,8 @@ rule makeIntrons:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | makeIntrons.pl - | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | makeIntrons.pl - | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getIntronMotif:
@@ -19,12 +19,12 @@ rule getIntronMotif:
 	shell:
 		'''
 uuid=$(uuidgen)
-mkdir -p {config[TMPDIR]}/$uuid
+mkdir -p {TMPDIR}/$uuid
 
-zcat {input.introns} | grep -vP "^ERCC"| extract_intron_strand_motif.pl - {input.genome} {config[TMPDIR]}/$uuid/$(basename {output.gff} .introns.gff.gz)
+zcat {input.introns} | grep -vP "^ERCC"| extract_intron_strand_motif.pl - {input.genome} {TMPDIR}/$uuid/$(basename {output.gff} .introns.gff.gz)
 
-gzip {config[TMPDIR]}/$uuid/*
-mv {config[TMPDIR]}/$uuid/* $(dirname {output.gff})
+gzip {TMPDIR}/$uuid/*
+mv {TMPDIR}/$uuid/* $(dirname {output.gff})
 		'''
 		
 rule getGencodeSpliceJunctions:
@@ -33,8 +33,8 @@ rule getGencodeSpliceJunctions:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | awk '$3=="exon"' |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} | awk '$3=="exon"' |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n | makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort -T {TMPDIR} |uniq > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -44,8 +44,8 @@ rule getClsSpliceJunctions:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | awk '$3=="exon"' |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | awk '$3=="exon"' |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n | makeIntrons.pl - | awk '{{print $1"_"$4"_"$5"_"$7}}' |sort -T {TMPDIR} |uniq > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -61,8 +61,8 @@ uuidTmpOut=$(uuidgen)
 clsSJs=$(cat {input.clsSJs} | wc -l)
 commonSJs=$(comm -1 -2 {input.gencodeSJs} {input.clsSJs} | wc -l)
 novelSJs=$(comm -1 -3 {input.gencodeSJs} {input.clsSJs} | wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$clsSJs\t$commonSJs\t$novelSJs"  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$clsSJs\t$commonSJs\t$novelSJs"  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -72,9 +72,9 @@ rule aggCompareClsGencodeSJsStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 
 		'''

@@ -8,7 +8,7 @@ rule basicFASTQqc:
 #zcat {input} | perl -lane 'if ($F[3]) {{die}}' 
 
 # check that there are no read ID duplicates
-zcat {input} | fastq2tsv.pl | awk '{{print $1}}' | sort -T {config[TMPDIR]} | uniq -dc > {output}
+zcat {input} | fastq2tsv.pl | awk '{{print $1}}' | sort -T {TMPDIR} | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
 		'''
@@ -20,11 +20,11 @@ rule fastqTimestamps:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "sample_name\\tFASTQ_modified" > {config[TMPDIR]}/$uuid
+echo -e "sample_name\\tFASTQ_modified" > {TMPDIR}/$uuid
 for file in $(echo {input}); do
 echo -e "$(basename $file .fastq.gz)\t$(stat -L --printf='%y' $file  | awk '{{print $1}}')"
-done | sort >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+done | sort >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 
@@ -40,24 +40,24 @@ rule getReadLengthSummary:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tlength" |gzip > {TMPDIR}/$uuidTmpOut.gz
 
-zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| gzip >> {config[TMPDIR]}/$uuidTmpOut.gz
+zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| gzip >> {TMPDIR}/$uuidTmpOut.gz
 
 echo "
 library(data.table)
 library(tidyverse)
-dat<-fread('{config[TMPDIR]}/$uuidTmpOut.gz', header=T, sep='\\t')
+dat<-fread('{TMPDIR}/$uuidTmpOut.gz', header=T, sep='\\t')
 dat %>%
   group_by(seqTech, sizeFrac, capDesign, sampleRep) %>%
   summarise(n=n(), median=median(length), mean=mean(length), max=max(length)) -> datSumm
 
-write_tsv(datSumm, '{config[TMPDIR]}/$uuidTmpOut.1')
+write_tsv(datSumm, '{TMPDIR}/$uuidTmpOut.1')
 
 " | R --slave
 
-mv {config[TMPDIR]}/$uuidTmpOut.gz {output.reads}
-mv {config[TMPDIR]}/$uuidTmpOut.1 {output.summ}
+mv {TMPDIR}/$uuidTmpOut.gz {output.reads}
+mv {TMPDIR}/$uuidTmpOut.1 {output.summ}
 		'''
 
 rule aggReadLengthSummary:
@@ -67,9 +67,9 @@ rule aggReadLengthSummary:
 	shell:
 		'''
 uuid=$(uuidgen)
-head -n1 {input[0]} > {config[TMPDIR]}/$uuid
-tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+head -n1 {input[0]} > {TMPDIR}/$uuid
+tail -q -n+2 {input} |sort >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 

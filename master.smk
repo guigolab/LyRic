@@ -58,8 +58,13 @@ ENDSUPPORTcategories=["all", "cagePolyASupported"]
 	# "cagePolyASupported" = CAGE (5') + PolyA (3') -supported TMs only
 # splicing status categories of TMs:
 TMSPLICEDSTATUScategories=["all", "spliced", "unspliced"]
+# TMPDIR to write temp files in
+TMPDIR='$TMPDIR'
 
+MINIMUM_TMERGE_READ_SUPPORT=['2',]
 READFILTERS=['HiSS', 'noFilt']
+# for tmerge:
+ExonOverhangTolerance='8'
 
 GENOMES=[]
 GENOMETOCAPDESIGNS=defaultdict(list)
@@ -93,7 +98,7 @@ wildcard_constraints:
  	sizeFrac = "[^_/]+",
  	techname = "[^_/]+",
  	sampleRep = "[^_/]+",
-	minReadSupport = '|'.join(config["MINIMUM_TMERGE_READ_SUPPORT"]),
+	minReadSupport = '|'.join(MINIMUM_TMERGE_READ_SUPPORT),
 	endSupport  = '|'.join(ENDSUPPORTcategories),
 	splicedStatus = '|'.join(TMSPLICEDSTATUScategories),
 	filt= '|'.join(READFILTERS),
@@ -198,11 +203,11 @@ include: "trackHub.smk"
 rule all:
 	input:
 		# transcriptome GTFs (per sampleRep):
-		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		# transcriptome GTFs (per grouped sampleReps)
-		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
-		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),		
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),		
 		expand(returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null', # facetted histograms of read length
 		expand("output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
@@ -212,28 +217,28 @@ rule all:
 		expand(returnPlotFilenames("output/plots/" + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.lrMapping.spikeIns.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand("output/plots/" + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=plotFormat) if config['produceStatPlots'] else '/dev/null',
 		expand("output/plots/" + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=plotFormat) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.merged.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, ext=plotFormat, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config["CAPTURE"] and config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.matureRNALength.hist.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.merged.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, ext=plotFormat, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config["CAPTURE"] and config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.matureRNALength.hist.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], filt=READFILTERS) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.SnPr.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-bySplicingStatus.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
-		expand("output/plots/" + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, filt=READFILTERS) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.SnPr.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-bySplicingStatus.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
+		expand("output/plots/" + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.geneReadCoverage.stats"), filtered_product, techname=TECHNAMESplusBY, capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.density.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null',
 		expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.heatmap.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.allErrors.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.deletionsOnly.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
 
 		# one summary HTML table per subProject, plus one overall:
 		expand("output/html/summary_table_{subProject}.html", subProject=subProjects) if config['produceHtmlStatsTable'] else '/dev/null',
@@ -263,8 +268,8 @@ uuid=$(uuidgen)
 count=$(cat {input} | fgrep ">" | sort|uniq -d | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate sequence IDs found"; exit 1; fi
 
-FastaToTbl {input} | sort -T {config[TMPDIR]} -k1,1 | TblToFasta > {config[TMPDIR]}/$uuid 
-mv {config[TMPDIR]}/$uuid {output.sorted}
+FastaToTbl {input} | sort -T {TMPDIR} -k1,1 | TblToFasta > {TMPDIR}/$uuid 
+mv {TMPDIR}/$uuid {output.sorted}
 perl -e 'use Bio::DB::Fasta; my $chrdb = Bio::DB::Fasta->new("{output.sorted}");'
 
 		'''
@@ -275,8 +280,8 @@ rule makeGenomeFile:
 	shell:
 		'''
  uuid=$(uuidgen)
-FastaToTbl {input} | awk '{{print $1"\\t"length($2)}}' | sort -k1,1 > {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+FastaToTbl {input} | awk '{{print $1"\\t"length($2)}}' | sort -k1,1 > {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 		'''
 
 rule makeGencodePartition:
@@ -323,8 +328,8 @@ rule simplifyGencode:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule collapseGencode:
@@ -336,12 +341,12 @@ rule collapseGencode:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-cat {input} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
+cat {input} | skipcomments | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid
 uuidL=$(uuidgen)
 
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid | buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidL
-mergeToRef.pl {input} {config[TMPDIR]}/$uuidL | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid | buildLoci.pl - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidL
+mergeToRef.pl {input} {TMPDIR}/$uuidL | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 

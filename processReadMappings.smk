@@ -10,16 +10,16 @@ rule integratePolyaAndSjInfo:
 uuid=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
 uuidTmpOutW=$(uuidgen)
-zcat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort -T {config[TMPDIR]} > {config[TMPDIR]}/$uuid.reads.SJ.strandInfo.tsv
-cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort -T {config[TMPDIR]}  > {config[TMPDIR]}/$uuid.reads.polyA.strandInfo.tsv
-join -a1 -a2 -e '.' -o '0,1.2,2.2' {config[TMPDIR]}/$uuid.reads.SJ.strandInfo.tsv  {config[TMPDIR]}/$uuid.reads.polyA.strandInfo.tsv > {config[TMPDIR]}/$uuid.reads.SJ.polyA.strandInfo.tsv
+zcat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort -T {TMPDIR} > {TMPDIR}/$uuid.reads.SJ.strandInfo.tsv
+cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort -T {TMPDIR}  > {TMPDIR}/$uuid.reads.polyA.strandInfo.tsv
+join -a1 -a2 -e '.' -o '0,1.2,2.2' {TMPDIR}/$uuid.reads.SJ.strandInfo.tsv  {TMPDIR}/$uuid.reads.polyA.strandInfo.tsv > {TMPDIR}/$uuid.reads.SJ.polyA.strandInfo.tsv
 
 #make list of reads with wrongly called polyA sites (i.e. their strand is different from the one inferred using SJs):
-cat {config[TMPDIR]}/$uuid.reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[2] ne "." && $F[1] ne "." && $F[1] ne $F[2]){{print join ("\\t", $F[0])}}' |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidTmpOutW
-mv {config[TMPDIR]}/$uuidTmpOutW {output.wrongPolyAs}
+cat {TMPDIR}/$uuid.reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[2] ne "." && $F[1] ne "." && $F[1] ne $F[2]){{print join ("\\t", $F[0])}}' |sort -T {TMPDIR} |uniq > {TMPDIR}/$uuidTmpOutW
+mv {TMPDIR}/$uuidTmpOutW {output.wrongPolyAs}
 #get strand info, prioritizing SJ inference
-cat {config[TMPDIR]}/$uuid.reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print "$F[0]\\t$F[1]"}} else{{print "$F[0]\\t$F[2]"}}' |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidTmpOutS
-mv {config[TMPDIR]}/$uuidTmpOutS {output.strandInfo}
+cat {TMPDIR}/$uuid.reads.SJ.polyA.strandInfo.tsv | perl -slane 'if($F[1] ne "."){{print "$F[0]\\t$F[1]"}} else{{print "$F[0]\\t$F[2]"}}' |sort -T {TMPDIR} |uniq > {TMPDIR}/$uuidTmpOutS
+mv {TMPDIR}/$uuidTmpOutS {output.strandInfo}
 		'''
 
 rule removeWrongPolyAs:
@@ -30,8 +30,8 @@ rule removeWrongPolyAs:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input.polyA} | fgrep -v -w -f {input.wrongPolyAs} > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule strandGffs:
@@ -43,9 +43,9 @@ rule strandGffs:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-zcat {input.gff} > {config[TMPDIR]}/$uuid.in.gff
-get_right_transcript_strand.pl {config[TMPDIR]}/$uuid.in.gff {input.strandInfo} | fgrep -v ERCC- | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input.gff} > {TMPDIR}/$uuid.in.gff
+get_right_transcript_strand.pl {TMPDIR}/$uuid.in.gff {input.strandInfo} | fgrep -v ERCC- | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 rule removeIntraPriming:
@@ -60,22 +60,22 @@ rule removeIntraPriming:
 		'''
 uuid=$(uuidgen)
 
-zcat {input.strandedGff} | awk '$3=="exon"'>  {config[TMPDIR]}/$uuid.gff
-gtfToGenePred {config[TMPDIR]}/$uuid.gff {config[TMPDIR]}/$uuid.gp
-genePredToBed {config[TMPDIR]}/$uuid.gp {config[TMPDIR]}/$uuid.bed
-rm {config[TMPDIR]}/$uuid.gp
-totalReads=$(cat {config[TMPDIR]}/$uuid.bed | wc -l)
+zcat {input.strandedGff} | awk '$3=="exon"'>  {TMPDIR}/$uuid.gff
+gtfToGenePred {TMPDIR}/$uuid.gff {TMPDIR}/$uuid.gp
+genePredToBed {TMPDIR}/$uuid.gp {TMPDIR}/$uuid.bed
+rm {TMPDIR}/$uuid.gp
+totalReads=$(cat {TMPDIR}/$uuid.bed | wc -l)
 
 
-cat {config[TMPDIR]}/$uuid.bed | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
-rm {config[TMPDIR]}/$uuid.bed
-zcat $(dirname {output.list})/$(basename {output.list} .list).bed.gz | awk '$5>0.6'|cut -f4 | sort|uniq > {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output.list}
+cat {TMPDIR}/$uuid.bed | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
+rm {TMPDIR}/$uuid.bed
+zcat $(dirname {output.list})/$(basename {output.list} .list).bed.gz | awk '$5>0.6'|cut -f4 | sort|uniq > {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output.list}
 intraPrimed=$(cat {output.list} | wc -l)
 let nonIntraPrimed=$totalReads-$intraPrimed || true
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalReads\t$intraPrimed" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuid.2
-mv {config[TMPDIR]}/$uuid.2 {output.stats}
-rm {config[TMPDIR]}/$uuid*
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalReads\t$intraPrimed" | awk '{{print $0"\t"$6/$5}}' > {TMPDIR}/$uuid.2
+mv {TMPDIR}/$uuid.2 {output.stats}
+rm {TMPDIR}/$uuid*
 		'''
 
 rule aggIntraPrimingStats:
@@ -84,9 +84,9 @@ rule aggIntraPrimingStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tintraPrimed\tpercentIntraPrimed" > {config[TMPDIR]}/$uuid
-cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tintraPrimed\tpercentIntraPrimed" > {TMPDIR}/$uuid
+cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 		'''
 
 rule plotIntraPrimingStats:
@@ -169,31 +169,31 @@ canonSjReads=$(zcat {input.transcriptStrandInfo} | awk '$6==1'| wc -l)
 noFishySjReads=$(zcat {input.transcriptStrandInfo} | awk '$7==1'| wc -l)
 # reads with no fishy SJs and canonical SJs
 noFishyCanonSjReads=$(zcat {input.transcriptStrandInfo} | awk '$6==1 && $7==1'| wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalSplicedReads\t$canonSjReads\t$noFishySjReads\t$noFishyCanonSjReads" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5"\\t"$8/$5}}' > {config[TMPDIR]}/$uuidTmpOutS
-mv {config[TMPDIR]}/$uuidTmpOutS {output.stats}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalSplicedReads\t$canonSjReads\t$noFishySjReads\t$noFishyCanonSjReads" | awk '{{print $0"\\t"$6/$5"\\t"$7/$5"\\t"$8/$5}}' > {TMPDIR}/$uuidTmpOutS
+mv {TMPDIR}/$uuidTmpOutS {output.stats}
 
 
 #select read IDs with canonical GT|GC/AG
 uuid=$(uuidgen)
-zcat {input.transcriptStrandInfo} | tgrep -v -P "^#" | awk '$6==1' | cut -f1 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
-wc -l {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp
-zcat {input.strandedReads} > {config[TMPDIR]}/$uuid.str.gff
+zcat {input.transcriptStrandInfo} | tgrep -v -P "^#" | awk '$6==1' | cut -f1 | sort -T {TMPDIR} |uniq > {TMPDIR}/$uuid.reads.hcSJs.list.tmp
+wc -l {TMPDIR}/$uuid.reads.hcSJs.list.tmp
+zcat {input.strandedReads} > {TMPDIR}/$uuid.str.gff
 
 ##high-quality Phred SJs
-samtools view -F 256 -F4 -F 2048 {input.bam} | samHQintrons.pl --minQual {params.minSJsPhredScore} - |cut -f1|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuid.HQintrons.reads.list
-#tgrep -F -w -f {config[TMPDIR]}/$uuid.HQintrons.reads.list {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp > {config[TMPDIR]}/$uuid.reads.hcSJs.list
-comm -1 -2 {config[TMPDIR]}/$uuid.HQintrons.reads.list {config[TMPDIR]}/$uuid.reads.hcSJs.list.tmp > {config[TMPDIR]}/$uuid.reads.hcSJs.list
+samtools view -F 256 -F4 -F 2048 {input.bam} | samHQintrons.pl --minQual {params.minSJsPhredScore} - |cut -f1|sort -T {TMPDIR} |uniq > {TMPDIR}/$uuid.HQintrons.reads.list
+#tgrep -F -w -f {TMPDIR}/$uuid.HQintrons.reads.list {TMPDIR}/$uuid.reads.hcSJs.list.tmp > {TMPDIR}/$uuid.reads.hcSJs.list
+comm -1 -2 {TMPDIR}/$uuid.HQintrons.reads.list {TMPDIR}/$uuid.reads.hcSJs.list.tmp > {TMPDIR}/$uuid.reads.hcSJs.list
 
 
 
-tgrep -F -w -f {config[TMPDIR]}/$uuid.reads.hcSJs.list {config[TMPDIR]}/$uuid.str.gff > {config[TMPDIR]}/$uuid.gtag.gff
-wc -l {config[TMPDIR]}/$uuid.gtag.gff
-cat {config[TMPDIR]}/$uuid.str.gff | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq -u > {config[TMPDIR]}/$uuid.tmp
-tgrep -F -w -f {config[TMPDIR]}/$uuid.tmp {config[TMPDIR]}/$uuid.str.gff > {config[TMPDIR]}/$uuid.tmp2
-cat {config[TMPDIR]}/$uuid.tmp2  > {config[TMPDIR]}/$uuid.monoPolyA.gff
+tgrep -F -w -f {TMPDIR}/$uuid.reads.hcSJs.list {TMPDIR}/$uuid.str.gff > {TMPDIR}/$uuid.gtag.gff
+wc -l {TMPDIR}/$uuid.gtag.gff
+cat {TMPDIR}/$uuid.str.gff | extractGffAttributeValue.pl transcript_id | sort -T {TMPDIR} |uniq -u > {TMPDIR}/$uuid.tmp
+tgrep -F -w -f {TMPDIR}/$uuid.tmp {TMPDIR}/$uuid.str.gff > {TMPDIR}/$uuid.tmp2
+cat {TMPDIR}/$uuid.tmp2  > {TMPDIR}/$uuid.monoPolyA.gff
  echo $?
-cat {config[TMPDIR]}/$uuid.gtag.gff {config[TMPDIR]}/$uuid.monoPolyA.gff | fgrep -vw -f {input.intraPriming} -| sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip> {config[TMPDIR]}/$uuidTmpOutG
-mv {config[TMPDIR]}/$uuidTmpOutG {output.gff}
+cat {TMPDIR}/$uuid.gtag.gff {TMPDIR}/$uuid.monoPolyA.gff | fgrep -vw -f {input.intraPriming} -| sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip> {TMPDIR}/$uuidTmpOutG
+mv {TMPDIR}/$uuidTmpOutG {output.gff}
 		'''
 
 rule aggHighConfSplicedReadsStats:
@@ -202,9 +202,9 @@ rule aggHighConfSplicedReadsStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalSplicedReads\tcanonSjReads\tnoFishySjReads\tnoFishyCanonSjReads" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalSplicedReads\tcanonSjReads\tnoFishySjReads\tnoFishyCanonSjReads" > {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
@@ -214,8 +214,8 @@ rule getHCGMintrons:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | makeIntrons.pl -| perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $end=$F[4]+1; print $F[11]."\t".$F[0]."_".$start."_".$end."_".$F[6]' | sort -T {config[TMPDIR]}  -k2,2 > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | makeIntrons.pl -| perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $end=$F[4]+1; print $F[11]."\t".$F[0]."_".$start."_".$end."_".$F[6]' | sort -T {TMPDIR}  -k2,2 > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -237,10 +237,10 @@ echoerr "#########################"
 if [ "{params.useHiSeq}" = "pleasedo" ]; then
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.introns.noHiSeq.tsv
-zcat {input.hcgmGTF} > {config[TMPDIR]}/$uuid.$(basename {input.hcgmGTF} .gz)
-cut -f1 {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.introns.noHiSeq.tsv | sort -T {config[TMPDIR]} |uniq | fgrep -wv -f - {config[TMPDIR]}/$uuid.$(basename {input.hcgmGTF} .gz) |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+join -v1 -1 2 -2 1 {input.lrIntrons} {input.hiSeqIntrons} |awk '{{print $2"\t"$1}}' > {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.introns.noHiSeq.tsv
+zcat {input.hcgmGTF} > {TMPDIR}/$uuid.$(basename {input.hcgmGTF} .gz)
+cut -f1 {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.introns.noHiSeq.tsv | sort -T {TMPDIR} |uniq | fgrep -wv -f - {TMPDIR}/$uuid.$(basename {input.hcgmGTF} .gz) |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 else
 ln -srf {input.hcgmGTF} {output}
 fi
@@ -259,20 +259,20 @@ uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
 
-bedtools bamtobed -i {input.reads} -bed12 > {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.merged.bed
-zcat {input.HiSSGTF} | gff2bed_full.pl - > {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.HiSS.bed
+bedtools bamtobed -i {input.reads} -bed12 > {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.merged.bed
+zcat {input.HiSSGTF} | gff2bed_full.pl - > {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.HiSS.bed
 
-mappedReadsMono=$(cat {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.merged.bed | awk '$10<=1'|cut -f4 |sort -T {config[TMPDIR]} |uniq|wc -l)
-mappedReadsSpliced=$(cat {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.merged.bed | awk '$10>1'|cut -f4 |sort -T {config[TMPDIR]} |uniq|wc -l)
+mappedReadsMono=$(cat {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.merged.bed | awk '$10<=1'|cut -f4 |sort -T {TMPDIR} |uniq|wc -l)
+mappedReadsSpliced=$(cat {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.merged.bed | awk '$10>1'|cut -f4 |sort -T {TMPDIR} |uniq|wc -l)
 
-HiSSMono=$(cat {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.HiSS.bed| awk '$10<=1'|cut -f4  | sort -T {config[TMPDIR]} |uniq|wc -l)
-HiSSSpliced=$(cat {config[TMPDIR]}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.HiSS.bed| awk '$10>1'|cut -f4  | sort -T {config[TMPDIR]} |uniq|wc -l)
+HiSSMono=$(cat {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.HiSS.bed| awk '$10<=1'|cut -f4  | sort -T {TMPDIR} |uniq|wc -l)
+HiSSSpliced=$(cat {TMPDIR}/$uuid.{wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.HiSS.bed| awk '$10>1'|cut -f4  | sort -T {TMPDIR} |uniq|wc -l)
 
 #let totalMapped=$mappedReadsMono+$mappedReadsSpliced || true
 let nonHiSSMono=$mappedReadsMono-$HiSSMono || true
 let nonHiSSSPliced=$mappedReadsSpliced-$HiSSSpliced || true
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$HiSSMono\t$HiSSSpliced\t$nonHiSSMono\t$nonHiSSSPliced" > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$HiSSMono\t$HiSSSpliced\t$nonHiSSMono\t$nonHiSSSPliced" > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -284,9 +284,9 @@ rule aggHiSSStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-mono\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-spliced\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonHCGM-mono\\t"$7"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonHCGM-spliced\\t"$8}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-mono\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tHCGM-spliced\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonHCGM-mono\\t"$7"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonHCGM-spliced\\t"$8}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -358,8 +358,8 @@ rule mergedReads:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport {wildcards.minReadSupport} --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | tmerge --exonOverhangTolerance {ExonOverhangTolerance} --minReadSupport {wildcards.minReadSupport} --endFuzz {ExonOverhangTolerance} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule mergedUnfilteredSirvReads:
@@ -372,10 +372,10 @@ rule mergedUnfilteredSirvReads:
 		'''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
-zcat {input} | awk '$1 ~ /SIRV/ || $1=="chrIS"' > {config[TMPDIR]}/$uuid
+zcat {input} | awk '$1 ~ /SIRV/ || $1=="chrIS"' > {TMPDIR}/$uuid
 
-cat {config[TMPDIR]}/$uuid| tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n | gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {TMPDIR}/$uuid| tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n | gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
@@ -388,8 +388,8 @@ rule splitTmsBySplicedStatus:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} {params.grepSpliced} | gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} {params.grepSpliced} | gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
@@ -399,8 +399,8 @@ rule catMergedReadsForGroupedSampleReps:
 	shell:
 		'''
 uuid=$(uuidgen)
-zcat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n > {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+zcat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n > {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 		'''
 
 rule mergedReadsGroupedSampleReps:
@@ -411,16 +411,16 @@ rule mergedReadsGroupedSampleReps:
 	shell:
 		'''
 uuid=$(uuidgen)
-cat {input} | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} --minReadSupport 1 --endFuzz {config[exonOverhangTolerance]} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid.gff
+cat {input} | tmerge --exonOverhangTolerance {ExonOverhangTolerance} --minReadSupport 1 --endFuzz {ExonOverhangTolerance} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
 
-echo -e "read_id\ttranscript_id" > {config[TMPDIR]}/$uuid.tsv
+echo -e "read_id\ttranscript_id" > {TMPDIR}/$uuid.tsv
 
-tmergeRecoverSampleRepReadIds.pl {input} {config[TMPDIR]}/$uuid.gff | sort -T $TMPDIR | uniq >> {config[TMPDIR]}/$uuid.tsv
+tmergeRecoverSampleRepReadIds.pl {input} {TMPDIR}/$uuid.gff | sort -T $TMPDIR | uniq >> {TMPDIR}/$uuid.tsv
 
-gzip {config[TMPDIR]}/$uuid.tsv
-gzip {config[TMPDIR]}/$uuid.gff
-mv {config[TMPDIR]}/$uuid.gff.gz {output.gff}
-mv {config[TMPDIR]}/$uuid.tsv.gz {output.readToTmTsv}
+gzip {TMPDIR}/$uuid.tsv
+gzip {TMPDIR}/$uuid.gff
+mv {TMPDIR}/$uuid.gff.gz {output.gff}
+mv {TMPDIR}/$uuid.tsv.gz {output.readToTmTsv}
 
 		'''
 
@@ -435,8 +435,8 @@ rule mergedReadsToBed:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | gff2bed_full.pl - > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | gff2bed_full.pl - > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
@@ -448,8 +448,8 @@ rule getTmStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | extractGffAttributeValue.pl transcript_id spliced mature_RNA_length contains_count 3p_dists_to_3p 5p_dists_to_5p meta_3p_dists_to_5p meta_5p_dists_to_5p |sort|uniq | awk -v t={wildcards.techname} -v ca={wildcards.capDesign} -v s={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print t"\\t"ca"\\t"s"\\t"b"\t"$0}}' | gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | extractGffAttributeValue.pl transcript_id spliced mature_RNA_length contains_count 3p_dists_to_3p 5p_dists_to_5p meta_3p_dists_to_5p meta_5p_dists_to_5p |sort|uniq | awk -v t={wildcards.techname} -v ca={wildcards.capDesign} -v s={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print t"\\t"ca"\\t"s"\\t"b"\t"$0}}' | gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule aggTmStats:
@@ -458,10 +458,10 @@ rule aggTmStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tspliced\tcontains_count\tend\tdistance\tnormDistance" | gzip > {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tspliced\tcontains_count\tend\tdistance\tnormDistance" | gzip > {TMPDIR}/$uuidTmpOut
 
-zcat {input} | perl -F"\\t" -slane '@ara=split(",", $F[8]); @arb=split(",", $F[9]); @arc=split(",", $F[10]), @ard=split(",", $F[11]); for ($i=0; $i<=$#ara; $i++){{$threepMinusDist=-$ara[$i];print  "$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t3\\t$threepMinusDist\\t$arc[$i]\\n$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t5\\t$arb[$i]\\t$ard[$i]"}}' | sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | perl -F"\\t" -slane '@ara=split(",", $F[8]); @arb=split(",", $F[9]); @arc=split(",", $F[10]), @ard=split(",", $F[11]); for ($i=0; $i<=$#ara; $i++){{$threepMinusDist=-$ara[$i];print  "$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t3\\t$threepMinusDist\\t$arc[$i]\\n$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t5\\t$arb[$i]\\t$ard[$i]"}}' | sort -T {TMPDIR}  | gzip >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -475,10 +475,10 @@ rule getMergingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-hcgms=$(zcat {input.hcgms} | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
-merged=$(zcat {input.pooledMerged} | extractGffAttributeValue.pl transcript_id | sort -T {config[TMPDIR]} |uniq|wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$hcgms\t$merged" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+hcgms=$(zcat {input.hcgms} | extractGffAttributeValue.pl transcript_id | sort -T {TMPDIR} |uniq|wc -l)
+merged=$(zcat {input.pooledMerged} | extractGffAttributeValue.pl transcript_id | sort -T {TMPDIR} |uniq|wc -l)
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$hcgms\t$merged" | awk '{{print $0"\t"$6/$5}}' > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -490,9 +490,9 @@ rule aggMergingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGMreads\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tmergedTMs\\t"$6}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tHCGMreads\\t"$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tmergedTMs\\t"$6}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 rule plotMergingStats:
@@ -563,11 +563,11 @@ rule aggTmLengthStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttranscript_id\tspliced\tmature_RNA_length\tcategory" |gzip> {config[TMPDIR]}/$uuidTmpOut
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttranscript_id\tspliced\tmature_RNA_length\tcategory" |gzip> {TMPDIR}/$uuidTmpOut
 
-zcat {input.all} |cut -f1-7| awk '{{print $0"\\tCLS_TMs"}}' |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
-zcat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' |sort -T {config[TMPDIR]}  | gzip >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input.all} |cut -f1-7| awk '{{print $0"\\tCLS_TMs"}}' |sort -T {TMPDIR}  | gzip >> {TMPDIR}/$uuidTmpOut
+zcat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' |sort -T {TMPDIR}  | gzip >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule aggHistTmLengthSummaryStats:
@@ -586,9 +586,9 @@ dat<-fread('{input}', header=T, sep='\\t')
 dat %>%
   group_by(seqTech, sizeFrac, capDesign, sampleRep, category) %>%
   summarise(med=median(mature_RNA_length), max=max(mature_RNA_length)) -> datSumm
-write_tsv(datSumm, '{config[TMPDIR]}/$uuid')
+write_tsv(datSumm, '{TMPDIR}/$uuid')
 " | R --slave
-mv {config[TMPDIR]}/$uuid {output.summary}
+mv {TMPDIR}/$uuid {output.summary}
 
 		'''
 
@@ -686,22 +686,22 @@ rule getGeneReadCoverageStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-cut -f1 {input.genome} |sort|uniq > {config[TMPDIR]}/$uuid.chr
+cut -f1 {input.genome} |sort|uniq > {TMPDIR}/$uuid.chr
 
 #gencode
 
-cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| fgrep -w -f {config[TMPDIR]}/$uuid.chr |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.1
+cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| fgrep -w -f {TMPDIR}/$uuid.chr |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid.1
 
-bedtools coverage -sorted -g {input.genome} -bed -split -nonamecheck -counts -a {config[TMPDIR]}/$uuid.1 -b {input.bam} |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}'> {config[TMPDIR]}/$uuid.2
+bedtools coverage -sorted -g {input.genome} -bed -split -nonamecheck -counts -a {TMPDIR}/$uuid.1 -b {input.bam} |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}'> {TMPDIR}/$uuid.2
 
-mv {config[TMPDIR]}/$uuid.2 {output.gencode}
+mv {TMPDIR}/$uuid.2 {output.gencode}
 
 #tmerge
-zcat {input.tmerge} > {config[TMPDIR]}/$uuid.a
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid.a -b {config[TMPDIR]}/$uuid.a | buildLoci.pl - | extract_locus_coords.pl -| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuid.3
+zcat {input.tmerge} > {TMPDIR}/$uuid.a
+bedtools intersect -s -wao -a {TMPDIR}/$uuid.a -b {TMPDIR}/$uuid.a | buildLoci.pl - | extract_locus_coords.pl -| sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid.3
 
-bedtools coverage -sorted -g {input.genome}  -bed -split -nonamecheck -counts -a {config[TMPDIR]}/$uuid.3 -b {input.bam}  |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}' > {config[TMPDIR]}/$uuid.4
-mv {config[TMPDIR]}/$uuid.4 {output.tmerge}
+bedtools coverage -sorted -g {input.genome}  -bed -split -nonamecheck -counts -a {TMPDIR}/$uuid.3 -b {input.bam}  |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}' > {TMPDIR}/$uuid.4
+mv {TMPDIR}/$uuid.4 {output.tmerge}
 
 		'''
 
@@ -712,9 +712,9 @@ rule aggGeneReadCoverageStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tgene_id\\treadCount" > {config[TMPDIR]}/$uuid
-cat {input} | cut -f1-4,8,9   >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tgene_id\\treadCount" > {TMPDIR}/$uuid
+cat {input} | cut -f1-4,8,9   >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 

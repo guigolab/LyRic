@@ -1,7 +1,9 @@
-LyRic is a full-featured, automated transcriptome annotation workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is:
+LyRic is a full-featured, automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
 
-- to generate a set of high-quality RNA transcript models mapped onto a genome sequence, based on Long-Read (LR) sequencing data (*e.g.* from the ONT or PacBio platforms)
-- to produce various statistics plots that describe the input and output data 
+- a set of high-quality RNA Transcript Models (TMs) mapped onto a genome sequence, based on Long-Read (LR) sequencing data (*e.g.* from the ONT or PacBio platforms)
+- various summary statistics plots and analysis results that describe the input and output data in details
+- an interactive HTML table reporting statistics for each input sample
+- a [UCSC Track Hub](http://genome.cse.ucsc.edu/goldenPath/help/hgTrackHubHelp.html) to display output TMs as well as various other tracks produced by LyRic.
 
 # Dependencies
 
@@ -40,6 +42,8 @@ Note that using a Snakemake-compatible HPC environment such as SGE/UGE is highly
 
 All paths mentioned below are relative to the working directory.
 
+# Execution
+
 # Input
 
 - **LR FASTQ files**:
@@ -58,8 +62,8 @@ All paths mentioned below are relative to the working directory.
 	The contents of each column should me mostly self-explanatory, except:
 
 	- `sample_name` (string): should match the basename of the corresponding LR FASTQ file and should be globally unique.
-	- `use_matched_HiSeq` (boolean): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below)
-	- `project` (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired.
+	- `use_matched_HiSeq` (boolean): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below).
+	- `project` (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
 	- `filter_SJ_Qscore` (integer): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Recommended values: `10` for ONT, `30` for PacBio HiFi reads.
 	
 - genomes.fa
@@ -80,13 +84,13 @@ The production of each output type can be turned on and off using boolean Snakem
 
 ## Summary statistics plots
 
-- `config['produceStatPlots']`: boolean. If true, multiple statistics plots in PNG format will be output inside the `./output/plots/` subdirectory.
+Controlled by Snakemake's `config['produceStatPlots']` config variable: boolean. If `True`, multiple statistics plots in PNG format will be output inside the `./output/plots/` subdirectory.
 
 ## Interactive HTML summary stats table
 
 Production of the interactive HTML summary table is controlled by Snakemake's `config['produceHtmlStatsTable']` variable. If set to `True`, detailed reports containing various per-sample statistics will be produced in the `./output/html/` subdirectory. 
 
-LyRic will produce one table per distinct `project` value in the input sample annotation file (as long as those correspond to actual input FASTQ files), plus a global one
+LyRic will produce one table per distinct `project` value in the input sample annotation file (as long as those correspond to actual input FASTQ files) (`./output/html/summary_table_{project}.html`), plus a global one containing info for all samples (`./output/html/summary_table_ALL.html`)
 
 For each interactive HTML summary stats table, an accompanying TSV file with the same basename and the `.tsv` extension will also be produced. It contains the same data as the HTML table, in an easily parsable tab-separated format.
 

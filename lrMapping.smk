@@ -23,18 +23,18 @@ uuidTmpOut=$(uuidgen)
 
 echoerr "Mapping"
 
-minimap2 --MD -x {params.minimap_preset} -t {threads} --secondary=no -L -a {input.genome} {input.reads} > {config[TMPDIR]}/$uuid
+minimap2 --MD -x {params.minimap_preset} -t {threads} --secondary=no -L -a {input.genome} {input.reads} > {TMPDIR}/$uuid
 echoerr "Mapping done"
 echoerr "Creating/sorting BAM"
-samtools view -H {config[TMPDIR]}/$uuid > {config[TMPDIR]}/$uuid.2
-samtools view -F 256 -F4 -F 2048 {config[TMPDIR]}/$uuid >> {config[TMPDIR]}/$uuid.2
-cat {config[TMPDIR]}/$uuid.2 | samtools sort -T {config[TMPDIR]}  --threads {threads}  -m 5G - > {config[TMPDIR]}/$uuidTmpOut
+samtools view -H {TMPDIR}/$uuid > {TMPDIR}/$uuid.2
+samtools view -F 256 -F4 -F 2048 {TMPDIR}/$uuid >> {TMPDIR}/$uuid.2
+cat {TMPDIR}/$uuid.2 | samtools sort -T {TMPDIR}  --threads {threads}  -m 5G - > {TMPDIR}/$uuidTmpOut
 echoerr "Done creating/sorting BAM"
 sleep 200s
-samtools index {config[TMPDIR]}/$uuidTmpOut
+samtools index {TMPDIR}/$uuidTmpOut
 
-mv {config[TMPDIR]}/$uuidTmpOut {output.bam}
-mv {config[TMPDIR]}/$uuidTmpOut.bai {output.bai}
+mv {TMPDIR}/$uuidTmpOut {output.bam}
+mv {TMPDIR}/$uuidTmpOut.bai {output.bai}
 		'''
 
 rule makeBigWigs:
@@ -44,8 +44,8 @@ rule makeBigWigs:
 	shell:
 		'''
 uuid=$(uuidgen)
-bamCoverage --normalizeUsing CPM  -b {input} -o {config[TMPDIR]}/$uuid.bw 
-mv {config[TMPDIR]}/$uuid.bw {output}
+bamCoverage --normalizeUsing CPM  -b {input} -o {TMPDIR}/$uuid.bw 
+mv {TMPDIR}/$uuid.bw {output}
 		'''
 
 
@@ -66,9 +66,9 @@ rule getBamqcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-qualimapReportToTsv.pl {input}  | cut -f2,3 |grep -v globalErrorRate| sed 's/PerMappedBase//' |awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2}}' > {config[TMPDIR]}/$uuid
+qualimapReportToTsv.pl {input}  | cut -f2,3 |grep -v globalErrorRate| sed 's/PerMappedBase//' |awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2}}' > {TMPDIR}/$uuid
 
-mv {config[TMPDIR]}/$uuid {output}
+mv {TMPDIR}/$uuid {output}
 		'''
 
 rule aggBamqcStats:
@@ -77,9 +77,9 @@ rule aggBamqcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\terrorCategory\terrorRate" > {config[TMPDIR]}/$uuid
-cat {input} | sort >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\terrorCategory\terrorRate" > {TMPDIR}/$uuid
+cat {input} | sort >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 
@@ -178,13 +178,13 @@ rule makeBigWigExonicRegions:
 	shell:
 		'''
 uuid=$(uuidgen)
-cat {input.annotGff} | awk '$3=="exon"' > {config[TMPDIR]}/$uuid.gff
-bedtools intersect -split -u -a {input.bam} -b {config[TMPDIR]}/$uuid.gff > {config[TMPDIR]}/$uuid.bam
-samtools index {config[TMPDIR]}/$uuid.bam
+cat {input.annotGff} | awk '$3=="exon"' > {TMPDIR}/$uuid.gff
+bedtools intersect -split -u -a {input.bam} -b {TMPDIR}/$uuid.gff > {TMPDIR}/$uuid.bam
+samtools index {TMPDIR}/$uuid.bam
 
-bamCoverage --normalizeUsing CPM  -b {config[TMPDIR]}/$uuid.bam -o {config[TMPDIR]}/$uuid.bw
+bamCoverage --normalizeUsing CPM  -b {TMPDIR}/$uuid.bam -o {TMPDIR}/$uuid.bw
 
-mv {config[TMPDIR]}/$uuid.bw {output}
+mv {TMPDIR}/$uuid.bw {output}
 
 		'''
 
@@ -244,9 +244,9 @@ rule getReadProfileMatrix:
 		'''
 uuid=$(uuidgen)
 
-computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {config[TMPDIR]}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {input.libraryPrepList} | perl -ne 'chomp; print')
+computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {TMPDIR}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {input.libraryPrepList} | perl -ne 'chomp; print')
 
-mv {config[TMPDIR]}/$uuid.gz {output.matrix}
+mv {TMPDIR}/$uuid.gz {output.matrix}
 		'''
 
 rule plotReadProfileMatrix:
@@ -283,13 +283,13 @@ rule getMappingStats:
 uuidTmpOutB=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
 totalReads=$(zcat {input.fastqs} | fastq2tsv.pl | wc -l)
-mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
+mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {TMPDIR} |uniq|wc -l)
 erccMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep ERCC- | wc -l)
 sirvMappedReads=$(samtools view -F 4 {input.bams}|cut -f3| tgrep SIRV | wc -l)
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOutB
-mv {config[TMPDIR]}/$uuidTmpOutB {output.basic}
-echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalReads\t$erccMappedReads\t$sirvMappedReads" | awk '{{print $0"\t"$6/$5"\t"$7/$5}}' > {config[TMPDIR]}/$uuidTmpOutS
-mv {config[TMPDIR]}/$uuidTmpOutS {output.spikeIns}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$6/$5}}' > {TMPDIR}/$uuidTmpOutB
+mv {TMPDIR}/$uuidTmpOutB {output.basic}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalReads\t$erccMappedReads\t$sirvMappedReads" | awk '{{print $0"\t"$6/$5"\t"$7/$5}}' > {TMPDIR}/$uuidTmpOutS
+mv {TMPDIR}/$uuidTmpOutS {output.spikeIns}
 
 		'''
 
@@ -299,9 +299,9 @@ rule aggMappingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tmappedReads\tpercentMappedReads" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tmappedReads\tpercentMappedReads" > {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -366,9 +366,9 @@ rule aggSpikeInsMappingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tERCCs\\t"$6"\\t"$8}}' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tSIRVs\\t"$7"\\t"$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tERCCs\\t"$6"\\t"$8}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -441,10 +441,10 @@ rule checkOnlyOneHit:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-samtools view {input} | cut -f1 | sort -T {config[TMPDIR]} | uniq -dc > {config[TMPDIR]}/$uuidTmpOut
-count=$(cat {config[TMPDIR]}/$uuidTmpOut | wc -l)
+samtools view {input} | cut -f1 | sort -T {TMPDIR} | uniq -dc > {TMPDIR}/$uuidTmpOut
+count=$(cat {TMPDIR}/$uuidTmpOut | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {input} {input}.dup.bkp; exit 1; fi
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -458,8 +458,8 @@ rule readBamToBed:
 uuidTmpOut=$(uuidgen)
 #remove mappings with ultra-short exons after bamtobed
 
-bedtools bamtobed -i {input} -bed12 | perl -ne '$line=$_; @line=split ("\\t", $line); @blockSizes=split(",", $line[10]); $allExonsOK=1; foreach $block (@blockSizes){{if ($block<2){{$allExonsOK=0; last;}}}}; if ($allExonsOK==1){{print $line}}'| sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+bedtools bamtobed -i {input} -bed12 | perl -ne '$line=$_; @line=split ("\\t", $line); @blockSizes=split(",", $line[10]); $allExonsOK=1; foreach $block (@blockSizes){{if ($block<2){{$allExonsOK=0; last;}}}}; if ($allExonsOK==1){{print $line}}'| sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  | gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
@@ -469,8 +469,8 @@ rule readBedToGff:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | bed12togff | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | bed12togff | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getReadBiotypeClassification:
@@ -482,8 +482,8 @@ rule getReadBiotypeClassification:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-bedtools intersect -split -wao -bed -a {input.reads} -b {input.ann} |perl -lane '$line=$_; $gid="NA"; $gt="nonExonic"; if($line=~/gene_id \"(\S+)\";/){{$gid=$1}}; if ($line=~/gene_type \"(\S+)\";/){{$gt=$1}}; print "$F[3]\\t$gid\\t$gt\\t$F[-1]"'|cut -f1,3|sort -T {config[TMPDIR]} |uniq | gzip > {config[TMPDIR]}/$uuidTmpOut.2
-mv  {config[TMPDIR]}/$uuidTmpOut.2 {output}
+bedtools intersect -split -wao -bed -a {input.reads} -b {input.ann} |perl -lane '$line=$_; $gid="NA"; $gt="nonExonic"; if($line=~/gene_id \"(\S+)\";/){{$gid=$1}}; if ($line=~/gene_type \"(\S+)\";/){{$gt=$1}}; print "$F[3]\\t$gid\\t$gt\\t$F[-1]"'|cut -f1,3|sort -T {TMPDIR} |uniq | gzip > {TMPDIR}/$uuidTmpOut.2
+mv  {TMPDIR}/$uuidTmpOut.2 {output}
 		'''
 
 rule getReadToBiotypeBreakdownStats:
@@ -492,7 +492,7 @@ rule getReadToBiotypeBreakdownStats:
 	shell:
 		'''
 totalPairs=$(zcat {input} | wc -l)
-zcat {input} | cut -f2| sort -T {config[TMPDIR]} |uniq -c |ssv2tsv | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} -v tp=$totalPairs '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"$2"\\t"$1"\\t"$1/tp}}' > {output}
+zcat {input} | cut -f2| sort -T {TMPDIR} |uniq -c |ssv2tsv | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} -v tp=$totalPairs '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"$2"\\t"$1"\\t"$1/tp}}' > {output}
 
 		'''
 
@@ -503,9 +503,9 @@ rule aggReadToBiotypeBreakdownStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv  {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv  {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
