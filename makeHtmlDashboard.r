@@ -1,38 +1,50 @@
 #!/usr/bin/env Rscript
 
+library(formattable)
+library(tidyverse)
+library(DT)
+
 args = commandArgs(trailingOnly=TRUE)
 
 # test if there is at least two arguments: if not, return an error
-if (length(args) != 2) {
-  stop("Exactly two arguments must be given\n\t1: input sample annotation TSV;\n\t2: output HTML", call.=FALSE)
+if (length(args) != 15) {
+  stop("Exactly 15 arguments must be given\n", call.=FALSE)
 }
 
-inputSampleAnnotation=args[1]
-outputHtml=args[2]
+outputHtml=args[1]
+inputSampleAnnotation=args[2]
+allFastqTimeStamps=args[3]
+allReadLengths=args[4]
+allBasicMappingStats=args[5]
+allHissStats=args[6]
+allMergedStats=args[7]
+allMatureRnaLengthStats=args[8]
+allTmergeVsSirvStats=args[9]
+allCagePolyASupportStats=args[10]
+allNovelLociStats=args[11]
+allNovelFlLociStats=args[12]
+allNovelLociQcStats=args[13]
+allNovelFlLociQcStats=args[14]
+allNtCoverageStats=args[15]
 
-print(paste("Input: ", inputSampleAnnotation))
 print(paste("Output: ", outputHtml))
 
-library(formattable)
-library(dplyr)
-library(tidyr)
-library(DT)
-
 concatMetadata <- function(df){
-	return(mutate(df, sample_name=paste(seqTech, capDesign, sizeFrac, tissue, sep='_'), seqTech=NULL, capDesign=NULL, sizeFrac=NULL, tissue=NULL, correctionLevel=NULL))
+	head(df)
+	return(mutate(df, sample_name=paste(seqTech, capDesign, sizeFrac, sampleRep, sep='_'), seqTech=NULL, capDesign=NULL, sizeFrac=NULL, sampleRep=NULL))
 }
 
-dat <- read.table("Rinput/all.readlength.summary.tsv", header=TRUE, sep='\t')
+dat <- read.table(allReadLengths, header=TRUE, sep='\t')
 dat <- concatMetadata(dat)
 
 sampleAnnot <- read.table(inputSampleAnnotation, header=TRUE, sep='\t')
 
-fastqTimestamps <- read.table("Rinput/all.fastq.timestamps.tsv", header=TRUE, sep='\t')
-mappingStats <- read.table("Rinput/all.basic.mapping.stats.tsv", header=TRUE, sep='\t')
+fastqTimestamps <- read.table(allFastqTimeStamps, header=TRUE, sep='\t')
+mappingStats <- read.table(allBasicMappingStats, header=TRUE, sep='\t')
 mappingStats <- concatMetadata(mappingStats)
 mappingStats <- select(mappingStats, -totalReads)
 
-hissStats <- read.table("Rinput/all.HiSS.stats.tsv", header=TRUE, sep='\t')
+hissStats <- read.table(allHissStats, header=TRUE, sep='\t')
 hissStats <- concatMetadata(hissStats)
 hissStats <- spread(hissStats, category, count)
 hissStats <- rename(hissStats, HCGMspliced='HCGM-spliced', HCGMmono='HCGM-mono')
@@ -40,11 +52,11 @@ hissStats <- mutate(hissStats, percentHcgmSpliced=HCGMspliced/(HCGMmono+HCGMspli
 hissStats <- select(hissStats, sample_name, percentHcgmSpliced)
 hissStats <- rename(hissStats, '% spliced HCGMs' = percentHcgmSpliced)
 
-mergedStats <- read.table("Rinput/all.min2reads.merged.stats.tsv", header=TRUE, sep='\t')
+mergedStats <- read.table(allMergedStats, header=TRUE, sep='\t')
 mergedStats <- spread(mergedStats, category, count)
 mergedStats <- concatMetadata(mergedStats)
 
-tmLengthStats <- read.table('Rinput/all.min2reads.matureRNALengthSummary.stats.tsv', header=TRUE, sep='\t')
+tmLengthStats <- read.table(allMatureRnaLengthStats, header=TRUE, sep='\t')
 tmLengthStats <- concatMetadata(tmLengthStats)
 tmLengthStats <- filter(tmLengthStats, category=='CLS_TMs')
 tmMedLengthStats <- spread(select(tmLengthStats, -max), category, med)
@@ -53,21 +65,21 @@ tmMaxLengthStats <- spread(select(tmLengthStats, -med), category, max)
 tmMaxLengthStats <- rename(tmMaxLengthStats, 'TM max length'=CLS_TMs)
 tmLengthStats <- inner_join(tmMedLengthStats, tmMaxLengthStats, by='sample_name')
 
-sirvAccuracyStats <- read.table('Rinput/all.HiSS.tmerge.min2reads.vs.SIRVs.stats.tsv', header=TRUE, sep='\t')
+sirvAccuracyStats <- read.table(allTmergeVsSirvStats, header=TRUE, sep='\t')
 sirvAccuracyStats <- concatMetadata(sirvAccuracyStats)
 sirvAccuracyStats <- filter(sirvAccuracyStats, level=='Transcript')
 sirvAccuracyStats <- spread(select(sirvAccuracyStats, -level), metric, value)
 sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV Tx Sn' = 'Sn')
 sirvAccuracyStats <- rename(sirvAccuracyStats, 'SIRV Tx Pr' = 'Pr')
 
-cagePolyASupportStats <- read.table('Rinput/all.min2reads.splicing_status:all.cagePolyASupport.stats.tsv', header=TRUE, sep='\t')
+cagePolyASupportStats <- read.table(allCagePolyASupportStats, header=TRUE, sep='\t')
 cagePolyASupportStats <- select(cagePolyASupportStats, -count)
 cagePolyASupportStats <- spread(cagePolyASupportStats, category, percent)
 cagePolyASupportStats <- select(cagePolyASupportStats, -cageOnly, -noCageNoPolyA, -polyAOnly)
 cagePolyASupportStats <- concatMetadata(cagePolyASupportStats)
 cagePolyASupportStats <- rename(cagePolyASupportStats, '% FL TMs' = cageAndPolyA)
 
-novelLociStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:all.novelLoci.stats.tsv', header=TRUE, sep='\t')
+novelLociStats <- read.table(allNovelLociStats, header=TRUE, sep='\t')
 novelLociStats <- concatMetadata(novelLociStats)
 novelLociStats <- select(novelLociStats, -percent)
 novelLociStats <- spread(novelLociStats, category, count)
@@ -76,7 +88,7 @@ novelLociStats <- mutate(novelLociStats, 'novelLoci'=novelIntergenicLoci+novelIn
 novelLociStats <- mutate(novelLociStats, percentIntergenicNovelLoci=novelIntergenicLoci/novelLoci)
 novelLociStats <- select(novelLociStats, -novelIntergenicLoci, -novelIntronicLoci)
 
-novelFlLociStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:cagePolyASupported.novelLoci.stats.tsv', header=TRUE, sep='\t')
+novelFlLociStats <- read.table(allNovelFlLociStats, header=TRUE, sep='\t')
 novelFlLociStats <- concatMetadata(novelFlLociStats)
 novelFlLociStats <- select(novelFlLociStats, -percent)
 novelFlLociStats <- spread(novelFlLociStats, category, count)
@@ -84,14 +96,14 @@ novelFlLociStats <- rename(novelFlLociStats, 'novelIntergenicFlLoci'=intergenic,
 novelFlLociStats <- mutate(novelFlLociStats, 'novelFlLoci'=novelIntergenicFlLoci+novelIntronicFlLoci)
 novelFlLociStats <- select(novelFlLociStats, -novelIntergenicFlLoci, -novelIntronicFlLoci)
 
-novelLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:all.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
+novelLociQcStats <- read.table(allNovelLociQcStats, header=TRUE, sep='\t')
 novelLociQcStats <- concatMetadata(novelLociQcStats)
 novelLociQcStats <- mutate(novelLociQcStats, countSpliced=total-countMono, percentSpliced=1-percentMono)
 novelLociQcStats <- select(novelLociQcStats, -total, -minLengthAllTms, -minLengthMonoTms, -minLengthSplicedTms, -countMono, -percentMono)
 novelLociQcStats <- relocate(novelLociQcStats, percentSpliced, .after=countSpliced)
 novelLociQcStats <- relocate(novelLociQcStats, percentRepeats, .after=countRepeats)
 
-novelFlLociQcStats <- read.table('Rinput/all.tmerge.min2reads.endSupport:cagePolyASupported.novelLoci.qc.stats.tsv', header=TRUE, sep='\t')
+novelFlLociQcStats <- read.table(allNovelFlLociQcStats, header=TRUE, sep='\t')
 novelFlLociQcStats <- concatMetadata(novelFlLociQcStats)
 novelFlLociQcStats <- mutate(novelFlLociQcStats, countSpliced=total-countMono, percentSpliced=1-percentMono)
 novelFlLociQcStats <- select(novelFlLociQcStats, -total, -minLengthAllTms, -minLengthMonoTms, -minLengthSplicedTms, -countMono, -percentMono)
@@ -100,7 +112,7 @@ novelFlLociQcStats <- relocate(novelFlLociQcStats, percentRepeats, .after=countR
 novelFlLociQcStats <- rename(novelFlLociQcStats, countFlLociSpliced=countSpliced, '% FL spliced novel loci'=percentSpliced, '# FL novel loci on repeats'=countRepeats, '% FL novel loci on repeats'=percentRepeats, 'median length all TMs (FL novel loci)'=medianLengthAllTms, 'max length all TMs (FL novel loci)'=maxLengthAllTms, 'median length monoexonic TMs (FL novel loci)'=medianLengthMonoTms, 'max length monoexonic TMs (FL novel loci)'=maxLengthMonoTms, 'median length spliced TMs (FL novel loci)'=medianLengthSplicedTms, 'max length spliced TMs (FL novel loci)'=maxLengthSplicedTms)
 
 
-ntCoverageStats <- read.table("Rinput/all.tmerge.min2reads.endSupport:all.vs.ntCoverageByGenomePartition.stats.tsv", header=TRUE, sep='\t')
+ntCoverageStats <- read.table(allNtCoverageStats, header=TRUE, sep='\t')
 ntCoverageStats <- concatMetadata(ntCoverageStats)
 ntCoverageStats <- filter(ntCoverageStats, splicingStatus=="all")
 ntCoverageStats <- select(ntCoverageStats, -splicingStatus)
@@ -322,6 +334,6 @@ options= list(
   )
 	)
 	)
-
-
+dir.create('./html/')
 DT::saveWidget(tbDt, paste0(getwd(), "/", outputHtml), title='GENCODE - CRG Dashboard of Experiments')
+write_tsv(dat, paste0(tools::file_path_sans_ext(outputHtml), ".tsv", sep=''))

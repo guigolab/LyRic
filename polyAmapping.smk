@@ -3,73 +3,73 @@
 
 rule polyAmapping:
 	input:
-		reads = "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
+		reads = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	params:
 		minAcontent=0.8
-	output: "mappings/polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
+	output: "output/mappings/polyAmapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsites.bed.gz"
 	conda: "envs/perl_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
 
 
-samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  |gzip > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  |gzip > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule removePolyAERCCs:
-	input: "mappings/polyAmapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.bed.gz"
-	output: temp("mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.tmp.bed")
+	input: "output/mappings/polyAmapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsites.bed.gz"
+	output: temp("output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsitesNoErcc.tmp.bed")
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | fgrep -v ERCC > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+zcat {input} | fgrep -v ERCC > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getPolyAreadsList:
-	input: "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
+	input: "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsitesNoErcc.bed"
+	output: "output/mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.list"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | cut -f4 | sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} | cut -f4 | sort -T {TMPDIR} |uniq > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule getPolyAreadsStats:
 	input:
-		mappedReads= "mappings/readMapping/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam",
-		polyAreads = "mappings/getPolyAreadsList/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.list"
-	output: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv"
+		mappedReads= "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
+		polyAreads = "output/mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.list"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort -T {config[TMPDIR]} |uniq|wc -l)
+mapped=$(samtools view -F4 {input.mappedReads} |cut -f1|sort -T {TMPDIR} |uniq|wc -l)
 polyA=$(cat {input.polyAreads} | wc -l)
-echo -e "{wildcards.techname}Corr{wildcards.corrLevel}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.barcodes}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$mapped\t$polyA" | awk '{{print $0"\t"$6/$5}}' > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
 rule aggPolyAreadsStats:
-	input: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats.tsv",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED)
-	output: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
+	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats.tsv",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
+	output: "output/statsFiles/" + "all.polyAreads.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6"\\t"$6/$5}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tnonPolyA\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyA\\t"$6"\\t"$6/$5}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 
 rule plotAllPolyAreadsStats:
-	input: config["STATSDATADIR"] + "all.polyAreads.stats.tsv"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "polyAreads.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats")
+	input: "output/statsFiles/" + "all.polyAreads.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats")
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
 	conda: "envs/R_env.yml"
 	shell:
 		'''
@@ -84,43 +84,36 @@ library(ggplotify)
 library(data.table)
 
 dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
+{params.filterDat[technameFilterString]}
+{params.filterDat[capDesignFilterString]}
 
-plotBase <- \\"p <- ggplot(data=dat, aes(x=factor(correctionLevel), y=count, fill=category)) +
+{params.filterDat[sizeFracFilterString]}
+{params.filterDat[sampleRepFilterString]}
+{params.filterDat[substSeqTechString]}
+{params.filterDat[substSampleRepString]}
+{params.filterDat[graphDimensions]}
+
+plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=count, fill=category)) +
 geom_bar(stat='identity') + 
 scale_fill_manual(values=c('polyA' = '#c8e09e', 'nonPolyA' = '#e7a198')) +
 ylab('# mapped reads') +
 xlab('') +
 guides(fill = guide_legend(title='Category'))+ scale_y_continuous(labels=scientific)+
-geom_text(position = 'stack', size=geom_textSize, aes(x = factor(correctionLevel), y = count, label = paste(sep='',percent(round(percent, digits=2)),'\\n','(',comma(count),')'), hjust = 0.5, vjust = 1))+
-{params.filterDat[7]}
+geom_text(position = 'stack', size=geom_textSize, aes( y = count, label = paste(sep='',percent(round(percent, digits=2)),'\\n','(',comma(count),')'), hjust = 0.5, vjust = 1))+
+{params.filterDat[hideXaxisLabels]}
 {GGPLOT_PUB_QUALITY} + 
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[2]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[3]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
 
-save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[4]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
@@ -131,30 +124,30 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
 rule clusterPolyAsites:
-	input: "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed"
-	output: "mappings/clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed"
+	input: "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsitesNoErcc.bed"
+	output: "output/mappings/clusterPolyAsites/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsites.clusters.bed"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input} | bedtools merge -s -d 5 -c 4,6 -o distinct -i stdin | awk '{{print $1"\t"$2"\t"$3"\t"$4"\t0\t"$5}}'| perl -F"\\t" -lane 'if($F[5] eq "+"){{$F[1]=$F[2]-1}}elsif($F[5] eq "-"){{$F[2]=$F[1]+1}}else{{die}} print join("\t",@F);'|sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 rule makePolyABigWigs:
 	input:
-		sites = "mappings/removePolyAERCCs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.bed",
+		sites = "output/mappings/removePolyAERCCs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsitesNoErcc.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
-	output: "mappings/makePolyABigWigs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsitesNoErcc.{strand}.bw"
+	output: "output/mappings/makePolyABigWigs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsitesNoErcc.{strand}.bw"
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 tmpIn=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-cat {input.sites} | grep -P "^chr" | grep -v "chrIS" > {config[TMPDIR]}/$tmpIn
+cat {input.sites} | grep -P "^chr" | grep -v "chrIS" > {TMPDIR}/$tmpIn
 
 
-bedtools genomecov -strand {wildcards.strand} -split -bg -i {config[TMPDIR]}/$tmpIn -g {input.genome} > {config[TMPDIR]}/$uuidTmpOut.bedgraph
-bedGraphToBigWig {config[TMPDIR]}/$uuidTmpOut.bedgraph {input.genome} {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+bedtools genomecov -strand {wildcards.strand} -split -bg -i {TMPDIR}/$tmpIn -g {input.genome} > {TMPDIR}/$uuidTmpOut.bedgraph
+bedGraphToBigWig {TMPDIR}/$uuidTmpOut.bedgraph {input.genome} {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''

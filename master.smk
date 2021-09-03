@@ -7,13 +7,22 @@ import pandas as pd
 from pprint import pprint
 
 
+onsuccess:
+	print("Workflow finished smoothly.")
+
+onerror:
+	print("Workflow finished with errors, see log file.")
+
 #prefix all shell scripts with the following commands:
 shell.prefix('source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; export PATH="$PWD/utils/:$PATH";')
 #(it seems DRMAA does not source ~/.bashrc by itself)
+include: "functions.py"
 
 # consistent ggplot2 theme across R plots:
 GGPLOT_PUB_QUALITY="theme(axis.text= element_text(size=themeSize*1.8), axis.ticks = element_line(size=lineSize), axis.line = element_line(colour = '#595959', size=lineSize), axis.title=element_text(size = themeSize*2), panel.grid.major = element_line(colour='#d9d9d9', size=lineSize),panel.grid.minor = element_line(colour='#e6e6e6', size=minorLineSize),panel.border = element_blank(),panel.background = element_blank(), strip.background = element_rect(colour='#737373',fill='white'), legend.key.size=unit(0.5,'line'), legend.title=element_text(size=themeSize*1.2), legend.text=element_text(size=themeSize), strip.text = element_text(size = themeSize))"
 
+#list of stat plot formats to generate (currently only one format at a time is supported):
+plotFormat=['png',]
 # color sizeFracs:
 sizeFrac_Rpalette="c('0+'='#b3b3b3', '0-1' ='#f765ac','1+' ='#b370f9')"
 
@@ -27,29 +36,33 @@ sampleAnnot_Rpalette="list(seqPlatform = c(ONT = '#8dd3c7', pacBioSI = '#ffffb3'
 simpleBiotypes_Rpalette="c('lncRNA' = '#66ccff',  'nonExonic' = '#6666ff',  'protein_coding' = '#ff8c66', miRNA = '#808000', 'misc_RNA' = '#99ff99','pseudogene' = '#d98cb3', 'rRNA' = '#d9d9d9', 'ERCC' = '#8dd3c7', 'SIRV' = '#399384')"
 
 
+# which genome build corresponds to to each capture design:
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
-CAPDESIGNTOANNOTGTF=config["capDesignToAnnotGtf"]
+# which gencode annotation GTF correspond to each capture design:
+GENOMETOANNOTGTF=config["genomeToAnnotGtf"]
+# non-overlapping targeted regions for each capture design
+CAPDESIGNTOTARGETSGFF=config['capDesignToTargetsGff']
+# mapping of capDesign to capDesign:
+CAPDESIGNTOCAPDESIGN=config["capDesignToCapDesign"]
+# which CAGE peak BED file corresponds to each genome build:
 GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
+# which ENCODE DHS peak BED file corresponds to each genome build:
 GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
-GENOMETOPAS=config["genomeToPAS"]
-DUMMY_DIR="dummy/"
-FQPATH=config["FQPATH"]
-FQ_CORR_PATH=FQPATH + "corr/"
+# URL for UCSC Track Hub data files:
 TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
-if 'genomeToPreviousPhaseTMs' in config:
-	GENOMETOPREVIOUS=config["genomeToPreviousPhaseTMs"]
-else:
-	GENOMETOPREVIOUS=None
-
-print ("Input LR FASTQs are in: " + FQPATH, file=sys.stderr)
-
-
-
-
-
-ENDSUPPORTcategories=["all", "cagePolyASupported"]
+# 5' and 3' end support categories for transcript models (TMs):
+ENDSUPPORTcategories=["all", "cagePolyASupported"] 
+	# "all" = all TMs (no filter applied)
+	# "cagePolyASupported" = CAGE (5') + PolyA (3') -supported TMs only
+# splicing status categories of TMs:
 TMSPLICEDSTATUScategories=["all", "spliced", "unspliced"]
+# TMPDIR to write temp files in
+TMPDIR='$TMPDIR'
+
+MINIMUM_TMERGE_READ_SUPPORT=['2',]
 READFILTERS=['HiSS', 'noFilt']
+# for tmerge:
+ExonOverhangTolerance='8'
 
 GENOMES=[]
 GENOMETOCAPDESIGNS=defaultdict(list)
@@ -59,30 +72,6 @@ for capD in CAPDESIGNTOGENOME:
 	GENOMETOCAPDESIGNS[genome].append(capD)
 GENOMES=set(GENOMES)
 
-MERGEDCAPDESIGNS=defaultdict(list)
-for genome in GENOMETOCAPDESIGNS:
-	mergedCapDString=''
-	capDperGenome=0
-	for capD in sorted(GENOMETOCAPDESIGNS[genome]):
-		if capD.find('preCap') == -1:  #avoid merging pre-capture with post-capture
-			mergedCapDString+=capD
-			capDperGenome+=1
-	if capDperGenome > 1:
-		for capD in GENOMETOCAPDESIGNS[genome]:
-			MERGEDCAPDESIGNS[mergedCapDString].append(capD)
-			#CAPDESIGNTOCAGEPEAKS[mergedCapDString]=CAPDESIGNTOCAGEPEAKS[capD]
-			CAPDESIGNTOANNOTGTF[mergedCapDString]=CAPDESIGNTOANNOTGTF[capD]
-		CAPDESIGNTOGENOME[mergedCapDString]=genome
-
-
-GENOMETOCAPDESIGNSplusMERGED=defaultdict(list)
-for capD in CAPDESIGNTOGENOME:
-	genome=CAPDESIGNTOGENOME[capD]
-	GENOMETOCAPDESIGNSplusMERGED[genome].append(capD)
-
-print ("Genomes:", file=sys.stderr)
-print (GENOMES, file=sys.stderr)
-# no underscores allowed in wildcards, to avoid greedy matching since we use them as separators
 
 SIRVpresent=None
 try:
@@ -92,53 +81,22 @@ except KeyError:
 	print ("Will NOT compare TMs to SIRVs because config['SIRVinfo'] not found.", file=sys.stderr)
 else:
 	SIRVpresent=True
-	print ("Will compare TMs to SIRVs", file=sys.stderr)
 
 
-if config["DEMULTIPLEX"]:
-	print ("Demultiplexing is ON", file=sys.stderr)
-	# get CAPDESIGNS (capture designs, i.e. Hv1, Hv2, Mv1) and SIZEFRACS (size fractions) variables from FASTQ file names (warning: this will generate duplicate entries so "set" them afterwards):
-	DEMULTIPLEX_DIR=config["DEMULTIPLEX_DIR"]
-	DEMULTIPLEXED_FASTQS= DEMULTIPLEX_DIR + "demultiplexFastqs/"
-	(TECHNAMES, CAPDESIGNS, SIZEFRACS) = glob_wildcards(FQPATH + "{techname, [^_/]+}_{capDesign}_{sizeFrac}.fastq.gz")
-	# remove duplicate entries:
-	adaptersTSV = DEMULTIPLEX_DIR + "all_adapters.tsv"
-	f = open(adaptersTSV, 'r')
-	BARCODES = []
-	BARCODESUNDETER = []
-	for line in f:
-		columns = line.split("\t")
-		barcodeId = columns[0].split("_")
-		if columns[0] != 'UP':
-			BARCODES.append(columns[0])
-			BARCODESUNDETER.append(columns[0])
 
-	BARCODESUNDETER.append("Undeter")
-	BARCODES=set(BARCODES)
-	BARCODESUNDETER=set(BARCODESUNDETER)
-
-else:
-	print ("Demultiplexing is OFF", file=sys.stderr)
-#	DEMULTIPLEX_DIR=FQPATH
-	DEMULTIPLEXED_FASTQS=FQ_CORR_PATH
-	(TECHNAMES, CAPDESIGNS, SIZEFRACS, BARCODES) = glob_wildcards(FQPATH + "{techname, [^_/]+}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz")
-	BARCODES=set(BARCODES)
-	BARCODESUNDETER=list(BARCODES)
-
-
+(TECHNAMES, CAPDESIGNS, SIZEFRACS, SAMPLEREPS) = glob_wildcards("fastqs/" + "{techname, [^_/]+}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz")
+SAMPLEREPS=set(SAMPLEREPS)
 CAPDESIGNS=set(CAPDESIGNS)
 SIZEFRACS=set(SIZEFRACS)
 TECHNAMES=set(TECHNAMES)
 
-SIZEFRACSnoSIZESELECTONLY=["0+"]
-
+# no underscores allowed in wildcards, to avoid greedy matching since we use them as separators:
 wildcard_constraints:
  	capDesign = "[^_/]+",
  	sizeFrac = "[^_/]+",
  	techname = "[^_/]+",
- 	corrLevel = "[^_/]+",
- 	barcodes = "[^_/]+",
-	minReadSupport = '|'.join(config["MINIMUM_TMERGE_READ_SUPPORT"]),
+ 	sampleRep = "[^_/]+",
+	minReadSupport = '|'.join(MINIMUM_TMERGE_READ_SUPPORT),
 	endSupport  = '|'.join(ENDSUPPORTcategories),
 	splicedStatus = '|'.join(TMSPLICEDSTATUScategories),
 	filt= '|'.join(READFILTERS),
@@ -148,474 +106,82 @@ wildcard_constraints:
 sampleAnnot = pd.read_table(config['SAMPLE_ANNOT'], header=0, sep='\t')
 
 ## check that samples are properly annotated:
-SAMPLES, = glob_wildcards(FQPATH + "{sample_name, [^/]+}.fastq.gz")
+SAMPLES, = glob_wildcards("fastqs/" + "{sample_name, [^/]+}.fastq.gz")
 for sample_name in SAMPLES:
 	sampleRow=sampleAnnot[sampleAnnot.sample_name == sample_name]
 	assert len(sampleRow) < 2, "Duplicate found for sample " + sample_name + " in " + config['SAMPLE_ANNOT']
 	assert len(sampleRow) > 0, "Sample " + sample_name + " not found in " + config['SAMPLE_ANNOT']
 
+#drop rows of sampleAnnot whose sample_name are not in SAMPLES list:
+sampleAnnot = sampleAnnot[sampleAnnot['sample_name'].isin(SAMPLES)]
+
+##########################################################################
+### Make mapping dict of sampleRep group ID (a sample, most of the times)
+### to list of sampleReps belonging to this group.
+### config['sampleRepGroupBy'] contains the list of attributes to group
+### sampleReps on. These attributes are column names in the sample
+### annotation file (config['SAMPLE_ANNOT'])
+##########################################################################
+
+# group samples contained in sampleAnnot by attributes listed in config['sampleRepGroupBy']
+sampleRepGroups=sampleAnnot.groupby(config['sampleRepGroupBy'])
+# initialize dict that will contain mapping of sampleRep group ID to list of sampleReps belonging to this group:
+sampleRepGroupIdToSampleReps={} 
+# populate sampleRepGroupIdToSampleReps:
+for key, item in sampleRepGroups:
+	# remove spaces from group identifiers, because they will serve as file basenames
+	sampleRepGroupId='_'.join(key).replace(' ', '')
+	# assign list of sample_names (dict value) to sampleRepGroupId (dict key)
+ 	sampleRepGroupIdToSampleReps[sampleRepGroupId]=item['sample_name'].to_list() 
+################
+### Done!
+################
+
+#convert sampleAnnot to dict to facilitate later access
 sampleAnnot.set_index('sample_name', inplace=True)
 sampleAnnotDict = sampleAnnot.to_dict('index')
 
+# extract unique list of sub-projects in sampleAnnot (values in 'project' column) to generate separate, filtered HTML stats reports:
+subProjects = set(sampleAnnot['project'])
+# 'None' to create an HTML report without filter:
+subProjects.add('ALL')
 
 
-
-
-BARCODESpluSMERGED=set(BARCODES)
-
-CAPDESIGNSplusMERGED=set(CAPDESIGNS)
-for capD in MERGEDCAPDESIGNS:
-	CAPDESIGNSplusMERGED.add(capD)
-TECHNAMESplusMERGED=set(TECHNAMES)
-TECHNAMESplusMERGED.add("allSeqTechs")
-
-
-SPLICE_SITE_TYPES=["Donor", "Acceptor"]
-
-# for polyA calling calibration:
-minPolyAlength = []
-for x in range(5, 30, 1):
-	minPolyAlength.append(x)
-
-
-
-if config["LORDEC_CORRECT"]:
-	graph_kmers=["17", "18", "19", "20", "21", "30", "40", "50", "60", "70", "80", "90"]
-	lastK=graph_kmers[-1]
-	FINALCORRECTIONLEVELS=["0", lastK]
-	print ("LR error correction is ON. Correction levels: ", file=sys.stderr)
-	print (FINALCORRECTIONLEVELS, file=sys.stderr)
-
-	#make string to interpolate into bash script in "lordecCorrectLr" rule
-	graph_kmers_string= "(" + " ".join(graph_kmers) + ")"
-	solid_kmer_abundance_threshold="3"
-	splitFastqsInto=19
-	splitFasta =[]
-	for x in range(0, splitFastqsInto, 1):
-		splitFasta.append(str(x).zfill(4))
-else:
-	print ("LR error correction is OFF. Correction levels: ", file=sys.stderr)
-	FINALCORRECTIONLEVELS=["0",]
-	lastK='NULL'
-	print (FINALCORRECTIONLEVELS, file=sys.stderr)
-
-
-
-
-
-########################
+###################################################################################
 ### make list of authorized wildcard combinations
-### inspired by https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
-###
+### inspired by 
+### https://stackoverflow.com/questions/41185567/how-to-use-expand-in-snakemake-when-some-particular-combinations-of-wildcards-ar
+###################################################################################
 
-AUTHORIZEDCOMBINATIONS = []
-AUTHORIZEDCOMBINATIONSMERGE = []
+AUTHORIZEDCOMBINATIONS = [] #contains combinations of wildcards corresponding to existing FASTQs or "by*" combinations when relevant
+TECHNAMESplusBY=set(TECHNAMES)
+TECHNAMESplusBY.add("byTech")
+SAMPLEREPSplusBY=set(SAMPLEREPS)
+SAMPLEREPSplusBY.add("bySampleRep")
+CAPDESIGNSplusBY=set(CAPDESIGNS)
+CAPDESIGNSplusBY.add("byCapDesign")
 
-for comb in itertools.product(TECHNAMES,CAPDESIGNS,SIZEFRACS,BARCODES):
-	if(os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or
-	os.path.isfile(FQPATH + comb[0] + "_" + comb[1] + "_" + comb[2]  + "_" + comb[3] + ".fastq.gz")): #allow only combinations corresponding to existing FASTQs
-		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1])))
-		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2])))
-		AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes", comb[3])))
+# Populate AUTHORIZEDCOMBINATIONS:
+for comb in itertools.product(TECHNAMESplusBY,CAPDESIGNSplusBY,SIZEFRACS,SAMPLEREPSplusBY):
+	if comb[0] == "byTech":
+		filesList=glob.glob("fastqs/" + "*" + "_" + comb[1] + "_" + comb[2] + "_" + comb[3] + ".fastq.gz")
+		if(len(filesList)>1): #authorize "byTech" combination only if it's relevant
+			authorizeComb(comb)
 
-		for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]),]):
-			AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-		for corrLevel in FINALCORRECTIONLEVELS:
-			AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2])))
-			for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]),]):
-				AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-
-		if (comb[3]).find(comb[1]) == 0 or config["DEMULTIPLEX"] is False: # check that barcode ID's prefix matches capDesign (i.e. ignore demultiplexed FASTQs with unmatched barcode/capDesign)
-			AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("barcodes", comb[3])))
-
-			if config["LORDEC_CORRECT"]:
-				for split in splitFasta:
-					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]), ("split", split)))
-			for corrLevel in FINALCORRECTIONLEVELS:
-				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3])))
-				AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("barcodes",comb[3])))
-				AUTHORIZEDCOMBINATIONS.append((("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3])))
-				for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")]):
-					AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-
-				for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")]):
-					AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-
-				for minReadSupport in config["MINIMUM_TMERGE_READ_SUPPORT"]:
-					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]), ("minReadSupport", minReadSupport)))
-					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),]):
-						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),]):
-						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-					for filt in READFILTERS:
-						for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),], [("filt", filt),]):
-							AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-						for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),], [("filt", filt),]):
-							AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-				for endSupport in ENDSUPPORTcategories:
-					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("endSupport", endSupport),]):
-						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("endSupport", endSupport),]):
-						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-					for minReadSupport in config["MINIMUM_TMERGE_READ_SUPPORT"]:
-						AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]), ("minReadSupport", minReadSupport), ("endSupport", endSupport)))
-						for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("endSupport", endSupport),],  [("minReadSupport", minReadSupport),]):
-							AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-						for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("endSupport", endSupport),],  [("minReadSupport", minReadSupport),]):
-							AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-						for splicedStatus in TMSPLICEDSTATUScategories:
-							for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("minReadSupport", minReadSupport),], [("splicedStatus", splicedStatus),]):
-								AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-							for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("endSupport", endSupport),], [("minReadSupport", minReadSupport),], [("splicedStatus", splicedStatus),]):
-								AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-
-
-			for splice in SPLICE_SITE_TYPES:
-				for corrLevel in FINALCORRECTIONLEVELS:
-					AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]),("spliceType",splice)))
-					for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("spliceType",splice)]):
-						AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-					for minReadSupport in config["MINIMUM_TMERGE_READ_SUPPORT"]:
-						AUTHORIZEDCOMBINATIONS.append((("techname", comb[0]),("corrLevel", corrLevel),("capDesign", comb[1]),("sizeFrac", comb[2]),("barcodes",comb[3]),("spliceType",splice),("minReadSupport", minReadSupport)))
-						for mergedComb in itertools.product([("techname", comb[0]), ("techname", "byTech"), ("techname", "allSeqTechs")], [("corrLevel", corrLevel), ("corrLevel", "byCorr")] , [("capDesign", comb[1]), ("capDesign", "byCapDesign")], [("sizeFrac", comb[2]), ], [("barcodes",comb[3]), ("barcodes", "allTissues"), ("barcodes", "byTissue")], [("spliceType",splice)], [("minReadSupport",minReadSupport)]):
-							AUTHORIZEDCOMBINATIONSMERGE.append((mergedComb))
-
-
-
+	elif comb[1] == "byCapDesign":
+		filesList=glob.glob("fastqs/" + comb[0] + "_" + "*" + "_" + comb[2] + "_" + comb[3] + ".fastq.gz")
+		if(len(filesList)>1): #authorize "byCapDesign" combination only if it's relevant
+			authorizeComb(comb)
+	elif comb[3] == "bySampleRep":
+		filesList=glob.glob("fastqs/" + comb[0] + "_" + comb[1] + "_" + comb[2] + "_" + "*" + ".fastq.gz")
+		if(len(filesList)>1): #authorize "bySampleRep" combination only if it's relevant
+			authorizeComb(comb)
+	elif(os.path.isfile("fastqs/" + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz") or
+	os.path.isfile("fastqs/" + comb[0] + "_" + comb[1] + "_" + comb[2]  + "_" + comb[3] + ".fastq.gz")):
+		authorizeComb(comb)
 
 
 AUTHORIZEDCOMBINATIONS=set(AUTHORIZEDCOMBINATIONS)
-AUTHORIZEDCOMBINATIONSMERGE=set(AUTHORIZEDCOMBINATIONSMERGE)
-
-
-PLOTSbyTISSUE=set(BARCODESpluSMERGED)
-PLOTSbyTISSUE.add("byTissue")
-PLOTSbyTISSUEnoALL=set(BARCODES)
-PLOTSbyTISSUEnoALL.add("byTissue")
-
-
-PLOTSbySEQTECH=set(TECHNAMES)
-PLOTSbySEQTECH.add("byTech")
-PLOTSbySEQTECHnoALLTECHS=set(TECHNAMES)
-PLOTSbySEQTECHnoALLTECHS.add("byTech")
-
-PLOTSbyCORRLEVEL=set(FINALCORRECTIONLEVELS)
-if config["LORDEC_CORRECT"]:
-	PLOTSbyCORRLEVEL.add("byCorr")
-PLOTSbyCAPDESIGN=set(CAPDESIGNS)
-PLOTSbyCAPDESIGN.add("byCapDesign")
-PLOTSbyCAPDESIGNplusMERGED=set(PLOTSbyCAPDESIGN)
-for capD in MERGEDCAPDESIGNS:
-	PLOTSbyCAPDESIGNplusMERGED.add(capD)
-
-#def sampleNameToSeqPlatform(sample_name):
-#	seqPlatform=sampleAnnot.loc[sampleAnnot.sample_name == sample_name, 'seqPlatform'].values[0]
-#	return seqPlatform
-
-
-def returnPlotFilenames(basename):
-	plotsList=[]
-	for comb in itertools.product(["legendOnly"], config["PLOTFORMATS"]):
-		plotsList.append(basename + "." + comb[0] + "." + comb[1])
-	for comb in itertools.product(["xy", "yx"], ["wLegend", "woLegend"], config["PLOTFORMATS"]):
-		plotsList.append(basename + "." + comb[0] + "." + comb[1] + "." + comb[2])
-	return plotsList
-
-
-
-def filtered_product(*args):
-	found=False
-	for wc_comb in itertools.product(*args):
-		#print(wc_comb)
-		if wc_comb in AUTHORIZEDCOMBINATIONS:
-			found=True
-			yield(wc_comb)
-		else:
-			if len(wc_comb) > 4:
-				if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
-					found=True
-					yield(wc_comb)
-	if not found:
-		pprint(" Error in function filtered_product. Args were:", file=sys.stderr)
-		pprint((args), file=sys.stderr)
-		quit(" Error. Could not yield any input file.", file=sys.stderr)
-
-def filtered_product_merge(*args):
-	found=False
-	#print("NEW COMB")
-	#print(args)
-
-	for wc_comb in itertools.product(*args):
-		#print(wc_comb)
-		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
-			#print("FPM ")
-			#print (wc_comb)
-		#	print ("AUTH")
-			if wc_comb[0] in (('techname', 'allSeqTechs'),):
-				if wc_comb[4] in (('barcodes', 'allTissues'),):
-					found=True
-					#print("YIELD 1")
-					yield(wc_comb)
-
-			else:
-				found=True
-				#print("YIELD 2")
-				yield(wc_comb)
-		else:
-			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
-				found=True
-				#print("YIELD 3")
-				yield(wc_comb)
-	if not found:
-		pprint(" Error in function filtered_product_merge. Args were:", file=sys.stderr)
-		pprint((args), file=sys.stderr)
-		quit(" Error. Could not yield any input file.")
-
-
-def filtered_capDesign_product_merge(*args):
-	found=False
-	for wc_comb in itertools.product(*args):
-		#print(wc_comb)
-		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
-			#print("FPM ")
-			#print (wc_comb)
-		#	print ("AUTH")
-			if wc_comb[0] in (('techname', 'allSeqTechs'),):
-				if wc_comb[4] in (('barcodes', 'allTissues'),):
-					found=True
-					yield(wc_comb)
-
-			else:
-				found=True
-				yield(wc_comb)
-		else:
-			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
-				#print ("OKcapDesign_product_merge")
-				for capD in MERGEDCAPDESIGNS[wc_comb[2][1]]:
-					wc_comb2=list(wc_comb)
-					wc_comb2[2]=('capDesign', capD)
-					wc_comb2=tuple(wc_comb2)
-					#print (wc_comb2)
-					found=True
-					yield(wc_comb2)
-	if not found:
-		pprint(" Error in function filtered_capDesign_product_merge. Args were:", file=sys.stderr)
-		pprint((args), file=sys.stderr)
-		quit(" Error. Could not yield any input file.")
-
-
-
-def filtered_merge_figures(*args):
-	found=False
-	for wc_comb in itertools.product(*args):
-		#print (wc_comb)
-		yieldWC=False
-		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
-			if wc_comb[1] not in (('corrLevel', '90'),):
-		#	print ("PRE AUTH ")
-				if wc_comb[2] in (('capDesign', 'byCapDesign'),):
-					if wc_comb[4] not in (('barcodes', 'byTissue'),): #DO NOT plot all tissues and capDesigns on the same axis (too big)
-		#			print ("AUTH 2")
-						yieldWC=True
-					else:
-					#print ("NO AUTH 1")
-						continue
-				if wc_comb[0] in (('techname', 'allSeqTechs'),):
-					if wc_comb[3] in (('sizeFrac', '0+'),) and wc_comb[4] in (('barcodes', 'allTissues'),):
-						yieldWC=True
-					else:
-					#print ("NO AUTH 2")
-						continue
-				else:
-		#		print ("AUTH 1")
-					yieldWC=True
-		else:
-			if wc_comb[2][0] in ('capDesign') and wc_comb[2][1] in MERGEDCAPDESIGNS and wc_comb[4] in (('barcodes', 'allTissues'),):
-				yieldWC=True
-		if yieldWC == True:
-			#print("AUTH")
-			yield(wc_comb)
-			found=True
-	if not found:
-		pprint(" Error in function filtered_merge_figures. Args were:", file=sys.stderr)
-		pprint((args), file=sys.stderr)
-		quit(" Error. Could not yield any input file.")
-
-
-def merge_figures_params(c,bf,bt,cl, tn, splicing_status=None):
-	clBool=None
-	if len(FINALCORRECTIONLEVELS)>1 and cl == FINALCORRECTIONLEVELS[1]:
-		clBool="Yes"
-	elif cl == FINALCORRECTIONLEVELS[0]:
-		clBool="No"
-	else:
-		clBool=cl
-	seqTechFilterString=''
-	removeFacetLabels=''
-	if tn not in ('byTech') and c not in ('byCapDesign') and bt not in ('byTissue'):
-		removeFacetLabels = """
-plotFacetXy <- parse(text =paste(plotFacetXy, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
-plotFacetYx <- parse(text=paste(plotFacetYx, \\" + theme(strip.text.x = element_blank(), strip.text.y = element_blank())\\"))
-"""		
-	splicingStatusFilterString=''
-	if splicing_status != None:
-		if splicing_status == 'spliced':
-			splicingStatusFilterString="dat <- subset(dat, spliced==1)\n"
-		elif splicing_status == 'unspliced':
-			splicingStatusFilterString="dat <- subset(dat, spliced==0)\n"
-		elif splicing_status == 'all':
-			splicingStatusFilterString=''
-		else:
-			quit("Error. Invalid value for splicing_status in function merge_figures_params.")
-	if tn not in ('byTech'):
-		seqTechFilterString="dat <- subset(dat, seqTech=='" + tn + "')\n"
-	else:
-		seqTechFilterString="dat <- subset(dat, seqTech!='allSeqTechs')\n"
-	substSeqTechString="""
-dat\$seqTech <- gsub(':$', '', dat\$seqTech)
-dat\$seqTech <- gsub(':', '\\n', dat\$seqTech)
-"""
-	substTissueString="dat\$tissue <- gsub('" + c + "_', '', dat\$tissue)\n"
-	capDesignFilterString=''
-	corrLevelFilterString=''
-	sizeFracFilterString=''
-	tissueFilterString=''
-	xlabString='Error correction'
-	hideXaxisLabels=''
-	hideYaxisLabels=''
-	graphDimensions="""
-
-horizCats <- (length(unique(dat\$correctionLevel))/2) * length(unique(dat\$capDesign)) * length(unique(dat\$tissue))
-vertCats <- length(unique(dat\$seqTech))
-
-wXyPlot = (horizCats * 0.9) +1.7
-hXyPlot = (vertCats * 0.6) + 1.7
-
-geom_textSize=1.4 # * (max(vertCats, horizCats))
-themeSize = (14/5) * geom_textSize
-# https://stackoverflow.com/questions/25061822/ggplot-geom-text-font-size-control/25062509
-lineSize=geom_textSize/8
-minorLineSize=lineSize/2
-
-"""
-	facetPlotSetup= f"""
-plotFacetXy <- parse(text =paste(plotBase, \\"facet_grid( seqTech ~ capDesign + tissue, scales='free_y')\\"))
-plotFacetYx <- parse(text=paste(plotBase, \\"facet_grid( capDesign + tissue ~ seqTech, scales='free_y')\\"))
-{removeFacetLabels}
-pXy <- eval(plotFacetXy)
-pYx <- eval(plotFacetYx)
-
-legend <- get_legend(pXy)
-
-pXyNoLegend <- pXy + theme(legend.position='none')
-pYxNoLegend <- pYx + theme(legend.position='none')
-
-legendOnly <- grid.arrange(legend)
-pXyGrob <- as.grob(pXy)
-pYxGrob <- as.grob(pYx)
-pXyNoLegendGrob <- as.grob(pXyNoLegend)
-pYxNoLegendGrob <- as.grob(pYxNoLegend)
-
-
-hLegendOnly <- convertUnit(sum(legend\$heights), 'in', valueOnly=TRUE)
-wLegendOnly <- convertUnit(sum(legend\$widths), 'in', valueOnly=TRUE)
-
-
-hYxPlot <- wXyPlot
-wYxPlot <- hXyPlot 
-
-hXyNoLegendPlot<- hXyPlot 
-wXyNoLegendPlot<- wXyPlot - wLegendOnly
-
-hYxNoLegendPlot<- hYxPlot
-wYxNoLegendPlot<- wYxPlot - wLegendOnly
-"""	
-
-	if c not in ('byCapDesign'):
-		capDesignFilterString+="dat <- subset(dat, capDesign=='" + c + "')\n"
- 	if clBool not in ('byCorr'):
- 		corrLevelFilterString+="dat <- subset(dat, correctionLevel=='" + clBool + "')\n"
- 		xlabString=''
- 		hideXaxisLabels="theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +"
- 		hideYaxisLabels="theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) +"
-# #	if bf in ('allFracs'):
-#		sizeFracFilterString+="dat <- subset(dat, sizeFrac=='" + bf + "')\n"
-#	else:
-	sizeFracFilterString+="dat <- subset(dat, sizeFrac=='" + bf + "')\n"
-	if bt in ('allTissues'):
-		tissueFilterString+="dat <- subset(dat, tissue=='" + bt + "')\n"
-	else:
-		if bt in ('byTissue'):
-			tissueFilterString+="dat <- subset(dat, tissue!='allTissues')\n"
-		else:
-			tissueFilterString+="dat <- subset(dat, tissue=='" + bt + "')\n"
-	return(capDesignFilterString, corrLevelFilterString, sizeFracFilterString, tissueFilterString, substSeqTechString, substTissueString,  xlabString, hideXaxisLabels , graphDimensions, hideYaxisLabels, seqTechFilterString, splicingStatusFilterString, facetPlotSetup)
-
-
-def trackHubSubGroupString(tn, cd, sf, bc, cl, m):
-	techname=(("techname", tn),)
-	capDesign=(("capDesign", cd),)
-	sizeFracs=[]
-	for sizeF in sf:
-		sizeFracs.append(("sizeFrac", sizeF))
-	barCodes=[]
-	for barC in bc:
-		barCodes.append(("barcodes", barC))
-	corrLevels=[]
-	for corrL in cl:
-		corrLevels.append(("corrLevel", corrL))
-	minRS=[]
-	for minReadSupport in m:
-		minRS.append(("minReadSupport", minReadSupport))
-	returnSubGroup1String="subGroup1 sample Sample"
-	returnSubGroup2String="subGroup2 sizeFraction Size_fraction"
-	returnSubGroup3String="subGroup3 corrLevel LoRDEC_sequence_correction"
-	returnSubGroup4String="subGroup4 minReadSupport Min_read_support_per_TM"
-
-	returnSubGroup1StringData=[]
-	returnSubGroup2StringData=[]
-	returnSubGroup3StringData=[]
-	returnSubGroup4StringData=[]
-	for wc_comb in itertools.product(techname, corrLevels, capDesign, sizeFracs, barCodes, minRS):
-		#print("THSS ")
-		#print(wc_comb)
-		if wc_comb in AUTHORIZEDCOMBINATIONSMERGE:
-		#	print ("AUTH")
-			returnSubGroup1StringData.append(wc_comb[4][1] + "=" + wc_comb[4][1])
-			returnSubGroup2StringData.append(wc_comb[3][1] + "=" + wc_comb[3][1])
-			returnSubGroup3StringData.append(wc_comb[1][1] + "=" + wc_comb[1][1])
-			returnSubGroup4StringData.append(wc_comb[5][1] + "=" + wc_comb[5][1])
-
-	#print ("returnSubGroup2StringData list")
-	#print (returnSubGroup2StringData)
-	returnSubGroup1StringData=set(returnSubGroup1StringData)
-	returnSubGroup2StringData=set(returnSubGroup2StringData)
-	returnSubGroup3StringData=set(returnSubGroup3StringData)
-	returnSubGroup4StringData=set(returnSubGroup4StringData)
-	#print ("returnSubGroup2StringData set")
-	#print (returnSubGroup2StringData)
-	return(returnSubGroup1String + " " + " ".join(sorted(returnSubGroup1StringData)) + "\n" + returnSubGroup2String + " " + " ".join(sorted(returnSubGroup2StringData)) + "\n" + returnSubGroup3String + " " + " ".join(sorted(returnSubGroup3StringData))+ "\n" + returnSubGroup4String + " " + " ".join(sorted(returnSubGroup4StringData)))
-
-def trackChecked(t,c,cd,s,b,m):
-	checked=''
-	if t.find('pacBio') == 0 and (len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]):
-		checked='off'
-	elif t.find('ont') == 0 and (len(FINALCORRECTIONLEVELS)>1 and c == FINALCORRECTIONLEVELS[1]):
-		checked='off'
-	else:
-		if s == '0+' and b == 'allTissues':
-			checked='on'
-		else:
-			checked='off'
-	if m == '1':
-		checked='off'
-	return(checked)
-
-
-
-include: "lrCorrection.smk"
-if config["DEMULTIPLEX"]:
-	include: "demultiplex.smk"
 
 include: "fastqStats.smk"
 include: "lrMapping.smk"
@@ -626,7 +192,6 @@ include: "processReadMappings.smk"
 include: "tmClassification.smk"
 include: "tmEndSupport.smk"
 include: "trackHub.smk"
-include: "lociEndSupport.smk"
 
 
 
@@ -635,96 +200,58 @@ include: "lociEndSupport.smk"
 #pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "HiSS.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand("mappings/nonAnchoredMergeReads/colored/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNSplusMERGED, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		config["STATSDATADIR"] + "all.highConfSplicedReads.stats.tsv",
+		# transcriptome GTFs (per sampleRep):
+		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
+		# transcriptome GTFs (per grouped sampleReps)
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
+		# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),		
+		expand(returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null', # facetted histograms of read length
+		expand("output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
+		expand("output/mappings/longReadMapping/qc/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
+		expand(returnPlotFilenames("output/plots/" + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.lrMapping.basic.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "intraPriming.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.intraPriming.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.lrMapping.spikeIns.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand("output/plots/" + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=plotFormat) if config['produceStatPlots'] else '/dev/null',
+		expand("output/plots/" + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=plotFormat) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.merged.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, ext=plotFormat, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config["CAPTURE"] and config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.matureRNALength.hist.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, filt=READFILTERS) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.SnPr.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-bySplicingStatus.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
+		expand("output/plots/" + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.geneReadCoverage.stats"), filtered_product, techname=TECHNAMESplusBY, capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.density.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null',
+		expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.heatmap.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.allErrors.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.deletionsOnly.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
 
-		expand(FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats"), filtered_merge_figures, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES), # facetted histograms of read length
-		expand(FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.dupl.txt", filtered_product,techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"] else expand(FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt", filtered_product,techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.fastq.UP.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"] else expand( DUMMY_DIR + "dummy{number}.txt", number='1'), # UP reads plots
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.fastq.BC.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='2') , # barcode reads plots
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.fastq.foreignBC.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='3') , #foreign barcode reads plots
-#		expand(DEMULTIPLEX_DIR + "demultiplexFastqs/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='4'),
-		expand("mappings/readMapping/qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.bam.dupl.txt",filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED),
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.ambiguousBarcodes.reads.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='6'), # ambiguous barcodes plots
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}_{capDesign}.adapters.location.stats.{ext}",techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='7'), #location of adapters over reads
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.chimeric.reads.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='8'), # stats on chimeric reads
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.finalDemul.reads.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"]) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='9'), #final demultiplexing stats
-#		expand(DEMULTIPLEX_DIR + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demul.QC1.txt",filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='10'), # QC on demultiplexing (checks that there is only one barcode assigned per read
-#		expand(DEMULTIPLEX_DIR + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.demul.QC2.txt", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS) if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='11'), # QC on demultiplexing (checks that there is only one barcode assigned per read
-#		expand(config["PLOTSDIR"] + "{techname}Corr{corrLevel}.demultiplexing.perSample.stats.{ext}", techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, ext=config["PLOTFORMATS"])  if config["DEMULTIPLEX"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='12'),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.basic.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.basic.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "intraPriming.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.intraPriming.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "lrMapping.spikeIns.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.lrMapping.spikeIns.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-
-		expand(config["PLOTSDIR"] + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand(config["PLOTSDIR"] + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=config["PLOTFORMATS"]),
-		expand ("mappings/clusterPolyAsites/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAsites.clusters.bed", filtered_product_merge, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODESpluSMERGED),
-		
-		
-		
-		
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "merged.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.merged.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, ext=config["PLOTFORMATS"], minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "cagePolyASupport.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.cagePolyASupport.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "targetCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.targetCoverage.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if config["CAPTURE"]  else expand( DUMMY_DIR + "dummy{number}.txt", number='15'),
-		#expand(returnPlotFilenames(config["PLOTSDIR"] + "spliceSites.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.spliceSites.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		#expand(returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.box.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUEnoALL, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "matureRNALength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.splicing_status:{splicedStatus}.matureRNALength.hist.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUEnoALL, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "polyAreads.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.polyAreads.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.novelLoci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.Gencode.SJs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], filt=READFILTERS) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='13'),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.SnPr.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.vs.gencode.SnPr.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:bySplicingStatus.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_merge_figures, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.gencode.length.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:all.endSupport:{endSupport}.vs.gencode.length.stats"), filtered_merge_figures, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.vs.SIRVs.detection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if SIRVpresent  else expand( DUMMY_DIR + "dummy{number}.txt", number='14'),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "FLloci.gencodeOnly.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.gencodeOnly.stats"), filtered_merge_figures, techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes='allTissues', minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if GENOMETOPREVIOUS is not None else expand( DUMMY_DIR + "dummy{number}.txt", number='15'),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "FLloci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats"), filtered_merge_figures, techname='allSeqTechs', corrLevel=FINALCORRECTIONLEVELS,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes='allTissues', minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]) if GENOMETOPREVIOUS is not None else expand( DUMMY_DIR + "dummy{number}.txt", number='16'),
-		expand(config["PLOTSDIR"] + "dhsVsCage5primeComparison.venn.stats/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, barcodes=BARCODES, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "geneReadCoverage.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.geneReadCoverage.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL, capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUEnoALL), # facetted histograms of read length
-		expand(config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.density.png", filtered_product, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand(config["PLOTSDIR"] + "readProfile/byTechCorr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readProfile.heatmap.png", filtered_product, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.allErrors.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "sequencingError.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.sequencingError.deletionsOnly.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "gencode.geneDetection.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.splicing_status:{splicedStatus}.endSupport:{endSupport}.gencode.geneDetection.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], splicedStatus=TMSPLICEDSTATUScategories),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "readToBiotypeBreakdown.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readToBiotypeBreakdown.stats"), filtered_merge_figures, techname=PLOTSbySEQTECHnoALLTECHS, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGN, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE),
-		expand(returnPlotFilenames(config["PLOTSDIR"] + "tmerge.ntCoverageByGenomePartition.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.ntCoverageByGenomePartition.stats"), filtered_merge_figures, techname=PLOTSbySEQTECH, corrLevel=PLOTSbyCORRLEVEL,  capDesign=PLOTSbyCAPDESIGNplusMERGED, sizeFrac=SIZEFRACS, barcodes=PLOTSbyTISSUE, endSupport=ENDSUPPORTcategories, minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-
-## temporary/intermediate
-		config["STATSDATADIR"] + "all.fastq.timestamps.tsv",
-		config["STATSDATADIR"] + "all.readlength.summary.tsv",
-		config["STATSDATADIR"] + "all.mappedReadlength.summary.tsv",
-		expand("annotations/{capDesign}.partition.gff", capDesign=CAPDESIGNS),
-		expand(config["STATSDATADIR"] + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"]),
-		expand(config["STATSDATADIR"] + "all.tmerge.min{minReadSupport}reads.endSupport:{endSupport}.novelLoci.qc.stats.tsv", minReadSupport=config["MINIMUM_TMERGE_READ_SUPPORT"], endSupport=ENDSUPPORTcategories),
-## temporary
-
+		# one summary HTML table per subProject, plus one overall:
+		expand("output/html/summary_table_{subProject}.html", subProject=subProjects) if config['produceHtmlStatsTable'] else '/dev/null',
+		# same contents as the HTML summary table, but in TSV format
+		expand("output/html/summary_table_{subProject}.tsv", subProject=subProjects) if config['produceHtmlStatsTable'] else '/dev/null',
 
 
 		#################
 		### Track hub ###
 		#################
-		config["TRACK_HUB_DIR"] + "hub.txt",
-		config["TRACK_HUB_DIR"] + "genomes.txt",
-		expand(config["TRACK_HUB_DIR"] + "{genome}/trackDb.txt", genome=GENOMES),
+		"output/trackHub/" + "hub.txt" if config['produceTrackHub'] else '/dev/null',
+		"output/trackHub/" + "genomes.txt" if config['produceTrackHub'] else '/dev/null',
+		expand("output/trackHub/" + "{genome}/trackDb.txt", genome=GENOMES) if config['produceTrackHub'] else '/dev/null',
 
 
-##
-# "Dummy" rule to skip undesired targets depending on config
-##
-rule dummy:
-	input: "/dev/null"
-	output: DUMMY_DIR + "dummy{number}.txt"
-	shell:
-		'''
-touch {output}
-		'''
 
 
 rule sortIndexGenome:
@@ -739,8 +266,8 @@ uuid=$(uuidgen)
 count=$(cat {input} | fgrep ">" | sort|uniq -d | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate sequence IDs found"; exit 1; fi
 
-FastaToTbl {input} | sort -T {config[TMPDIR]} -k1,1 | TblToFasta > {config[TMPDIR]}/$uuid 
-mv {config[TMPDIR]}/$uuid {output.sorted}
+FastaToTbl {input} | sort -T {TMPDIR} -k1,1 | TblToFasta > {TMPDIR}/$uuid 
+mv {TMPDIR}/$uuid {output.sorted}
 perl -e 'use Bio::DB::Fasta; my $chrdb = Bio::DB::Fasta->new("{output.sorted}");'
 
 		'''
@@ -751,16 +278,16 @@ rule makeGenomeFile:
 	shell:
 		'''
  uuid=$(uuidgen)
-FastaToTbl {input} | awk '{{print $1"\\t"length($2)}}' | sort -k1,1 > {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+FastaToTbl {input} | awk '{{print $1"\\t"length($2)}}' | sort -k1,1 > {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 		'''
 
 rule makeGencodePartition:
 	input:
-		gtf=lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign],
+		gtf=lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	conda: "envs/xtools_env.yml"
-	output: "annotations/{capDesign}.partition.gff"
+	output: "output/annotations/{capDesign}.partition.gff"
 	shell:
 		'''
 
@@ -777,8 +304,8 @@ fi
 
 
 rule makeSirvGff:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
-	output: "annotations/{capDesign}.SIRVs.gff"
+	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
+	output: "output/annotations/{capDesign}.SIRVs.gff"
 	shell:
 		'''
 cat {input} | awk '$1 ~ /SIRV/' | sortgff > {output}
@@ -786,37 +313,74 @@ cat {input} | awk '$1 ~ /SIRV/' | sortgff > {output}
 		'''
 
 rule makeGencodeBed:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
-	output: "annotations/{capDesign}.bed"
+	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
+	output: "output/annotations/{capDesign}.bed"
 	shell:
 		'''
 cat {input} | gff2bed_full.pl - |sortbed > {output}
 		'''
 
 rule simplifyGencode:
-	input: lambda wildcards: CAPDESIGNTOANNOTGTF[wildcards.capDesign]
-	output: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
+	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
+	output: "output/annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule collapseGencode:
-	input: "annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
-	output: "annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
+	input: "output/annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
+	output: "output/annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
 	threads:1
 	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
-cat {input} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuid
+cat {input} | skipcomments | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid
 uuidL=$(uuidgen)
 
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuid -b {config[TMPDIR]}/$uuid | buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidL
-mergeToRef.pl {input} {config[TMPDIR]}/$uuidL | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidTmpOut
-mv {config[TMPDIR]}/$uuidTmpOut {output}
+bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid | buildLoci.pl - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidL
+mergeToRef.pl {input} {TMPDIR}/$uuidL | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
+mv {TMPDIR}/$uuidTmpOut {output}
 
+		'''
+
+
+
+rule filterSampleAnnot:
+	input: config['SAMPLE_ANNOT']
+	output: temp("output/tmp/{subProject}_samples.tsv")
+	run:
+		if wildcards.subProject == 'ALL':
+			sampleAnnot.to_csv(output[0], sep="\t")
+		else:
+			sampleAnnotFiltered=sampleAnnot[sampleAnnot.project == wildcards.subProject]
+			sampleAnnotFiltered.to_csv(output[0], sep="\t")
+
+rule makeHtmlSummaryDashboard:
+	input:
+		sampleAnnotationFile="output/tmp/{subProject}_samples.tsv",
+		allFastqTimeStamps="output/statsFiles/all.fastq.timestamps.tsv",
+		allReadLengths="output/statsFiles/all.readlength.summary.tsv",
+		allBasicMappingStats="output/statsFiles/all.basic.mapping.stats.tsv",
+		allHissStats="output/statsFiles/all.HiSS.stats.tsv",
+		allMergedStats="output/statsFiles/all.min2reads.merged.stats.tsv",
+		allMatureRnaLengthStats="output/statsFiles/all.min2reads.matureRNALengthSummary.stats.tsv",
+		allTmergeVsSirvStats="output/statsFiles/all.HiSS.tmerge.min2reads.vs.SIRVs.stats.tsv",
+		allCagePolyASupportStats="output/statsFiles/all.min2reads.splicing_status-all.cagePolyASupport.stats.tsv",
+		allNovelLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.stats.tsv",
+		allNovelFlLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.stats.tsv",
+		allNovelLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.qc.stats.tsv",
+		allNovelFlLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv",
+		allNtCoverageStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv",
+	conda: "envs/R_env.yml"
+	output:
+		"output/html/summary_table_{subProject}.html",
+		"output/html/summary_table_{subProject}.tsv"
+	shell:
+		'''
+./LyRic/makeHtmlDashboard.r {output[0]} {input.sampleAnnotationFile} {input.allFastqTimeStamps} {input.allReadLengths} {input.allBasicMappingStats} {input.allHissStats} {input.allMergedStats} {input.allMatureRnaLengthStats} {input.allTmergeVsSirvStats} {input.allCagePolyASupportStats} {input.allNovelLociStats} {input.allNovelFlLociStats} {input.allNovelLociQcStats} {input.allNovelFlLociQcStats} {input.allNtCoverageStats}
 		'''

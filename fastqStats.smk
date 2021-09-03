@@ -1,6 +1,6 @@
 rule basicFASTQqc:
-	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.fastq.gz" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
-	output: FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.dupl.txt" if config["DEMULTIPLEX"] else  FQ_CORR_PATH + "qc/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.dupl.txt"
+	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"
+	output: "output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt"
 	shell:
 		'''
 
@@ -8,88 +8,78 @@ rule basicFASTQqc:
 #zcat {input} | perl -lane 'if ($F[3]) {{die}}' 
 
 # check that there are no read ID duplicates
-zcat {input} | fastq2tsv.pl | awk '{{print $1}}' | sort -T {config[TMPDIR]} | uniq -dc > {output}
+zcat {input} | fastq2tsv.pl | awk '{{print $1}}' | sort -T {TMPDIR} | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
 		'''
 
 rule fastqTimestamps:
-	input: expand(FQPATH + "{techname}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: expand("fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
 
-	output: config["STATSDATADIR"] + "all.fastq.timestamps.tsv"
+	output: "output/statsFiles/" + "all.fastq.timestamps.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
-echo -e "sample_name\\tFASTQ_modified" > {config[TMPDIR]}/$uuid
+echo -e "sample_name\\tFASTQ_modified" > {TMPDIR}/$uuid
 for file in $(echo {input}); do
 echo -e "$(basename $file .fastq.gz)\t$(stat -L --printf='%y' $file  | awk '{{print $1}}')"
-done | sort >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+done | sort >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
 
 #get read lengths for all FASTQ files:
 rule getReadLengthSummary:
-	input: FQ_CORR_PATH + "{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.fastq.gz"
+	input: "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"
 	output: 
-		reads=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz",
-		summ=config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv"
+		reads="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlength.tsv.gz",
+		summ="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlengthSummary.tsv"
 	conda: "envs/R_env.yml"
 	params:
-		bc=lambda wildcards: 'allTissues' if config["DEMULTIPLEX"] else wildcards.barcodes
+		bc=lambda wildcards: wildcards.sampleRep
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-echo -e "seqTech\\tcorrectionLevel\\tcapDesign\\tsizeFrac\\ttissue\\tlength" |gzip > {config[TMPDIR]}/$uuidTmpOut.gz
+echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\tlength" |gzip > {TMPDIR}/$uuidTmpOut.gz
 
-zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname}Corr{wildcards.corrLevel} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | gzip >> {config[TMPDIR]}/$uuidTmpOut.gz
+zcat {input} | fastq2tsv.pl | perl -F"\\t" -slane '$F[0]=~s/^(\S+).*/$1/; print join("\\t", @F)' | awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={params.bc} '{{print t\"\\t\"c\"\\t\"si\"\\t\"b\"\\t\"length($2)}}'| gzip >> {TMPDIR}/$uuidTmpOut.gz
 
 echo "
 library(data.table)
 library(tidyverse)
-dat<-fread('{config[TMPDIR]}/$uuidTmpOut.gz', header=T, sep='\\t')
+dat<-fread('{TMPDIR}/$uuidTmpOut.gz', header=T, sep='\\t')
 dat %>%
-  group_by(seqTech, sizeFrac, capDesign, tissue) %>%
+  group_by(seqTech, sizeFrac, capDesign, sampleRep) %>%
   summarise(n=n(), median=median(length), mean=mean(length), max=max(length)) -> datSumm
 
-write_tsv(datSumm, '{config[TMPDIR]}/$uuidTmpOut.1')
+write_tsv(datSumm, '{TMPDIR}/$uuidTmpOut.1')
 
 " | R --slave
 
-mv {config[TMPDIR]}/$uuidTmpOut.gz {output.reads}
-mv {config[TMPDIR]}/$uuidTmpOut.1 {output.summ}
+mv {TMPDIR}/$uuidTmpOut.gz {output.reads}
+mv {TMPDIR}/$uuidTmpOut.1 {output.summ}
 		'''
 
 rule aggReadLengthSummary:
-	input: lambda wildcards: expand(config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, corrLevel=FINALCORRECTIONLEVELS, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, barcodes=BARCODES)
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlengthSummary.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
 	output: 
-		summary=config["STATSDATADIR"] + "all.readlength.summary.tsv"
+		summary="output/statsFiles/" + "all.readlength.summary.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
-head -n1 {input[0]} > {config[TMPDIR]}/$uuid
-tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
-mv {config[TMPDIR]}/$uuid {output}
+head -n1 {input[0]} > {TMPDIR}/$uuid
+tail -q -n+2 {input} |sort >> {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output}
 
 		'''
-# rule aggSummaryReadLength:
-# 	input: lambda wildcards: expand(config["STATSDATADIR"] + "all.{capDesign}.readlength.summary.tsv", capDesign=CAPDESIGNS),
-# 	output: config["STATSDATADIR"] + "all.readlength.summary.tsv"
-# 	shell:
-# 		'''
-# uuid=$(uuidgen)
-# head -n1 {input[0]} > {config[TMPDIR]}/$uuid
-# tail -q -n+2 {input} |sort >> {config[TMPDIR]}/$uuid
-# mv {config[TMPDIR]}/$uuid {output}
-# 		'''
 
 # plot histograms with R:
 rule plotReadLength:
-	input: config["STATSDATADIR"] + "tmp/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}.{barcodes}.readlength.tsv.gz"
-	output: returnPlotFilenames(config["PLOTSDIR"] + "readLength.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.readLength.stats")
+	input: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlength.tsv.gz"
+	output: returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats")
 	conda: "envs/R_env.yml"
 	params:
-		filterDat=lambda wildcards: merge_figures_params(wildcards.capDesign, wildcards.sizeFrac, wildcards.barcodes, wildcards.corrLevel, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname),
 	shell:
 		'''
 echo "
@@ -102,20 +92,20 @@ library(ggplotify)
 library(dplyr)
 library(data.table)
 dat<-fread('{input}', header=T, sep='\\t')
-{params.filterDat[10]}
-{params.filterDat[0]}
-{params.filterDat[1]}
-{params.filterDat[2]}
-{params.filterDat[3]}
-{params.filterDat[4]}
-{params.filterDat[5]}
-{params.filterDat[8]}
+{params.filterDat[technameFilterString]}
+{params.filterDat[capDesignFilterString]}
+
+{params.filterDat[sizeFracFilterString]}
+{params.filterDat[sampleRepFilterString]}
+{params.filterDat[substSeqTechString]}
+{params.filterDat[substSampleRepString]}
+{params.filterDat[graphDimensions]}
 
 wXyPlot = wXyPlot * 1.2
 
 dat\$sizeFrac_f=factor(dat\$sizeFrac, levels=names({sizeFrac_Rpalette}), ordered=TRUE)
 dat %>%
-  group_by(seqTech, sizeFrac_f, capDesign, tissue) %>%
+  group_by(seqTech, sizeFrac_f, capDesign, sampleRep) %>%
   summarise(n=n(), med=median(length)) -> datSumm
 
 
@@ -132,25 +122,18 @@ coord_cartesian(xlim=c(0, 3500)) +
 scale_x_continuous(labels=comma, name='Read length (nts)')+
 {GGPLOT_PUB_QUALITY} + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + \\"
 
-{params.filterDat[12]}
+{params.filterDat[facetPlotSetup]}
 
 wYxPlot = wYxPlot * 1.2
 wYxNoLegendPlot<- wYxPlot - wLegendOnly
 
 save_plot('{output[0]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
-save_plot('{output[1]}', legendOnly, base_width=wLegendOnly, base_height=hLegendOnly)
+save_plot('{output[1]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
 
-save_plot('{output[2]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
-save_plot('{output[3]}', pXy, base_width=wXyPlot, base_height=hXyPlot)
+save_plot('{output[2]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
+save_plot('{output[3]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
 
-save_plot('{output[4]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-save_plot('{output[5]}', pXyNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
-
-save_plot('{output[6]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-save_plot('{output[7]}', pYx, base_width=wYxPlot, base_height=hYxPlot)
-
-save_plot('{output[8]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
-save_plot('{output[9]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
+save_plot('{output[4]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hYxNoLegendPlot)
 
 
 " > $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r
