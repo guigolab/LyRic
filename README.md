@@ -2,7 +2,7 @@ LyRic is a full-featured, automated transcriptome annotation and analysis workfl
 
 - a set of high-quality RNA Transcript Models (TMs) mapped onto a genome sequence, based on Long-Read (LR) sequencing data (*e.g.* from the ONT or PacBio platforms)
 - various summary statistics plots and analysis results that describe the input and output data in details
-- an interactive HTML table reporting statistics for each input sample
+- an interactive HTML table reporting statistics for each input sample, enabling easy and intuitive sample-to-sample comparison 
 - a [UCSC Track Hub](http://genome.cse.ucsc.edu/goldenPath/help/hgTrackHubHelp.html) to display output TMs as well as various other tracks produced by LyRic.
 
 # Dependencies
@@ -44,6 +44,11 @@ All paths mentioned below are relative to the working directory.
 
 # Execution
 
+
+An example bash script launching LyRic in [cluster/DRMAA mode](https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html?highlight=drmaa#cluster-execution) is provided ('`run_snakemake_EXAMPLE.sh`'). It should be moved to your working directory and executed from there.
+
+Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/stable/executing/cli.html) for more advanced usage.
+
 # Input
 
 - **LR FASTQ files**:
@@ -57,11 +62,13 @@ All paths mentioned below are relative to the working directory.
 		- `{sizeFrac}`: the RNA/cDNA size fraction the file corresponds to. If no size fractionation was performed, should be `0+`.
 		- `{sampleRep}` should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the `tissue` column of the corresponding row in the sample annotation file (see below). The `\d{2}Rep\d+` suffix identifies multiple replicates of the same experiment.
 
-- **Sample annotation file**: This tab-separated file contains all metadata associated to each sample/input LR FASTQ file. Its path is controlled by Snakemake config value `config[SAMPLE_ANNOT]`. A mock sample annotation file, named `sample_annotations.tsv` is included in this repo. 
+- **Sample annotation file**: This tab-separated file contains all metadata associated to each sample/input LR FASTQ file. Its path is controlled by Snakemake config value `config[SAMPLE_ANNOT]`. A mock sample annotation file, named `sample_annotations_EXAMPLE.tsv` is included in this repo. 
 
 	The contents of each column should me mostly self-explanatory, except:
 
 	- `sample_name` (string): should match the basename of the corresponding LR FASTQ file and should be globally unique.
+	- `cellFrac` (string): the cell fraction, *e.g.* `Cytoplasm`, `Nucleus` or `Total` (*i.e.* whole-cell extract with no cell fractionation)
+	- `cappedSpikeIns` (boolean): `True` if ERCC and/or SIRV spike-ins were artificially 5'-m7G-capped before their incorporation into the library, `False` otherwise
 	- `use_matched_HiSeq` (boolean): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below).
 	- `project` (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
 	- `filter_SJ_Qscore` (integer): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Recommended values: `10` for ONT, `30` for PacBio HiFi reads.

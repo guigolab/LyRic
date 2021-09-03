@@ -48,8 +48,6 @@ CAPDESIGNTOCAPDESIGN=config["capDesignToCapDesign"]
 GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
 # which ENCODE DHS peak BED file corresponds to each genome build:
 GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
-# which polyA signal file corresponds to each genome build:
-GENOMETOPAS=config["genomeToPAS"]
 # URL for UCSC Track Hub data files:
 TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
 # 5' and 3' end support categories for transcript models (TMs):

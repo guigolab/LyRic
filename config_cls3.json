@@ -1,8 +1,5 @@
 {
   "GENOMESDIR": "/users/rg/jlagarde/genomes/",
-  "TARGETSDIR": "targets/",
-  "PLOTSDIR": "plots/",
-  "STATSDATADIR": "Rinput/",
   "produceStatPlots": true,
   "produceTrackHub": true,
   "produceHtmlStatsTable": true,
@@ -12,33 +9,37 @@
     "MpreCap": "mm10",
     "Mv2": "mm10"
   },
-  "POSTPRECAPTURE": {
-    "Hv3": "HpreCap",
-    "Mv2": "MpreCap"
+  "capDesignToTargetsGff": {
+	"Hv3": "targets/Hv3_primary_targets.exons.reduced.gene_type.segments.gtf",
+	"Mv2": "targets/Mv2_primary_targets.exons.reduced.gene_type.segments.gtf"
   },
+  "capDesignToCapDesign":{
+	"HpreCap": "Hv3",
+	"MpreCap": "Mv2",
+	"Hv3": "Hv3",
+	"Mv2": "Mv2"
+  },
+	"sampleRepGroupBy": [
+	"seqPlatform",
+	"libraryPrep",
+	"species",
+	"captureDesign",
+	"sizeFrac",
+	"tissue",
+	"cellFrac",
+	"reverse_transcriptase"
+	],
   "CAPTURE": true,
   "SAMPLE_ANNOT": "annotations/samples/sample_annotations.tsv",
-  "TMPDIR": "$TMPDIR",
-  "exonOverhangTolerance": "8",
   "genomeToAnnotGtf": {
     "hg38": "annotations/hs.gencode24+SIRVS.gff",
     "mm10": "annotations/mm.gencodeM7+SIRVS.gff"
   },
-  "PLOTFORMATS": [
-    "pdf",
-    "png"
-  ],
-  "MINIMUM_TMERGE_READ_SUPPORT": [
-    "2"
-  ],
   "USE_MATCHED_ILLUMINA": true,
   "PROJECT_NAME": "CLS3",
   "PROJECT_LONG_NAME": "GENCODE CLS Phase 3",
   "PROJECT_CONTACT_EMAIL": "julien.lagarde@crg.eu",
-  "TRACK_HUB_DIR": "trackHub/",
   "TRACK_HUB_BASE_URL": "https://public-docs.crg.es/rguigo/Data/jlagarde/gencode/trackHubs/CLS3/",
-  "BED12_AUTOSQL": "/users/rg/jlagarde/bed12.as",
-  "HISEQ_FASTQDIR": "fastqs/hiSeq/",
   "genomeToCAGEpeaks": {
     "hg38": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/hg38_fair+new_CAGE_peaks_phase1and2.bed",
     "mm10": "/users/project/gencode_006070_no_backup/jlagarde/fantom5/mm10_fair+new_CAGE_peaks_phase1and2.bed"
@@ -46,10 +47,6 @@
   "genomeToDHSpeaks": {
     "hg38": "/users/project/gencode_006070/jlagarde/lncRNACapture_phase3/annotations/dhs/ENCFF301VRH.hg38.sorted.bed",
     "mm10": "/users/project/gencode_006070/jlagarde/lncRNACapture_phase3/annotations/dhs/ENCFF108APF.bed"
-  },
-  "genomeToPAS": {
-    "hg38": "/users/rg/jlagarde/projects/polyAsignals/hg38.polyAsignals.bed",
-    "mm10": "/users/rg/jlagarde/projects/polyAsignals/mm10.polyAsignals.bed"
   },
   "SIRVinfo": "annotations/SIRV_Set1_Lot00141_info-170612a.tsv"
 }
