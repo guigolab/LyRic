@@ -1,4 +1,4 @@
-sample_name	seqPlatform	seqCenter	libraryPrep	species	captureDesign	sizeFrac	tissue	cellFrac	cappedSpikeIns	bioRep	techRep	date_sequenced	biosample_id	reverse_transcriptase	use_matched_HiSeq	project	filter_SJ_Qscore	comments
+sample_name	seqPlatform	seqCenter	libraryPrep	species	captureDesign	sizeFrac	tissue	cellFrac	cappedSpikeIns	bioRep	techRep	date_sequenced	biosample_id	reverse_transcriptase	use_matched_HiSeq	subProject	filter_SJ_Qscore	comments
 ont-Crg-CapTrap_Hv3_0+_WBlood01Rep1	ONT	Crg	CapTrap	Human	Hv3	0+	WBlood	Total	TRUE	1	1	20200928	CRG_HSaWBLOOD_20191127	PrimeScript II	FALSE	GENCODE	10	
 pacBioSII-Cshl-CapTrap_MpreCap_0+_Heart01Rep1	pacBioSII	Cshl	CapTrap	Mouse	MpreCap	0+	Heart	Total	TRUE	1	1	20200901	CRG_CRG0002_MMaHEART_20180919	PrimeScript II	FALSE	GENCODE	30	
 pacBioSII-Uci-SmartSeq2_HpreCap_0+_Mix03Rep2	pacBioSII	Uci	SmartSeq2	Human	HpreCap	0+	Mix	Total	TRUE	3	2	20210501	ali-mortazavi-h1_es_3,ali-mortazavi-h1_de_3	Maxima	FALSE	LRGASP	30	

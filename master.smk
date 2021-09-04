@@ -141,8 +141,8 @@ for key, item in sampleRepGroups:
 sampleAnnot.set_index('sample_name', inplace=True)
 sampleAnnotDict = sampleAnnot.to_dict('index')
 
-# extract unique list of sub-projects in sampleAnnot (values in 'project' column) to generate separate, filtered HTML stats reports:
-subProjects = set(sampleAnnot['project'])
+# extract unique list of sub-projects in sampleAnnot (values in 'subProject' column) to generate separate, filtered HTML stats reports:
+subProjects = set(sampleAnnot['subProject'])
 # 'None' to create an HTML report without filter:
 subProjects.add('ALL')
 
@@ -357,7 +357,7 @@ rule filterSampleAnnot:
 		if wildcards.subProject == 'ALL':
 			sampleAnnot.to_csv(output[0], sep="\t")
 		else:
-			sampleAnnotFiltered=sampleAnnot[sampleAnnot.project == wildcards.subProject]
+			sampleAnnotFiltered=sampleAnnot[sampleAnnot.subProject == wildcards.subProject]
 			sampleAnnotFiltered.to_csv(output[0], sep="\t")
 
 rule makeHtmlSummaryDashboard:

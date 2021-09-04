@@ -62,17 +62,17 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 		- **`{capDesign}`**: for sample names that didn't undergo targeted RNA capture, this field should match the following regex: `\S+preCap$`. For captured samples, this field should match the name of the capture design (up to the user but preferably a short string).
 		- **`{sizeFrac}`**: the RNA/cDNA size fraction the file corresponds to. If no size fractionation was performed, should be `0+`.
 		- **`{sampleRep}`** should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the `tissue` column of the corresponding row in the sample annotation file (see below). The `\d{2}Rep\d+` suffix identifies multiple replicates of the same experiment.
-
+		- the file basename (*i.e.* `{techname}_{capDesign}_{sizeFrac}_{sampleRep}`) should have an exact match in the `sample_name` column of the sample annotation file (see below).
 - **Sample annotation file**:
 
-	This tab-separated file contains all metadata associated to each sample/input LR FASTQ file, as well as some customizable, sample-specific LyRic run parameters. Its path is controlled by Snakemake config variable `SAMPLE_ANNOT`. A mock sample annotation file, named `sample_annotations_EXAMPLE.tsv` is included in this repo. 
+	This tab-separated file contains all metadata associated to each sample/input LR FASTQ file, as well as some customizable, sample-specific LyRic run parameters. Its path is controlled by config variable `SAMPLE_ANNOT`. A mock sample annotation file, named `sample_annotations_EXAMPLE.tsv` is included in this repo. 
 
 	The contents of each column should me mostly self-explanatory, except:
 
 	- **`cappedSpikeIns`** (boolean): `True` if the corresponding sample contains ERCC and/or SIRV spike-ins that were artificially 5'-m7G-capped before their incorporation into the library, `False` otherwise.
 	- **`cellFrac`** (string): the cell fraction, *e.g.* `Cytoplasm`, `Nucleus` or `Total` (*i.e.* whole-cell extract with no cell fractionation)
-	- **`filter_SJ_Qscore`** (integer): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Recommended values: `10` for ONT, `30` for PacBio HiFi reads.
-	- **`project`** (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
+	- **`filter_SJ_Qscore`** (integer): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Example values: `10` for ONT, `30` for PacBio HiFi reads.
+	- **`subProject`** (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
 	- **`sample_name`** (string): should match the basename of the corresponding LR FASTQ file and should be globally unique.
 	- **`use_matched_HiSeq`** (boolean): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below).
 	
@@ -100,18 +100,19 @@ The following config variables are user-customizable. These can be set either vi
 
 ## Mandatory
 
-- **`capDesignToCapDesign`**
+
 - **`capDesignToGenome`** (dictionary/JSON object): ***key***: capture design identifier (`{capDesign}`); ***value***: corresponding genome assembly identifier (*e.g.* `hg38`, `mm10`)
 
-- **`CAPTURE`**
+- **`CAPTURE`** (boolean): set to '`True`' if some of your data underwent RNA capture and you want to obtain related target coverage statistics etc.
 
-- **`GENOMESDIR`** (string): The path to the directory containing the genome multifastas to map the sequencing reads against. In it, there should be one genome file per species, whose name should match values in `capDesignToGenome{}` object (e.g. '`hg38.fa`' and '`mm10.fa`')
+- **`GENOMESDIR`** (string): The path to the directory containing the genome multifastas to map the sequencing reads against. In it, there should be one genome file per species, whose name should match values in the `capDesignToGenome{}` object (e.g. '`hg38.fa`' and '`mm10.fa`')
 
-- **`produceHtmlStatsTable`**
-- **`produceStatPlots`**
-- **`produceTrackHub`**
-- **`SAMPLE_ANNOT`**
-- **`sampleRepGroupBy`**
+- **`produceHtmlStatsTable`** (boolean): set to '`True`' if you want LyRic to produce  interactive HTML summary tables containing various sample-specific statistics (see below)
+- **`produceStatPlots`** (boolean): set to '`True`' if you want LyRic to produce summary statistics plots (see below)
+- **`produceTrackHub`** (boolean): set to '`True`' if you want LyRic to produce a UCSC Track Hub based on your data
+- **`SAMPLE_ANNOT`** (string): Path to the sample annotation file (see above)
+- **`sampleRepGroupBy`** (list/JSON array): list of columns in the sample annotation file used to combine `{sampleReps}` into groups of samples. Usually, this is the combination of experimental metadata properties that form a distinct group of replicates to group by. This list is used to merge TMs from distinct `{sampleReps}`. See relevant section below for further details.
+
 - **`PROJECT_NAME`** for track hub + job name
 
 - **`USE_MATCHED_ILLUMINA`** (boolean)
@@ -119,6 +120,7 @@ The following config variables are user-customizable. These can be set either vi
 
 ## Optional
 
+- **`capDesignToCapDesign`** (dictionary/JSON object): ***key***: pre- or post-capture design identifier (`{capDesign}`); ***value***: corresponding post-capture design identifier. Only needed if config variable `CAPTURE` is `True`.
 
 - **`capDesignToTargetsGff`** (dictionary/JSON object): ***key***: capture design identifier (`{capDesign}`); ***value***: path to non-overlapping capture-targeted regions in `{capDesign}`, in GFF format. Only needed if config variable `CAPTURE` is `True`.
 
@@ -142,21 +144,59 @@ The production of each output type can be turned on and off using boolean Snakem
 
 ## Transcriptome GTF files
 
+### Sample-specific TMs
+
+(Output directory: `output/mappings/mergedReads/`)
+
+One GTF file per input FASTQ
+
+### TMs merged across replicates
+
+(Output directory: `output/mappings/mergedReads/groupedSampleReps/`)
+
+Samples-specific TMs can be further merged across samples according to config variable `sampleRepGroupBy`. The output transcriptome files will be named based on the column values used to group by. For example, using `config_EXAMPLE.json` and `sample_annotations_EXAMPLE.tsv`:
+
+- Samples 
+	
+	`pacBioSII-Uci-SmartSeq2_HpreCap_0+_Mix01Rep2` and 
+	
+	`pacBioSII-Uci-SmartSeq2_HpreCap_0+_Mix03Rep2` 
+	
+	will be merged into 
+	
+	`pacBioSII_SmartSeq2_Human_HpreCap_0+_Mix_Total_Maxima`
+
+- Samples 
+
+	`ont-Crg-CapTrap_HpreCap_0+_HEK293T01Rep2` and 
+	
+	`ont-Crg-CapTrap_HpreCap_0+_HEK293T01Rep3` 
+	
+	will be merged into 
+	
+	`ONT_CapTrap_Human_HpreCap_0+_HEK293T_Total_PrimeScriptII`
+
+- All other samples will be left untouched, as they correspond to singleton replicates. Note that a file will be created in the output directory anyway, following the file naming scheme described above.
+
 ## Summary statistics plots
 
-Controlled by Snakemake's `config['produceStatPlots']` config variable: boolean. If `True`, multiple statistics plots in PNG format will be output inside the `./output/plots/` subdirectory.
+(Output directory:  `./output/plots/`)
+
+Controlled by config variable '`produceStatPlots`': boolean. If `True`, multiple statistics plots in PNG format will be output inside the output directory.
 
 ## Interactive HTML summary stats table
 
-Production of the interactive HTML summary table is controlled by Snakemake's `config['produceHtmlStatsTable']` variable. If set to `True`, detailed reports containing various per-sample statistics will be produced in the `./output/html/` subdirectory. 
+(Output directory:  `./output/html/`)
 
-LyRic will produce one table per distinct `project` value in the input sample annotation file (as long as those correspond to actual input FASTQ files) (`./output/html/summary_table_{project}.html`), plus a global one containing info for all samples (`./output/html/summary_table_ALL.html`)
+Production of the interactive HTML summary table is controlled by config variable '`produceHtmlStatsTable`' variable. If set to `True`, detailed reports containing various per-sample statistics will be produced in the output directory. 
+
+LyRic will produce one table per distinct `subProject` value in the input sample annotation file (as long as those correspond to actual input FASTQ files) (`./output/html/summary_table_{subProject}.html`), plus a global one containing info for all samples (`./output/html/summary_table_ALL.html`)
 
 For each interactive HTML summary stats table, an accompanying TSV file with the same basename and the `.tsv` extension will also be produced. It contains the same data as the HTML table, in an easily parsable tab-separated format.
 
-## Track Hub
+## UCSC Track Hub
 
-- `config['produceTrackHub']`: boolean. If true, LyRic will generate a UCSC Track Hub in the `./trackHub/` subdirectory. 
+- Controlled by config variable '`produceTrackHub`': boolean. If true, LyRic will generate a UCSC Track Hub in the `./trackHub/` subdirectory. 
 
 
 
