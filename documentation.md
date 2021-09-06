@@ -190,7 +190,7 @@ One GTF file per input FASTQ.
 
 (Output directory: `output/mappings/mergedReads/groupedSampleReps/`)
 
-Samples-specific TMs can be further merged across samples according to config variable `sampleRepGroupBy`. The output transcriptome files will be named based on the column values used to group by. For example, given `config_EXAMPLE.json` and `sample_annotations_EXAMPLE.tsv`:
+Samples-specific TMs can be further merged across samples according to config variable `sampleRepGroupBy`. The output transcriptome files will be named based on the column values used to group by. For example, given [`config_EXAMPLE.json`](config_EXAMPLE.json) and [`sample_annotations_EXAMPLE.tsv`](sample_annotations_EXAMPLE.tsv):
 
 - Samples 
 	
@@ -198,7 +198,7 @@ Samples-specific TMs can be further merged across samples according to config va
 	
 	`pacBioSII-Uci-SmartSeq2_HpreCap_0+_Mix03Rep2` 
 	
-	will be merged into 
+	would be merged into:
 	
 	`pacBioSII_SmartSeq2_Human_HpreCap_0+_Mix_Total_Maxima`
 
@@ -208,11 +208,11 @@ Samples-specific TMs can be further merged across samples according to config va
 	
 	`ont-Crg-CapTrap_HpreCap_0+_HEK293T01Rep3` 
 	
-	will be merged into 
+	would be merged into:
 	
 	`ONT_CapTrap_Human_HpreCap_0+_HEK293T_Total_PrimeScriptII`
 
-- All other samples will be left untouched, as they correspond to singleton replicates. Note that a file will be created in the output directory anyway, following the file naming scheme described above.
+- All other samples will be left untouched, as they correspond to singleton replicates. Note that in that latter case, a file (identical in content to the input sample-specific TM file) would be created in the output directory anyway, following the file naming scheme described above.
 
 ## Summary statistics plots
 
@@ -220,7 +220,7 @@ Samples-specific TMs can be further merged across samples according to config va
 
 Controlled by config variable '`produceStatPlots`': boolean. If `True`, multiple statistics plots in PNG format will be output inside the output directory.
 
-***(missing section)***
+***(incomplete section)***
 
 ## Interactive HTML summary stats table
 
@@ -232,7 +232,7 @@ LyRic will produce one table per distinct `subProject` value in the input sample
 
 For each interactive HTML summary stats table, an accompanying TSV file with the same basename and the `.tsv` extension will also be produced. It contains the same data as the HTML table, in an easily parsable tab-separated format.
 
-***(missing section)***
+***(incomplete section)***
 
 
 ## UCSC Track Hub
