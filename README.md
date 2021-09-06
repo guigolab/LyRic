@@ -7,6 +7,7 @@ LyRic is a flexible, full-featured, automated transcriptome annotation and analy
 
  It is platform-agnostic, *i.e.* it can deal with data coming from both the ONT and PacBio platforms.
 
+* TOC
 {:toc}
 
 # Dependencies
