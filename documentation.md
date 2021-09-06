@@ -55,7 +55,7 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 
 # Input
 
-## Mandatory 
+## Mandatory input
 
 - **LR FASTQ files**
 	- Must be placed inside the `fastqs/` subdirectory
@@ -87,7 +87,7 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 	
 	The path to the directory containing genome sequences is controlled by config variable `GENOMESDIR` (see below).
 
-## Optional
+## Optional input
 
 - **Short-read Illumina FASTQ files**
 
@@ -131,7 +131,7 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 
 The following config variables are user-customizable. These can be set either via a config file (Snakemake's `--configfile FILE` option) or directly via command line options (`--config [KEY=VALUE [KEY=VALUE ...]]]`). See [Snakemake's CLI's documentation](https://snakemake.readthedocs.io/en/stable/executing/cli.html) for more details.
 
-## Mandatory
+## Mandatory config variables
 
 
 - **`capDesignToGenome`** (dictionary/JSON object): ***key***: capture design identifier (`{capDesign}`); ***value***: corresponding genome assembly identifier (*e.g.* `hg38`, `mm10`)
@@ -151,7 +151,7 @@ The following config variables are user-customizable. These can be set either vi
 - **`USE_MATCHED_ILLUMINA`** (boolean): whether to use `{capDesign}`-matched Illumina FASTQs to confirm LR splice junctions.
 
 
-## Optional
+## Optional config variables
 
 - **`capDesignToCapDesign`** (dictionary/JSON object): ***key***: pre- or post-capture design identifier (`{capDesign}`); ***value***: corresponding post-capture design identifier. Only needed if config variable `CAPTURE` is `True`.
 
