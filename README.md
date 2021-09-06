@@ -5,8 +5,10 @@ LyRic is a flexible, full-featured, automated transcriptome annotation and analy
 - an interactive HTML table reporting statistics for each input sample, enabling easy and intuitive sample-to-sample comparison 
 - a [UCSC Track Hub](http://genome.cse.ucsc.edu/goldenPath/help/hgTrackHubHelp.html) to display output TMs, as well as various other tracks produced by LyRic.
 
- It is platform-agnostic, *i.e.* it can deal with data coming from both the ONT and PacBio platforms
-. 
+ It is platform-agnostic, *i.e.* it can deal with data coming from both the ONT and PacBio platforms.
+
+{:toc}
+
 # Dependencies
 
 
