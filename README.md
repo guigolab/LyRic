@@ -7,6 +7,6 @@ LyRic is a versatile automated transcriptome annotation and analysis workflow wr
 
  It is platform-agnostic, *i.e.* it can deal with data coming from both the ONT and PacBio platforms.
 
-Full LyRic documentation is [here](documentation.md).
+**Full LyRic documentation is [here](documentation.md).**
 
 

@@ -1,5 +1,3 @@
-layout: page
-title: "LyRic workflow documentation"
 
 [LyRic](/../../) is a versatile automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
 

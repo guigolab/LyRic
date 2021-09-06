@@ -1,3 +1,5 @@
+layout: page
+title: "LyRic workflow documentation"
 markdown: kramdown
 plugins:
   - jekyll-relative-links
