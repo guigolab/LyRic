@@ -18,7 +18,7 @@ Please install those as a prerequisite.
 
 # Installation
 
-Note that using a Snakemake-compatible HPC environment such as SGE/UGE is highly recommended.
+Note that running LyRic under a Snakemake-compatible HPC environment such as SGE/UGE is highly recommended.
 
 1. `cd` to the directory where you intend to run the LyRic workflow (referred to as the **working directory** below).
 
@@ -67,32 +67,60 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 
 	This tab-separated file contains all metadata associated to each sample/input LR FASTQ file, as well as some customizable, sample-specific LyRic run parameters. Its path is controlled by config variable `SAMPLE_ANNOT`. A mock sample annotation file, named `sample_annotations_EXAMPLE.tsv` is included in this repo. 
 
-	The contents of each column should me mostly self-explanatory, except:
+	All columns are optional, except (1) if otherwise stated below; (2) if said column is listed in config variable `sampleRepGroupBy`. The contents of each column should me mostly self-explanatory, except:
 
-	- **`cappedSpikeIns`** (boolean): `True` if the corresponding sample contains ERCC and/or SIRV spike-ins that were artificially 5'-m7G-capped before their incorporation into the library, `False` otherwise.
-	- **`cellFrac`** (string): the cell fraction, *e.g.* `Cytoplasm`, `Nucleus` or `Total` (*i.e.* whole-cell extract with no cell fractionation)
-	- **`filter_SJ_Qscore`** (integer): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Example values: `10` for ONT, `30` for PacBio HiFi reads.
-	- **`subProject`** (string): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
-	- **`sample_name`** (string): should match the basename of the corresponding LR FASTQ file and should be globally unique.
-	- **`use_matched_HiSeq`** (boolean): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below).
+	- **`cappedSpikeIns`** (boolean, optional): `True` if the corresponding sample contains ERCC and/or SIRV spike-ins that were artificially 5'-m7G-capped before their incorporation into the library, `False` otherwise.
+	- **`cellFrac`** (string, optional): the cell fraction, *e.g.* `Cytoplasm`, `Nucleus` or `Total` (*i.e.* whole-cell extract with no cell fractionation)
+	- **`filter_SJ_Qscore`** (integer, **mandatory**): minimum average Phred sequencing quality of read sequences +/- 3 nts around all their splice junctions for a spliced read to be considered high-confidence (see "HCGM" glossary entry below). Example values: `10` for ONT, `30` for PacBio HiFi reads.
+	- **`subProject`** (string, optional): The sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see below) for each sub-project, if desired. Can be any string except '`ALL`'.
+	- **`sample_name`** (string, **mandatory**): should match the basename of the corresponding LR FASTQ file and should be globally unique.
+	- **`use_matched_HiSeq`** (boolean, **mandatory**): controls the production of HiSS files for the corresponding LR FASTQ file (see corresponding entry in glossary below).
 	
 - **Genome sequences** 
 	
-	To map RNA sequencing reads against. One genome assembly per file, in (multi-)FASTA format. See description of config variable `GENOMESDIR` below for more details.
+	To map RNA sequencing reads against. One genome assembly per file, in (multi-)FASTA format (*i.e.* all chromosomes in separated records of a single FASTA file). Each FASTA file should be named '`<genome_id>.fa`', where `<genome_id>` is the genome assembly identifier, and should match a value in the `capDesignToGenome{}` config variable object (e.g. '`hg38`' or '`mm10`'). 
+	
+	The path to the directory containing genome sequences is controlled by config variable `GENOMESDIR`.
 
 ## Optional
 
 - **Short-read Illumina FASTQ files**
 
-	If present, short reads contained in these files will be used to confirm splice junctions present in the LR FASTQ files.
+	If present, pair-ended short reads contained in these files will be used to confirm splice junctions present in the LR FASTQ files. There should be one pair of Illumina FASTQ files per `{capDesign}` inside the `fastqs/hiSeq/` subdirectory.
 
 	Only needed if config variable `USE_MATCHED_ILLUMINA` is `True`. 
 
 
-- Reference annotation GTFs in `config[genomeToAnnotGtf]`  **if required**
-- TSV containing SIRV info (<transcript_id>{tab}<length>{tab}<concentration> in `config[SIRVinfo]` **if required** 
-- "annotations/repeatMasker/" + CAPDESIGNTOGENOME[wildcards.capDesign] + ".repeatMasker.bed"
-- `config[capDesignToTargetsGff]`: non-overlapping targeted regions (only for RNA capture samples), labelled by target type using the `gene_type` GFF attribute **if required** 
+- **Reference annotation GTF** 
+
+	Reference gene annotation file to compare LyRic's output annotation against.Controlled by config variable `genomeToAnnotGtf` (see corresponding section below). This file should also contain spike-in gene annotations (*e.g.* SIRV/ERCC) if your samples include those.
+
+	Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
+
+- **SIRV information file**
+
+	TSV file containing SIRV information. Format should be:
+	
+	`<transcript_id>\t<length>\t<concentration>` 
+	
+	Controlled by config variable `SIRVinfo` (see corresponding section below). Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
+
+- **Repeats annotation file**
+
+	RepeatMasker BED file, containing the coordinates of repeat regions to compare TMs against. Can be easily downloaded from the UCSC Table Browser. 
+	
+	BED files should be named	'`<genome_id>.repeatMasker.bed`', where `<genome_id>` is the genome assembly identifier, and should match a value in the `capDesignToGenome{}` config variable object (e.g. '`hg38`' or '`mm10`'). The path to the directory containing repeat files is controlled by config variable `REPEATMASKER_DIR` (see corresponding section below).
+
+	Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
+
+- **Capture-targeted regions**
+
+	GTF file of non-overlapping capture-targeted regions for each (post-capture) `{capDesign}`. Only for RNA capture samples. Each region should be identified by its `transcript_id` and labelled using the `gene_type` GFF attribute to group features into groups of targets (*e.g.* by gene biotype).
+	
+	Filepath is controlled by config variable `capDesignToTargetsGff` (see corresponding section below).
+
+	Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`, and `CAPTURE` is `True`.
+ 
 
 # Workflow configuration variables
 
@@ -105,17 +133,17 @@ The following config variables are user-customizable. These can be set either vi
 
 - **`CAPTURE`** (boolean): set to '`True`' if some of your data underwent RNA capture and you want to obtain related target coverage statistics etc.
 
-- **`GENOMESDIR`** (string): The path to the directory containing the genome multifastas to map the sequencing reads against. In it, there should be one genome file per species, whose name should match values in the `capDesignToGenome{}` object (e.g. '`hg38.fa`' and '`mm10.fa`')
+- **`GENOMESDIR`** (string): The path to the directory containing the genome multifastas to map the sequencing reads against (see corresponding section above for format requirements). Note that you should have write permissions inside this directory, to allow LyRic to build various genome indices in it.
 
 - **`produceHtmlStatsTable`** (boolean): set to '`True`' if you want LyRic to produce  interactive HTML summary tables containing various sample-specific statistics (see below)
 - **`produceStatPlots`** (boolean): set to '`True`' if you want LyRic to produce summary statistics plots (see below)
 - **`produceTrackHub`** (boolean): set to '`True`' if you want LyRic to produce a UCSC Track Hub based on your data
-- **`SAMPLE_ANNOT`** (string): Path to the sample annotation file (see above)
+- **`SAMPLE_ANNOT`** (string): Path to the sample annotation file  (see corresponding section above for format requirements)
 - **`sampleRepGroupBy`** (list/JSON array): list of columns in the sample annotation file used to combine `{sampleReps}` into groups of samples. Usually, this is the combination of experimental metadata properties that form a distinct group of replicates to group by. This list is used to merge TMs from distinct `{sampleReps}`. See relevant section below for further details.
 
-- **`PROJECT_NAME`** for track hub + job name
+- **`PROJECT_NAME`** (string): a short identifier to name your UCSC track hub and suffix your cluster job names with.
 
-- **`USE_MATCHED_ILLUMINA`** (boolean)
+- **`USE_MATCHED_ILLUMINA`** (boolean): whether to use `{capDesign}`-matched Illumina FASTQs to confirm LR splice junctions.
 
 
 ## Optional
@@ -126,21 +154,22 @@ The following config variables are user-customizable. These can be set either vi
 
 - **`genomeToAnnotGtf`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding gene annotation file, in GTF format (*e.g.* gencode v24 GTF). Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
 
-- **`genomeToCAGEpeaks`**
-- **`genomeToDHSpeaks`**
-- **`PROJECT_CONTACT_EMAIL`**
-- **`PROJECT_LONG_NAME`**
-- **`REPEATMASKER_DIR`** (string): 
-- **`SIRVinfo`**
-- **`TRACK_HUB_BASE_URL`**
+- **`genomeToCAGEpeaks`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding CAGE cluster coordinates to compare TM's 5' ends against, in BED format. Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
+- **`genomeToDHSpeaks`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding DHS cluster coordinates to compare TM's 5' ends against, in BED format. Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
+- **`PROJECT_CONTACT_EMAIL`** (string): your contact email (to include in UCSC Track Hub Data). Only needed if config variable `produceTrackHub` is `True`.
+- **`PROJECT_LONG_NAME`** (string): a long name for your UCSC Track hub. Only needed if config variable `produceTrackHub` is `True`.
+- **`REPEATMASKER_DIR`** (string): The path to the directory where repeatMasker BED files are located (see relevant section above). Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
+- **`SIRVinfo`** (string): path to TSV file containing SIRV information (see corresponding section above for format requirements). If present (and if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`), comparisons between LyRic's transcriptome and SIRV annotations will be performed.
+
+- **`TRACK_HUB_BASE_URL`** (string): The base URL of the UCSC Track Hub. It should point to `./output/trackHub/` on your web server. Only needed if config variable  `produceTrackHub` is `True`.
 
 
 
 # Output
 
-All files output by LyRic are written under '`output/`' in the working directory. LyRic will generate various types of output files, listed below.
+All files output by LyRic are written under '`./output/`' in the working directory. LyRic will generate various types of output files, listed below.
 
-The production of each output type can be turned on and off using boolean Snakemake config variables, namely `config['produceStatPlots']`, `config['produceHtmlStatsTable']` and `config['produceTrackHub']`. If all these are set to false, the workflow will only produce transcriptome GTF files (this cannot be switched off).
+The production of each output type can be turned on and off using config variables, namely '`produceStatPlots`', `produceHtmlStatsTable`' and `produceTrackHub`'. If all these are set to `False`, the workflow will only produce transcriptome GTF files (which cannot be switched off).
 
 ## Transcriptome GTF files
 
@@ -154,7 +183,7 @@ One GTF file per input FASTQ
 
 (Output directory: `output/mappings/mergedReads/groupedSampleReps/`)
 
-Samples-specific TMs can be further merged across samples according to config variable `sampleRepGroupBy`. The output transcriptome files will be named based on the column values used to group by. For example, using `config_EXAMPLE.json` and `sample_annotations_EXAMPLE.tsv`:
+Samples-specific TMs can be further merged across samples according to config variable `sampleRepGroupBy`. The output transcriptome files will be named based on the column values used to group by. For example, given `config_EXAMPLE.json` and `sample_annotations_EXAMPLE.tsv`:
 
 - Samples 
 	
@@ -196,7 +225,9 @@ For each interactive HTML summary stats table, an accompanying TSV file with the
 
 ## UCSC Track Hub
 
-- Controlled by config variable '`produceTrackHub`': boolean. If true, LyRic will generate a UCSC Track Hub in the `./trackHub/` subdirectory. 
+(Output directory:  `./output/trackHub/`)
+
+Controlled by config variable '`produceTrackHub`' (boolean). If true, LyRic will generate a UCSC Track Hub structure in the corresponding output directory. The URL of the resulting Track Hub directory (i.e. where the Genome Browser should fetch the `hub.txt` file is controlled by config variable `TRACK_HUB_BASE_URL`.
 
 
 

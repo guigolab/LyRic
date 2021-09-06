@@ -188,5 +188,8 @@
   },
   "bamqc": {
     "virtual_free": "25G"
+  },
+  "mergedReadsGroupedSampleReps":{
+	"virtual_free": "15G"
   }
 }
