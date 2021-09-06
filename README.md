@@ -1,10 +1,12 @@
 LyRic is a flexible, full-featured, automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
 
-- a set of high-quality RNA Transcript Models (TMs) mapped onto a genome sequence, based on Long-Read (LR) sequencing data. It is platform-agnostic, *i.e.* it can deal with data coming from both the ONT and PacBio platforms
+- a set of high-quality RNA Transcript Models (TMs) mapped onto a genome sequence, based on Long-Read (LR) RNA sequencing data.
 - various summary statistics plots and analysis results that describe the input and output data in details
 - an interactive HTML table reporting statistics for each input sample, enabling easy and intuitive sample-to-sample comparison 
 - a [UCSC Track Hub](http://genome.cse.ucsc.edu/goldenPath/help/hgTrackHubHelp.html) to display output TMs, as well as various other tracks produced by LyRic.
 
+ It is platform-agnostic, *i.e.* it can deal with data coming from both the ONT and PacBio platforms
+. 
 # Dependencies
 
 
@@ -115,7 +117,7 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 
 - **Capture-targeted regions**
 
-	GTF file of non-overlapping capture-targeted regions for each (post-capture) `{capDesign}`. Only for RNA capture samples. Each region should be identified by its `transcript_id` and labelled using the `gene_type` GFF attribute to group features into groups of targets (*e.g.* by gene biotype).
+	GTF file of non-overlapping capture-targeted regions for each (post-capture) `{capDesign}`. Only for RNA capture samples. Each region should be identified by its `transcript_id` and labelled using the `gene_type` GFF attribute to group features into target types (*e.g.* by gene biotype).
 	
 	Filepath is controlled by config variable `capDesignToTargetsGff` (see corresponding section below).
 
@@ -155,7 +157,7 @@ The following config variables are user-customizable. These can be set either vi
 - **`genomeToAnnotGtf`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding gene annotation file, in GTF format (*e.g.* gencode v24 GTF). Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
 
 - **`genomeToCAGEpeaks`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding CAGE cluster coordinates to compare TM's 5' ends against, in BED format. Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
-- **`genomeToDHSpeaks`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding DHS cluster coordinates to compare TM's 5' ends against, in BED format. Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
+- **`genomeToDHSpeaks`** (dictionary/JSON object): ***key***: genome assembly identifier (*e.g.* `hg38`, `mm10`); ***value***: corresponding DHS cluster coordinates to compare TM's 5' ends against, in BED format. Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
 - **`PROJECT_CONTACT_EMAIL`** (string): your contact email (to include in UCSC Track Hub Data). Only needed if config variable `produceTrackHub` is `True`.
 - **`PROJECT_LONG_NAME`** (string): a long name for your UCSC Track hub. Only needed if config variable `produceTrackHub` is `True`.
 - **`REPEATMASKER_DIR`** (string): The path to the directory where repeatMasker BED files are located (see relevant section above). Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
