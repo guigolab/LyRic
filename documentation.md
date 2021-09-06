@@ -12,6 +12,7 @@ title: "LyRic workflow documentation"
 
 LyRic is platform-agnostic, *i.e.* it can deal with FASTQ data coming from both the ONT and PacBio platforms.
 
+# Table of Contents
 * TOC
 {:toc}
 
