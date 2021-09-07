@@ -68,6 +68,17 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 		- **`{sizeFrac}`**: the RNA/cDNA size fraction the file corresponds to. If no size fractionation was performed, should be `0+`.
 		- **`{sampleRep}`** should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the `tissue` column of the corresponding row in the sample annotation file (see below). The `\d{2}Rep\d+` suffix identifies multiple replicates of the same experiment.
 		- the file basename (*i.e.* `{techname}_{capDesign}_{sizeFrac}_{sampleRep}`) should have an exact match in the `sample_name` column of the sample annotation file (see below).
+	
+	
+	
+	- Note that **poly(A) tails should not have been trimmed from the input reads**, contrary to *e.g.* [PacBio's "mainstream" recommendation](https://github.com/PacificBiosciences/IsoSeq_SA3nUP/wiki/Tutorial:-Installing-and-Running-Iso-Seq-3-using-Conda). Check out the **[pb_gen workflow](https://github.com/julienlag/pb_gen)** if you need to generate LyRic-compatible PacBio Sequel FASTQs from PacBio subread BAMs.
+
+		If input reads are not polyadenylated, results will be biased in the following way:
+
+		1. Mono-exonic transcripts will be heavily under-represented. That's because no mono-exonic read will make it into the HCGM set (see [Glossary](#Glossary-/-Abbreviations) below).
+		2. Transcript 3' end completeness statistics will be substantially under-estimated.
+
+
 - **Sample annotation file**:
 
 	This tab-separated file contains all metadata associated to each sample/input LR FASTQ file, as well as some customizable, sample-specific LyRic run parameters. Its path is controlled by config variable `SAMPLE_ANNOT`. A mock sample annotation file, named [`sample_annotations_EXAMPLE.tsv`](sample_annotations_EXAMPLE.tsv) is included in this repository. 
