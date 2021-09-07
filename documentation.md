@@ -67,8 +67,8 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 		- `<library preparation protocol>`: *e.g.* '`SmartSeq2`', '`CapTrap`'
 	- **`{capDesign}`**: for sample names that didn't undergo targeted RNA capture, this field should match the following regex: `\S+preCap$`. For captured samples, this field should match the name of the capture design (up to the user but preferably a short string).
 	- **`{sizeFrac}`**: the RNA/cDNA size fraction the file corresponds to. If no size fractionation was performed, should be `0+`.
-	- **`{sampleRep}`** should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the `tissue` column of the corresponding row in the sample annotation file (see [below](###sample-annotation-file)). The `\d{2}Rep\d+` suffix identifies multiple replicates of the same experiment.
-	- the file basename (*i.e.* `{techname}_{capDesign}_{sizeFrac}_{sampleRep}`) should have an exact match in the `sample_name` column of the sample annotation file (see [below](###sample-annotation-file)).
+	- **`{sampleRep}`** should match the following regex: '`(\S+)\d{2}Rep\d+`' (*e.g. `Brain01Rep1`*). The `(\S+)` prefix should match the value in the `tissue` column of the corresponding row in the sample annotation file (see [below](#sample-annotation-file)). The `\d{2}Rep\d+` suffix identifies multiple replicates of the same experiment.
+	- the file basename (*i.e.* `{techname}_{capDesign}_{sizeFrac}_{sampleRep}`) should have an exact match in the `sample_name` column of the sample annotation file (see [below](#sample-annotation-file)).
 	
 - Note that **poly(A) tails should not have been trimmed from the input reads**, contrary to *e.g.* [PacBio's "mainstream" recommendation](https://github.com/PacificBiosciences/IsoSeq_SA3nUP/wiki/Tutorial:-Installing-and-Running-Iso-Seq-3-using-Conda). Check out the **[pb_gen workflow](https://github.com/julienlag/pb_gen)** if you need to generate LyRic-compatible PacBio Sequel FASTQs from PacBio subread BAMs.
 
@@ -98,7 +98,7 @@ All columns are optional, except (1) if otherwise stated below; (2) if said colu
 
 - **`subProject`** (string, optional):
 
-	the sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see [below](##interactive-html-summary-stats-table) for each sub-project, if desired. Can be any string except '`ALL`'.
+	the sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see [below](#interactive-html-summary-stats-table) for each sub-project, if desired. Can be any string except '`ALL`'.
 
 - **`sample_name`** (string, **mandatory**):
 
@@ -106,13 +106,13 @@ All columns are optional, except (1) if otherwise stated below; (2) if said colu
 
 - **`use_matched_HiSeq`** (boolean, **mandatory**):
 
-	controls the production of HiSS files for the corresponding sample  (see [glossary entry](#hiss)) below).
+	controls the production of HiSS files for the corresponding sample  (see [glossary entry](#hiss) below).
 	
 ### Genome sequences
 
 To map RNA sequencing reads against. One genome assembly per file, in (multi-)FASTA format (*i.e.* all chromosomes in separated records of a single FASTA file). Each FASTA file should be named '`<genome_id>.fa`', where `<genome_id>` is the genome assembly identifier, and should match a value in the `capDesignToGenome{}` config variable object (e.g. '`hg38`' or '`mm10`'). 
 
-The path to the directory containing genome sequences is controlled by config variable `GENOMESDIR` (see [below](##mandatory-config-variables)).
+The path to the directory containing genome sequences is controlled by config variable `GENOMESDIR` (see [below](#mandatory-config-variables)).
 
 ## Optional input
 
@@ -125,7 +125,7 @@ Only needed if config variable `USE_MATCHED_ILLUMINA` is `True`.
 
 ### Reference annotation GTF
 
-Reference gene annotation file to compare LyRic's output annotation against.Controlled by config variable `genomeToAnnotGtf` (see [below](##optional-config-variables)). This file should also contain spike-in gene annotations (*e.g.* SIRV/ERCC) if your samples include those.
+Reference gene annotation file to compare LyRic's output annotation against.Controlled by config variable `genomeToAnnotGtf` (see [below](#optional-config-variables)). This file should also contain spike-in gene annotations (*e.g.* SIRV/ERCC) if your samples include those.
 
 Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`.
 
@@ -135,13 +135,13 @@ TSV file containing SIRV information. Format should be:
 
 	<transcript_id>\t<length>\t<concentration>
 
-Controlled by config variable `SIRVinfo` (see [below](##optional-config-variables)). Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
+Controlled by config variable `SIRVinfo` (see [below](#optional-config-variables)). Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
 
 ### Repeat annotation file
 
 RepeatMasker BED file, containing the coordinates of repeat regions to compare TMs against. Can be easily downloaded from the UCSC Table Browser. 
 	
-BED files should be named	'`<genome_id>.repeatMasker.bed`', where `<genome_id>` is the genome assembly identifier, and should match a value in the `capDesignToGenome{}` config variable object (e.g. '`hg38`' or '`mm10`'). The path to the directory containing repeat files is controlled by config variable `REPEATMASKER_DIR` (see [below](##optional-config-variables)).
+BED files should be named	'`<genome_id>.repeatMasker.bed`', where `<genome_id>` is the genome assembly identifier, and should match a value in the `capDesignToGenome{}` config variable object (e.g. '`hg38`' or '`mm10`'). The path to the directory containing repeat files is controlled by config variable `REPEATMASKER_DIR` (see [below](#optional-config-variables)).
 
 Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
 
@@ -149,7 +149,7 @@ Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsT
 
 GTF file of non-overlapping capture-targeted regions for each (post-capture) `{capDesign}`. Only for RNA capture samples. Each region should be identified by its `transcript_id` and labelled using the `gene_type` GFF attribute to group features into target types (*e.g.* by gene biotype).
 
-Filepath is controlled by config variable `capDesignToTargetsGff` (see [below](##optional-config-variables)).
+Filepath is controlled by config variable `capDesignToTargetsGff` (see [below](#optional-config-variables)).
 
 Only needed if any of config variables `produceStatPlots`, `produceTrackHub` and `produceHtmlStatsTable` are `True`, and `CAPTURE` is `True`.
  
@@ -173,27 +173,27 @@ The following config variables are user-customizable. These can be set either vi
 
 - **`GENOMESDIR`** (string):
 
-	the path to the directory containing the genome multifastas to map the sequencing reads against (see [corresponding section above](###genome-sequences) for format requirements). Note that you should have write permissions inside this directory, to allow LyRic to build various genome indices in it.
+	the path to the directory containing the genome multifastas to map the sequencing reads against (see [corresponding section above](#genome-sequences) for format requirements). Note that you should have write permissions inside this directory, to allow LyRic to build various genome indices in it.
 
 - **`produceHtmlStatsTable`** (boolean):
 
-	set to '`True`' if you want LyRic to produce  interactive HTML summary tables containing various sample-specific statistics (see [below](##interactive-html-summary-stats-table)).
+	set to '`True`' if you want LyRic to produce  interactive HTML summary tables containing various sample-specific statistics (see [below](#interactive-html-summary-stats-table)).
 
 - **`produceStatPlots`** (boolean):
 
-	set to '`True`' if you want LyRic to produce summary statistics plots (see [below](##summary-statistics-plots)).
+	set to '`True`' if you want LyRic to produce summary statistics plots (see [below](#summary-statistics-plots)).
 
 - **`produceTrackHub`** (boolean):
 
-	set to '`True`' if you want LyRic to produce a UCSC Track Hub based on your data (see [below](##ucsc-track-hub)).
+	set to '`True`' if you want LyRic to produce a UCSC Track Hub based on your data (see [below](#ucsc-track-hub)).
 
 - **`SAMPLE_ANNOT`** (string):
 
-	Path to the sample annotation file  (see [corresponding section above](###sample-annotation-file) for format requirements)
+	Path to the sample annotation file  (see [corresponding section above](#sample-annotation-file) for format requirements)
 
 - **`sampleRepGroupBy`** (list/JSON array):
 
-	list of columns in the sample annotation file used to combine `{sampleReps}` into groups of samples. Usually, this is the combination of experimental metadata properties that form a distinct group of replicates to group by. This list is used to merge TMs from distinct `{sampleReps}`. See [below](###tms-merged-across-replicates) for further details.
+	list of columns in the sample annotation file used to combine `{sampleReps}` into groups of samples. Usually, this is the combination of experimental metadata properties that form a distinct group of replicates to group by. This list is used to merge TMs from distinct `{sampleReps}`. See [below](#tms-merged-across-replicates) for further details.
 
 - **`PROJECT_NAME`** (string):
 
@@ -255,13 +255,13 @@ The following config variables are user-customizable. These can be set either vi
 	a long name for your UCSC Track hub. Only needed if config variable `produceTrackHub` is `True`.
 - **`REPEATMASKER_DIR`** (string):
 
-	The path to the directory where repeatMasker BED files are located (see relevant section [above](###repeat-annotation-file)). 
+	The path to the directory where repeatMasker BED files are located (see relevant section [above](#repeat-annotation-file)). 
 	
 	Only needed if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`.
 
 - **`SIRVinfo`** (string): 
 
-	path to TSV file containing SIRV information (see corresponding section [above](###sirv-information-file) for format requirements). 
+	path to TSV file containing SIRV information (see corresponding section [above](#sirv-information-file) for format requirements). 
 	
 	If present (and if any of config variables `produceStatPlots` and `produceHtmlStatsTable` are `True`), comparisons between LyRic's transcriptome and SIRV annotations will be performed.
 
