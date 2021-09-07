@@ -98,7 +98,7 @@ All columns are optional, except (1) if otherwise stated below; (2) if said colu
 
 - **`subProject`** (string, optional):
 
-	the sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see [below](#interactive-html-summary-stats-table) for each sub-project, if desired. Can be any string except '`ALL`'.
+	the sub-project this dataset is part of. This is useful to produce separate interactive HTML summary stats tables (see [below](#interactive-html-summary-stats-table)) for each sub-project, if desired. Can be any string except '`ALL`'.
 
 - **`sample_name`** (string, **mandatory**):
 
