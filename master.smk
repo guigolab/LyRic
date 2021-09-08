@@ -192,20 +192,27 @@ include: "processReadMappings.smk"
 include: "tmClassification.smk"
 include: "tmEndSupport.smk"
 include: "trackHub.smk"
+include: "htmlTable.smk"
+include: "processInputGenome.smk"
 
 
 
-
-
-#pseudo-rule specifying the target files we ultimately want.
 rule all:
 	input:
+		###########################
+		### Transcriptome files ###
+		###########################
 		# transcriptome GTFs (per sampleRep):
 		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		# transcriptome GTFs (per grouped sampleReps)
 		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
 		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),		
+
+		################################
+		### Summary statistics plots ###
+		################################
+
 		expand(returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null', # facetted histograms of read length
 		expand("output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
@@ -238,11 +245,11 @@ rule all:
 		expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
 
-		# one summary HTML table per subProject, plus one overall:
-		expand("output/html/summary_table_{subProject}.html", subProject=subProjects) if config['produceHtmlStatsTable'] else '/dev/null',
-		# same contents as the HTML summary table, but in TSV format
-		expand("output/html/summary_table_{subProject}.tsv", subProject=subProjects) if config['produceHtmlStatsTable'] else '/dev/null',
+		################################
+		### HTML Summary stats table ###
+		################################
 
+		"output/html/index.html" if config['produceHtmlStatsTable'] else '/dev/null',
 
 		#################
 		### Track hub ###
@@ -251,136 +258,3 @@ rule all:
 		"output/trackHub/" + "genomes.txt" if config['produceTrackHub'] else '/dev/null',
 		expand("output/trackHub/" + "{genome}/trackDb.txt", genome=GENOMES) if config['produceTrackHub'] else '/dev/null',
 
-
-
-
-rule sortIndexGenome:
-	input: config["GENOMESDIR"] +"{genome}.fa"
-	output: 
-		sorted=config["GENOMESDIR"] +"{genome}.sorted.fa",
-		bioperlindex=config["GENOMESDIR"] +"{genome}.sorted.fa.index"
-	shell:
-		'''
-uuid=$(uuidgen)
-#check for duplicate sequences:
-count=$(cat {input} | fgrep ">" | sort|uniq -d | wc -l)
-if [ $count -gt 0 ]; then echo "$count duplicate sequence IDs found"; exit 1; fi
-
-FastaToTbl {input} | sort -T {TMPDIR} -k1,1 | TblToFasta > {TMPDIR}/$uuid 
-mv {TMPDIR}/$uuid {output.sorted}
-perl -e 'use Bio::DB::Fasta; my $chrdb = Bio::DB::Fasta->new("{output.sorted}");'
-
-		'''
-
-rule makeGenomeFile:
-	input: config["GENOMESDIR"] +"{genome}.sorted.fa"
-	output: config["GENOMESDIR"] +"{genome}.sorted.genome"
-	shell:
-		'''
- uuid=$(uuidgen)
-FastaToTbl {input} | awk '{{print $1"\\t"length($2)}}' | sort -k1,1 > {TMPDIR}/$uuid
-mv {TMPDIR}/$uuid {output}
-		'''
-
-rule makeGencodePartition:
-	input:
-		gtf=lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]],
-		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
-	conda: "envs/xtools_env.yml"
-	output: "output/annotations/{capDesign}.partition.gff"
-	shell:
-		'''
-
-partitionAnnotation.sh {input.gtf} {input.genome} | sortgff > {output}
-
-# QC:
-genomeSize=$(cat {input.genome} | cut -f2|sum.sh)
-testSize=$(cat {output} | awk '{{print ($5-$4)+1}}' | sum.sh)
-if [ $testSize -ne $genomeSize ]; then
-echoerr "ERROR: sum of feature sizes in output gff is not equal to genome size. The output is probably bogus."
-exit 1
-fi
-		'''
-
-
-rule makeSirvGff:
-	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
-	output: "output/annotations/{capDesign}.SIRVs.gff"
-	shell:
-		'''
-cat {input} | awk '$1 ~ /SIRV/' | sortgff > {output}
-
-		'''
-
-rule makeGencodeBed:
-	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
-	output: "output/annotations/{capDesign}.bed"
-	shell:
-		'''
-cat {input} | gff2bed_full.pl - |sortbed > {output}
-		'''
-
-rule simplifyGencode:
-	input: lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]]
-	output: "output/annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
-	shell:
-		'''
-uuidTmpOut=$(uuidgen)
-cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
-mv {TMPDIR}/$uuidTmpOut {output}
-		'''
-
-rule collapseGencode:
-	input: "output/annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf"
-	output: "output/annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	threads:1
-	conda: "envs/xtools_env.yml"
-	shell:
-		'''
-uuid=$(uuidgen)
-uuidTmpOut=$(uuidgen)
-cat {input} | skipcomments | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid
-uuidL=$(uuidgen)
-
-bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid | buildLoci.pl - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidL
-mergeToRef.pl {input} {TMPDIR}/$uuidL | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
-mv {TMPDIR}/$uuidTmpOut {output}
-
-		'''
-
-
-
-rule filterSampleAnnot:
-	input: config['SAMPLE_ANNOT']
-	output: temp("output/tmp/{subProject}_samples.tsv")
-	run:
-		if wildcards.subProject == 'ALL':
-			sampleAnnot.to_csv(output[0], sep="\t")
-		else:
-			sampleAnnotFiltered=sampleAnnot[sampleAnnot.subProject == wildcards.subProject]
-			sampleAnnotFiltered.to_csv(output[0], sep="\t")
-
-rule makeHtmlSummaryDashboard:
-	input:
-		sampleAnnotationFile="output/tmp/{subProject}_samples.tsv",
-		allFastqTimeStamps="output/statsFiles/all.fastq.timestamps.tsv",
-		allReadLengths="output/statsFiles/all.readlength.summary.tsv",
-		allBasicMappingStats="output/statsFiles/all.basic.mapping.stats.tsv",
-		allHissStats="output/statsFiles/all.HiSS.stats.tsv",
-		allMergedStats="output/statsFiles/all.min2reads.merged.stats.tsv",
-		allMatureRnaLengthStats="output/statsFiles/all.min2reads.matureRNALengthSummary.stats.tsv",
-		allTmergeVsSirvStats="output/statsFiles/all.HiSS.tmerge.min2reads.vs.SIRVs.stats.tsv",
-		allCagePolyASupportStats="output/statsFiles/all.min2reads.splicing_status-all.cagePolyASupport.stats.tsv",
-		allNovelLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.stats.tsv",
-		allNovelFlLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.stats.tsv",
-		allNovelLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.qc.stats.tsv",
-		allNovelFlLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv",
-		allNtCoverageStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv",
-	conda: "envs/R_env.yml"
-	output:
-		"output/html/summary_table_{subProject}.html",
-		"output/html/summary_table_{subProject}.tsv"
-	shell:
-		'''
-./LyRic/makeHtmlDashboard.r {output[0]} {input.sampleAnnotationFile} {input.allFastqTimeStamps} {input.allReadLengths} {input.allBasicMappingStats} {input.allHissStats} {input.allMergedStats} {input.allMatureRnaLengthStats} {input.allTmergeVsSirvStats} {input.allCagePolyASupportStats} {input.allNovelLociStats} {input.allNovelFlLociStats} {input.allNovelLociQcStats} {input.allNovelFlLociQcStats} {input.allNtCoverageStats}
-		'''

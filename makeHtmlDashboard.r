@@ -304,12 +304,6 @@ tb <- formattable(dat,
 
 )
 ) 
-#tb %>% as.htmlwidget() %>% htmlwidgets::saveWidget(file="./html/summary_table_test.html")
-#kbl(tb, escape=TRUE,format='latex') %>%  kable_styling("hover", full_width = F)
-
-#htmlString <- tb %>% select('# reads') %>% rename (reads = '# reads') %>% mutate(reads = color_tile("white", "orange")(reads)) %>% kable('html', escape=F)
-#write(htmlString, file='html/test.html')
-
 
 tbDt <- as.datatable(tb[order(tb$tissue), ], extensions = c('Buttons','ColReorder','FixedColumns', 'FixedHeader', 'KeyTable','RowGroup', 'Select', 'SearchPanes'), 
 rownames=FALSE, 
@@ -334,6 +328,6 @@ options= list(
   )
 	)
 	)
-dir.create('./html/')
-DT::saveWidget(tbDt, paste0(getwd(), "/", outputHtml), title='GENCODE - CRG Dashboard of Experiments')
+#dir.create('./html/')
+DT::saveWidget(tbDt, paste0(getwd(), "/", outputHtml), title='Dashboard of Experiments')
 write_tsv(dat, paste0(tools::file_path_sans_ext(outputHtml), ".tsv", sep=''))

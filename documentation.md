@@ -281,6 +281,8 @@ The production of each output type can be turned on and off using config variabl
 
 ## Transcriptome GTF files
 
+All reads and transcripts are collapsed/merged using [tmerge](https://github.com/julienlag/tmerge).
+
 ### Sample-specific TMs
 
 (Output directory: `output/mappings/mergedReads/`)
