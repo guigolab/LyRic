@@ -80,7 +80,7 @@ Please refer to Snakemake's [documentation](https://snakemake.readthedocs.io/en/
 
 ### Sample annotation file
 
-***NOTE***: **Never, [EVER](https://www.nature.com/articles/d41586-021-02211-4) use Excel /LibreOffice or the like to edit this file!!! ** Here's a [good TSV editor](https://edit-csv.net/), also available as a [VSCode](https://code.visualstudio.com/) [extension](https://github.com/janisdd/vscode-edit-csv). 
+***NOTE***: **Never, [EVER](https://www.nature.com/articles/d41586-021-02211-4) use Excel /LibreOffice or the like to edit this file!!!** Here's a [good TSV editor](https://edit-csv.net/), also available as a [VSCode](https://code.visualstudio.com/) [extension](https://github.com/janisdd/vscode-edit-csv). 
 
 This tab-separated file contains all metadata associated to each sample/input LR FASTQ file, as well as some customizable, sample-specific LyRic run parameters. Its path is controlled by config variable `SAMPLE_ANNOT`. A mock sample annotation file, named [`sample_annotations_EXAMPLE.tsv`](sample_annotations_EXAMPLE.tsv) is included in this repository. 
 
