@@ -6,6 +6,7 @@ rule sortIndexGenome:
 	output: 
 		sorted=config["GENOMESDIR"] +"{genome}.sorted.fa",
 		bioperlindex=config["GENOMESDIR"] +"{genome}.sorted.fa.index"
+	conda: "envs/perl_env.yml"
 	shell:
 		'''
 uuid=$(uuidgen)
