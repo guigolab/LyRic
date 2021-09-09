@@ -108,7 +108,7 @@ rule gffcompareToAnnotation:
 	output: 
 		standard="output/mappings/mergedReads/gffcompare/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.simple.tsv",
 		adjustedSn="output/mappings/mergedReads/gffcompare/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.adj.simple.tsv"
-
+	conda: "envs/gffcompare_env.yml"
 	shell:
 		'''
 pref=$(basename {output.standard} .simple.tsv)
@@ -147,6 +147,7 @@ if SIRVpresent:
 			annot="output/annotations/{capDesign}.SIRVs.gff",
 			tm="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz"
 		output: "output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
+		conda: "envs/gffcompare_env.yml"
 		shell:
 			'''
 pref=$(basename {output} .simple.tsv)

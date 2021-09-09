@@ -65,6 +65,7 @@ rule getHiSeqMappingStats:
 		reads1 = "fastqs/hiSeq/" + "hiSeq_{capDesign}_1.fastq.gz",
 		reads2 = "fastqs/hiSeq/" + "hiSeq_{capDesign}_2.fastq.gz",
 	output: "output/statsFiles/" + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)

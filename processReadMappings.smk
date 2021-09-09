@@ -48,9 +48,25 @@ get_right_transcript_strand.pl {TMPDIR}/$uuid.in.gff {input.strandInfo} | fgrep 
 mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
+
+rule strandedGffToBed:
+	input: strandedGff="output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.stranded.gff.gz"
+	output: temp("output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.stranded.bed")
+	conda: "envs/ucsc_env.yml"
+	shell:
+		'''
+uuid=$(uuidgen)
+zcat {input.strandedGff} | awk '$3=="exon"'>  {TMPDIR}/$uuid.gff
+gtfToGenePred {TMPDIR}/$uuid.gff {TMPDIR}/$uuid.gp
+genePredToBed {TMPDIR}/$uuid.gp {TMPDIR}/$uuid.bed
+mv {TMPDIR}/$uuid.bed {output}
+
+		'''
+
+
 rule removeIntraPriming:
 	input: 
-		strandedGff="output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.stranded.gff.gz",
+		strandedBed="output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.stranded.bed",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	output: 
 		list="output/mappings/intraPriming/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.list",
@@ -60,15 +76,10 @@ rule removeIntraPriming:
 		'''
 uuid=$(uuidgen)
 
-zcat {input.strandedGff} | awk '$3=="exon"'>  {TMPDIR}/$uuid.gff
-gtfToGenePred {TMPDIR}/$uuid.gff {TMPDIR}/$uuid.gp
-genePredToBed {TMPDIR}/$uuid.gp {TMPDIR}/$uuid.bed
-rm {TMPDIR}/$uuid.gp
-totalReads=$(cat {TMPDIR}/$uuid.bed | wc -l)
+totalReads=$(cat {input.strandedBed} | wc -l)
 
 
-cat {TMPDIR}/$uuid.bed | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
-rm {TMPDIR}/$uuid.bed
+cat {input.strandedBed} | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
 zcat $(dirname {output.list})/$(basename {output.list} .list).bed.gz | awk '$5>0.6'|cut -f4 | sort|uniq > {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output.list}
 intraPrimed=$(cat {output.list} | wc -l)
@@ -153,7 +164,7 @@ rule highConfidenceReads:
 		intraPriming="output/mappings/intraPriming/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.list"
 	params: 
 		minSJsPhredScore = lambda wildcards: sampleAnnotDict[wildcards.techname + "_" + wildcards.capDesign + "_" + wildcards.sizeFrac + "_" + wildcards.sampleRep]['filter_SJ_Qscore']
-
+	conda: "envs/xtools_env.yml"
 	output:
 		gff="output/mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.strandedHCGMs.gff.gz",
 		stats="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.highConfSplicedReads.stats.tsv"

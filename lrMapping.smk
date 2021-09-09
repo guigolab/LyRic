@@ -279,6 +279,7 @@ rule getMappingStats:
 	output: 
 		basic="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.mapping.stats.tsv",
 		spikeIns="output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.mapping.spikeIns.stats.tsv"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOutB=$(uuidgen)
@@ -439,6 +440,7 @@ cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 rule checkOnlyOneHit:
 	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam"
 	output: "output/mappings/longReadMapping/qc/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.dupl.txt"
+	conda: "envs/xtools_env.yml"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)

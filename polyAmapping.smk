@@ -1,9 +1,19 @@
 
+rule bamToSam:
+	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam"
+	output: temp("output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sam")
+	conda: "envs/xtools_env.yml"
+	shell:
+		'''
+uuid=$(uuidgen)
 
+samtools view {input.reads} > {TMPDIR}/$uuid.sam
+mv {TMPDIR}/$uuid.sam {output}
+		'''
 
 rule polyAmapping:
 	input:
-		reads = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
+		reads = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sam",
 		genome = lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.fa"
 	params:
 		minAcontent=0.8
@@ -13,8 +23,7 @@ rule polyAmapping:
 		'''
 uuidTmpOut=$(uuidgen)
 
-
-samtools view {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  |gzip > {TMPDIR}/$uuidTmpOut
+cat {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  |gzip > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -42,6 +51,7 @@ rule getPolyAreadsStats:
 	input:
 		mappedReads= "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
 		polyAreads = "output/mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.list"
+	conda: "envs/xtools_env.yml"
 	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats.tsv"
 	shell:
 		'''
