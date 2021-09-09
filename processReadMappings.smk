@@ -79,14 +79,13 @@ uuid=$(uuidgen)
 totalReads=$(cat {input.strandedBed} | wc -l)
 
 
-cat {input.strandedBed} | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - | gzip > $(dirname {output.list})/$(basename {output.list} .list).bed.gz
-zcat $(dirname {output.list})/$(basename {output.list} .list).bed.gz | awk '$5>0.6'|cut -f4 | sort|uniq > {TMPDIR}/$uuid
+cat {input.strandedBed} | findIntraPriming --genomeFa {input.genome} --downSeqLength 20 - > {TMPDIR}/$uuid.bed
+cat {TMPDIR}/$uuid.bed | awk '$5>0.6'|cut -f4 | sort|uniq > {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output.list}
 intraPrimed=$(cat {output.list} | wc -l)
 let nonIntraPrimed=$totalReads-$intraPrimed || true
 echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$totalReads\t$intraPrimed" | awk '{{print $0"\t"$6/$5}}' > {TMPDIR}/$uuid.2
 mv {TMPDIR}/$uuid.2 {output.stats}
-rm {TMPDIR}/$uuid*
 		'''
 
 rule aggIntraPrimingStats:
