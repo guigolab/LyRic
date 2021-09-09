@@ -30,9 +30,9 @@ Please install those as a prerequisite. Once this is completed:
 
 	`git clone https://github.com/julienlag/LyRic.git ./LyRic`
 
-3. Clone relevant conda environments into `envs/`:
+3. Clone relevant conda environments into `LyRic/envs/`:
 
-	`git clone https://github.com/julienlag/condaEnvExport.git envs/`
+	`git clone https://github.com/julienlag/condaEnvExport.git LyRic/envs/`
 
 4. Clone custom software utilities repository:
 
