@@ -7,7 +7,7 @@ rule bamToSam:
 		'''
 uuid=$(uuidgen)
 
-samtools view {input.reads} > {TMPDIR}/$uuid.sam
+samtools view {input} > {TMPDIR}/$uuid.sam
 mv {TMPDIR}/$uuid.sam {output}
 		'''
 
