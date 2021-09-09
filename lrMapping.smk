@@ -53,10 +53,11 @@ mv {TMPDIR}/$uuid.bw {output}
 rule bamqc:
 	input: "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam"
 	output: "output/mappings/longReadMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{sampleRep}/genome_results.txt"
+	conda: "envs/qualimap_env.yml"
 	shell:
 		'''
- unset DISPLAY
- ~/bin/qualimap_v2.2.1/qualimap bamqc -bam  {input} -outdir $(dirname {output}) --java-mem-size=25G 
+ unset DISPLAY # for JAVA
+ qualimap bamqc -bam  {input} -outdir $(dirname {output}) --java-mem-size=25G 
 
 		'''
 

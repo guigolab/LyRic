@@ -24,20 +24,20 @@
   },
   "getReadLengthSummary": {
     "virtual_free": "20G",
-    "h_rt": "01:30:00",
+    "h_rt": "01:30:00"
   },
   "makeBigWigExonicRegions": {
     "h_rt": "06:00:00"
   },
   "mergedUnfilteredSirvReads": {
-    "h_rt": "05:30:00",
+    "h_rt": "05:30:00"
   },
   "plotReadLength": {
     "virtual_free": "25G",
-    "h_rt": "01:30:00",
+    "h_rt": "01:30:00"
   },
   "aggTmStats": {
-    "h_rt": "04:00:00",
+    "h_rt": "04:00:00"
   },
   "compareTargetsToTms": {
     "disk": "30G",
@@ -79,7 +79,7 @@
     "virtual_free": "1G"
   },
   "getPolyAreadsStats": {
-    "h_rt": "6:00:00",
+    "h_rt": "6:00:00"
   },
   "makeIntrons": {
     "h_rt": "10:00:00",
@@ -87,10 +87,10 @@
     "virtual_free": "20G"
   },
   "getIntronMotif": {
-    "virtual_free": "15G",
+    "virtual_free": "15G"
   },
   "getReadsSpliceSites": {
-    "virtual_free": "10G",
+    "virtual_free": "10G"
   },
   "getHiSSStats": {
     "virtual_free": "65G",
@@ -105,13 +105,13 @@
     "h_rt": "26:00:00"
   },
   "mergedReadsToBed": {
-    "virtual_free": "10G",
+    "virtual_free": "10G"
   },
   "collapseGencode": {
-    "virtual_free": "10G",
+    "virtual_free": "10G"
   },
   "getHiSeqCanonicalIntronsList1": {
-    "h_rt": "6:00:00",
+    "h_rt": "6:00:00"
   },
   "getHiSeqCanonicalIntronsList2": {
     "virtual_free": "60G",
@@ -122,13 +122,13 @@
     "virtual_free": "20G"
   },
   "gffcompareToAnnotation": {
-    "virtual_free": "10G",
+    "virtual_free": "10G"
   },
   "gffcompareToSirvAnnotation": {
-    "virtual_free": "1G",
+    "virtual_free": "1G"
   },
   "getHCGMintrons": {
-    "virtual_free": "10G",
+    "virtual_free": "10G"
   },
   "getClsSpliceJunctions": {
     "h_rt": "04:30:00",
@@ -144,11 +144,11 @@
     "h_rt": "04:30:00"
   },
   "cageSupportedfivepEnds": {
-    "virtual_free": "15G",
+    "virtual_free": "15G"
   },
   "getReadBiotypeClassification": {
     "disk": "30G",
-    "h_rt": "16:00:00",
+    "h_rt": "16:00:00"
   },
   "aggGeneidScores": {
     "threads": "-pe smp 8"
@@ -159,7 +159,7 @@
   },
   "getHiSeqMappingStats": {
     "h_rt": "8:00:00",
-    "queue": "rg-el7,long-sl7",
+    "queue": "rg-el7,long-sl7"
   },
   "mergeTmsWithGencode": {
     "virtual_free": "10G",
@@ -169,13 +169,13 @@
     "virtual_free": "15G"
   },
   "readBamToBed": {
-    "virtual_free": "1G",
+    "virtual_free": "1G"
   },
   "tmergeAll": {
     "disk": "60G",
     "h_rt": "12:00:00",
     "virtual_free": "20G",
-    "queue": "rg-el7,long-sl7",
+    "queue": "rg-el7,long-sl7"
   },
   "getReadProfileMatrix": {
     "h_rt": "12:00:00",
@@ -189,7 +189,7 @@
   "bamqc": {
     "virtual_free": "25G"
   },
-  "mergedReadsGroupedSampleReps":{
+  "mergedReadsGroupedSampleReps": {
     "virtual_free": "15G"
   }
 }
