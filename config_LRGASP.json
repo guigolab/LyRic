@@ -1,0 +1,32 @@
+{
+  "GENOMESDIR": "genomes/",
+  "produceStatPlots": false,
+  "produceTrackHub": false,
+  "produceHtmlStatsTable": false,
+  "capDesignToGenome": {
+    "HpreCap": "hg38",
+    "Hv3": "hg38",
+    "MpreCap": "mm10",
+    "Mv2": "mm10"
+  },
+	"sampleRepGroupBy": [
+	"seqPlatform",
+	"libraryPrep",
+	"species",
+	"captureDesign",
+	"sizeFrac",
+	"tissue",
+	"cellFrac",
+	"reverse_transcriptase"
+	],
+  "CAPTURE": false,
+  "SAMPLE_ANNOT": "LyRic/sample_annotations_LRGASP.tsv",
+  "genomeToAnnotGtf": {
+    "hg38": "annotations/lrgasp_gencode_v38_sirvs.gtf",
+    "mm10": "annotations/lrgasp_gencode_vM27_sirvs.gtf"
+  },
+  "USE_MATCHED_ILLUMINA": true,
+  "PROJECT_NAME": "LRGASP-LyRic",
+  "PROJECT_LONG_NAME": "LRGASP LyRic entry",
+
+}
