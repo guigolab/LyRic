@@ -39,17 +39,33 @@ simpleBiotypes_Rpalette="c('lncRNA' = '#66ccff',  'nonExonic' = '#6666ff',  'pro
 # which genome build corresponds to to each capture design:
 CAPDESIGNTOGENOME=config["capDesignToGenome"]
 # which gencode annotation GTF correspond to each capture design:
-GENOMETOANNOTGTF=config["genomeToAnnotGtf"]
+try:
+	GENOMETOANNOTGTF=config["genomeToAnnotGtf"]
+except KeyError:
+	print ("No genome annotation(s) provided)")
+
 # non-overlapping targeted regions for each capture design
-CAPDESIGNTOTARGETSGFF=config['capDesignToTargetsGff']
+
+if config['CAPTURE']
 # mapping of capDesign to capDesign:
-CAPDESIGNTOCAPDESIGN=config["capDesignToCapDesign"]
+	CAPDESIGNTOCAPDESIGN=config["capDesignToCapDesign"]
+# non-overlapping targeted regions for each capture design
+	CAPDESIGNTOTARGETSGFF=config['capDesignToTargetsGff']
+
 # which CAGE peak BED file corresponds to each genome build:
-GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
+try:
+	GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
+except KeyError:
+	print("No CAGE annotation file provided")
 # which ENCODE DHS peak BED file corresponds to each genome build:
-GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
+try:
+	GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
+except KeyError:
+	print("No DHS annotation file provided")
+
 # URL for UCSC Track Hub data files:
-TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
+if config["produceTrackHub"]:
+	TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
 # 5' and 3' end support categories for transcript models (TMs):
 ENDSUPPORTcategories=["all", "cagePolyASupported"] 
 	# "all" = all TMs (no filter applied)

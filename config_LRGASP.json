@@ -5,9 +5,7 @@
   "produceHtmlStatsTable": false,
   "capDesignToGenome": {
     "HpreCap": "hg38",
-    "Hv3": "hg38",
     "MpreCap": "mm10",
-    "Mv2": "mm10"
   },
 "sampleRepGroupBy": [
 "seqPlatform",
@@ -21,11 +19,7 @@
 ],
   "CAPTURE": false,
   "SAMPLE_ANNOT": "LyRic/sample_annotations_LRGASP.tsv",
-  "genomeToAnnotGtf": {
-    "hg38": "annotations/lrgasp_gencode_v38_sirvs.gtf",
-    "mm10": "annotations/lrgasp_gencode_vM27_sirvs.gtf"
-  },
-  "USE_MATCHED_ILLUMINA": true,
+  "USE_MATCHED_ILLUMINA": false,
   "PROJECT_NAME": "LRGASP-LyRic",
   "PROJECT_LONG_NAME": "LRGASP LyRic entry"
 
