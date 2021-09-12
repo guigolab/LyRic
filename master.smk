@@ -46,7 +46,7 @@ except KeyError:
 
 # non-overlapping targeted regions for each capture design
 
-if config['CAPTURE']
+if config['CAPTURE']:
 # mapping of capDesign to capDesign:
 	CAPDESIGNTOCAPDESIGN=config["capDesignToCapDesign"]
 # non-overlapping targeted regions for each capture design
