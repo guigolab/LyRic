@@ -11,8 +11,8 @@ LyRic is platform-agnostic, _i.e._ it can deal with FASTQ data coming from both 
 
 # Table of Contents
 
-- TOC
-  {:toc}
+* TOC
+{:toc}
 
 # Installation & Dependencies
 
