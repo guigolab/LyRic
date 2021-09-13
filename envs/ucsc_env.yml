@@ -1,0 +1,24 @@
+name: ucsc_env
+channels:
+  - conda-forge
+  - defaults
+  - r
+  - bioconda
+dependencies:
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=4.5
+  - ca-certificates=2021.7.5
+  - libgcc-ng=11.1.0
+  - libgomp=11.1.0
+  - libpng=1.6.37
+  - libstdcxx-ng=11.1.0
+  - libuuid=2.32.1
+  - mysql-connector-c=6.1.11
+  - openssl=1.1.1l
+  - ucsc-bedgraphtobigwig=377
+  - ucsc-bedtobigbed=377
+  - ucsc-bigbedtobed=377
+  - ucsc-genepredtobed=377
+  - ucsc-gtftogenepred=377
+  - ucsc-liftover=377
+  - zlib=1.2.11

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+find $1 -name "*png" | fgrep -v ".min1reads" | fgrep -v ".legendOnly." | fgrep -v ".woLegend." |fgrep -v ".yx." | xargs gwenview
+

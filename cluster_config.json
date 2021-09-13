@@ -15,6 +15,9 @@
     "virtual_free": "40G",
     "h_rt": "06:00:00"
   },
+  "strandedGffToBed": {
+    "virtual_free": "15G"
+  },
   "makeReadsBlastDB": {
     "h_rt": "00:20:00",
     "virtual_free": "2G"

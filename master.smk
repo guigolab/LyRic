@@ -14,7 +14,7 @@ onerror:
 	print("LyRic workflow finished with errors, see log file.")
 
 #prefix all shell scripts with the following commands:
-shell.prefix('source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; export PATH="$PWD/utils/:$PATH";')
+shell.prefix('source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; export PATH="$PWD/LyRic/utils/:$PATH";')
 #(it seems DRMAA does not source ~/.bashrc by itself)
 include: "functions.py"
 
@@ -42,7 +42,7 @@ CAPDESIGNTOGENOME=config["capDesignToGenome"]
 try:
 	GENOMETOANNOTGTF=config["genomeToAnnotGtf"]
 except KeyError:
-	print ("No genome annotation(s) provided)")
+	print ("No genome annotation(s) file provided.", file=sys.stderr)
 
 # non-overlapping targeted regions for each capture design
 
@@ -56,12 +56,12 @@ if config['CAPTURE']:
 try:
 	GENOMETOCAGEPEAKS=config["genomeToCAGEpeaks"]
 except KeyError:
-	print("No CAGE annotation file provided")
+	print("No CAGE annotation file provided.", file=sys.stderr)
 # which ENCODE DHS peak BED file corresponds to each genome build:
 try:
 	GENOMETODHSPEAKS=config["genomeToDHSpeaks"]
 except KeyError:
-	print("No DHS annotation file provided")
+	print("No DHS annotation file provided.", file=sys.stderr)
 
 # URL for UCSC Track Hub data files:
 if config["produceTrackHub"]:
@@ -94,7 +94,7 @@ try:
 	config["SIRVinfo"]
 except KeyError:
 	SIRVpresent=False
-	print ("Will NOT compare TMs to SIRVs because config['SIRVinfo'] not found.", file=sys.stderr)
+	print ("No SIRVinfo file provided.", file=sys.stderr)
 else:
 	SIRVpresent=True
 

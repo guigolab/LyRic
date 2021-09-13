@@ -1,0 +1,118 @@
+#!/usr/bin/env perl
+use strict;
+use warnings FATAL => 'all';
+use Bio::DB::Fasta;
+use Getopt::Long;
+use Pod::Usage;
+
+
+my $message_text  = "Error\n";
+my $exit_status   = 2;          ## The exit status to use
+my $verbose_level = 99;          ## The verbose level to use
+my $filehandle    = \*STDERR;   ## The filehandle to write to
+my $sections = "NAME|SYNOPSIS|DESCRIPTION";
+
+my $downSeqLength=20;
+my $genomeFa;
+
+=head1 NAME
+
+findIntraPriming
+
+=head1 SYNOPSIS
+
+A utility to detect oligo-d(T) intra-priming in a set of cDNA-based transcript models or read alignments.
+
+B<Usage example>:
+
+C<< findIntraPriming --genomeFa <genome fasta file> --downSeqLength 20 <BED input> >>
+
+=head2 INPUT
+
+A BED file with at least 6 fields, where each line represents a transcript model or an RNA read alignment. 
+
+=head2 OPTIONS
+
+=head2 OUTPUT
+
+=head1 DESCRIPTION
+
+Oligo-d(T) intra-priming takes place when the oligo-d(T) primer used in most cDNA library construction protocols anneals to an internal A stretch instead of a poly(A) tail within an RNA molecule. This creates artifacts -- 3'-truncated cDNA molecules, see I<e.g.> L<Nam I<et al.>, Proc Natl Acad Sci U S A. 2002|https://www.ncbi.nlm.nih.gov/pubmed/11972056>. Typically, such C<findIntraPriming> tries to recognize such cases from a set of cDNA reads aligned to the genome.
+
+
+=head1 DEPENDENCIES
+
+CPAN: Bio::DB::Fasta
+
+=head1 AUTHOR
+
+Julien Lagarde, CRG, Barcelona, contact julienlag@gmail.com
+
+
+=cut
+
+GetOptions ('downSeqLength=i' => \$downSeqLength,
+            'genomeFa=s' => \$genomeFa)
+  or pod2usage( { -message => "ERROR in command line arguments",
+        		  -exitval => $exit_status  ,
+            		-verbose => $verbose_level,
+               -output  => $filehandle } );
+
+unless(defined $downSeqLength && defined $genomeFa && defined $ARGV[0] && $ARGV[0] ne ''){
+	pod2usage( { -message => "ERROR in command line arguments",
+        		  -exitval => $exit_status  ,
+            		-verbose => $verbose_level,
+               -output  => $filehandle } );
+}
+my $bed= $ARGV[0];
+
+my $chrdb = Bio::DB::Fasta->new("$genomeFa", -reindex => 0);
+
+
+open BED, "$bed" or die "ERROR: Could not open file $bed.\n";
+$downSeqLength--; # otherwise length of sequence is 1 nt too many
+while(<BED>){
+	chomp;
+	my @line=split "\t";
+    unless ($#line>5 && $line[1]=~/\d+/ && $line[2]=~/\d+/){
+        die "ERROR: The input doesn't look like proper (min. 6 field) BED format. Offending line:\n". join("\t", @line)."\n";
+    }
+    my $threepDownStart;
+    my $threepDownEnd;
+    my $threepDownSeq;
+    if($line[5] eq '+'){
+        $threepDownStart=$line[2];
+        $threepDownEnd=$line[2]+$downSeqLength;
+        $threepDownSeq=uc($chrdb->seq($line[0], $threepDownStart, $threepDownEnd));
+        unless(defined $threepDownSeq && length($threepDownSeq)>0){
+            warn "WARNING: Could not extract reference sequence in $line[0] (is it present in $genomeFa?). Skipped\n";
+        }
+    }
+    elsif ($line[5] eq '-'){
+        $threepDownStart=$line[1]-$downSeqLength;
+        $threepDownEnd=$line[1];
+        $threepDownSeq=uc($chrdb->seq($line[0], $threepDownStart, $threepDownEnd));
+        unless(defined $threepDownSeq && length($threepDownSeq)>0){
+            warn "WARNING: Could not extract reference sequence in $line[0] (is it present in $genomeFa?). Skipped\n";
+        }
+        $threepDownSeq=reverse($threepDownSeq);
+        $threepDownSeq=~ tr/ACGT/TGCA/;
+    }
+    elsif ($line[5] eq '.'){
+        warn "WARNING: Skipped the following line because strand info is absent from it:\n".join("\t", @line)."\n";
+    }
+    else{
+        die "ERROR: The input doesn't look like proper BED format (the strand column is wrong). Offending line:\n". join("\t", @line)."\n";
+    }
+
+    my @seq=split("", $threepDownSeq);
+    my $countAs=0;
+    for(my $i=0; $i<=$#seq; $i++){
+        if($seq[$i] eq 'A'){
+            $countAs++;
+        }
+    }
+    $line[4]=$countAs/length($threepDownSeq);
+    print join("\t", @line)."\n";
+
+}
