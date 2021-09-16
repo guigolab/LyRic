@@ -384,7 +384,7 @@ uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 zcat {input} | awk '$1 ~ /SIRV/ || $1=="chrIS"' > {TMPDIR}/$uuid
 
-cat {TMPDIR}/$uuid| tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n | gzip > {TMPDIR}/$uuidTmpOut
+cat {TMPDIR}/$uuid| tmerge --exonOverhangTolerance {ExonOverhangTolerance} --minReadSupport {wildcards.minReadSupport} --endFuzz {ExonOverhangTolerance} --tmPrefix {wildcards.techname}_{wildcards.capDesign}_{wildcards.sizeFrac}_{wildcards.sampleRep}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n | gzip > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
