@@ -68,3 +68,9 @@ pacBioSII-Uci-SmartSeq2_MpreCap_0+_F121-902Rep3	pacBioSII	Uci	SmartSeq2	Mouse	Mp
 pacBioSII-Uci-SmartSeq2_MpreCap_0+_F121-903Rep1	pacBioSII	Uci	SmartSeq2	Mouse	MpreCap	0+	F121-9	Total	TRUE	3	1	20210501	ENCBS474NOC	Maxima	FALSE	LRGASP	30	
 pacBioSII-Uci-SmartSeq2_MpreCap_0+_F121-903Rep2	pacBioSII	Uci	SmartSeq2	Mouse	MpreCap	0+	F121-9	Total	TRUE	3	2	20210501	ENCBS474NOC	Maxima	FALSE	LRGASP	30	
 pacBioSII-Uci-SmartSeq2_MpreCap_0+_F121-903Rep3	pacBioSII	Uci	SmartSeq2	Mouse	MpreCap	0+	F121-9	Total	TRUE	3	3	20210501	ENCBS474NOC	Maxima	FALSE	LRGASP	30	
+ont-Lrgasp-dRNA_HpreCap_0+_Simul01Rep1	ONT	Lrgasp	directRNA	Human	HpreCap	0+	Simul	Total	TRUE	1	1	20210916	SimulOntHuman	None	FALSE	LRGASP	10	
+ont-Lrgasp-dRNA_MpreCap_0+_Simul01Rep1	ONT	Lrgasp	directRNA	Mouse	MpreCap	0+	Simul	Total	TRUE	1	1	20210916	SimulOntMouse	None	FALSE	LRGASP	10	
+ont-Lrgasp-PcrOnt_HpreCap_0+_Simul01Rep1	ONT	Lrgasp	PcrOnt	Human	HpreCap	0+	Simul	Total	TRUE	1	1	20210916	SimulOntHuman	None	FALSE	LRGASP	10	
+ont-Lrgasp-PcrOnt_MpreCap_0+_Simul01Rep1	ONT	Lrgasp	PcrOnt	Mouse	MpreCap	0+	Simul	Total	TRUE	1	1	20210916	SimulOntMouse	None	FALSE	LRGASP	10	
+pacBioSII-Lrgasp-SmartSeq2_HpreCap_0+_Simul01Rep1	pacBioSII	Lrgasp	SmartSeq2	Human	HpreCap	0+	Simul	Total	TRUE	1	1	20210916	SimulPacbioHuman	None	FALSE	LRGASP	30	
+pacBioSII-Lrgasp-SmartSeq2_MpreCap_0+_Simul01Rep1	pacBioSII	Lrgasp	SmartSeq2	Mouse	MpreCap	0+	Simul	Total	TRUE	1	1	20210916	SimulPacbioMouse	None	FALSE	LRGASP	30	
