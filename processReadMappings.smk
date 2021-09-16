@@ -421,7 +421,7 @@ rule mergedReadsGroupedSampleReps:
 	shell:
 		'''
 uuid=$(uuidgen)
-cat {input} | tmerge --exonOverhangTolerance {ExonOverhangTolerance} --minReadSupport 1 --endFuzz {ExonOverhangTolerance} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
+cat {input} | tmerge --minReadSupport 2 --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
 
 echo -e "read_id\ttranscript_id" > {TMPDIR}/$uuid.tsv
 
