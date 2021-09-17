@@ -90,7 +90,7 @@
 		"virtual_free": "20G"
 	},
 	"getIntronMotif": {
-		"virtual_free": "15G"
+		"virtual_free": "25G"
 	},
 	"getReadsSpliceSites": {
 		"virtual_free": "10G"
