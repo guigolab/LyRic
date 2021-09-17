@@ -18,6 +18,10 @@
 	"strandedGffToBed": {
 		"virtual_free": "30G"
 	},
+	"strandGffs": {
+		"virtual_free": "10G",
+		"h_rt": "10:00:00"
+	},
 	"makeReadsBlastDB": {
 		"h_rt": "00:20:00",
 		"virtual_free": "2G"
