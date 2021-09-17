@@ -20,7 +20,7 @@
 	},
 	"strandGffs": {
 		"virtual_free": "10G",
-		"h_rt": "10:00:00"
+		"h_rt": "15:00:00"
 	},
 	"makeReadsBlastDB": {
 		"h_rt": "00:20:00",
@@ -70,7 +70,7 @@
 		"threads": "-pe smp 12"
 	},
 	"highConfidenceReads": {
-		"h_rt": "16:00:00",
+		"h_rt": "26:00:00",
 		"virtual_free": "35G"
 	},
 	"readBedToGff": {
