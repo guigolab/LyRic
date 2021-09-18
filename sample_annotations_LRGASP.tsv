@@ -41,6 +41,15 @@ ont-Ucsc-R2C2_HpreCap_0+_WTC1103Rep1	ONT	Ucsc	R2C2	Human	HpreCap	0+	WTC11	Total	
 ont-Ucsc-R2C2_HpreCap_0+_Mix01Rep1	ONT	Ucsc	R2C2	Human	HpreCap	0+	Mix	Total	TRUE	1	1	20210114	ali-mortazavi-h1_es_1,ali-mortazavi-h1_de_1	SMART MMLV	FALSE	LRGASP	10	
 ont-Ucsc-R2C2_HpreCap_0+_Mix02Rep1	ONT	Ucsc	R2C2	Human	HpreCap	0+	Mix	Total	TRUE	2	1	20210111	ali-mortazavi-h1_es_2,ali-mortazavi-h1_de_2	SMART MMLV	FALSE	LRGASP	10	
 ont-Ucsc-R2C2_HpreCap_0+_Mix03Rep1	ONT	Ucsc	R2C2	Human	HpreCap	0+	Mix	Total	TRUE	3	1	20210111	ali-mortazavi-h1_es_3,ali-mortazavi-h1_de_3	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_MpreCap_0+_F121-901Rep2	ONT	Ucsc	R2C2	Mouse	MpreCap	0+	F121-9	Total	TRUE	1	2	20200907	ENCBS648HXY	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_MpreCap_0+_F121-902Rep2	ONT	Ucsc	R2C2	Mouse	MpreCap	0+	F121-9	Total	TRUE	2	2	20200907	ENCBS951CRC	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_MpreCap_0+_F121-903Rep2	ONT	Ucsc	R2C2	Mouse	MpreCap	0+	F121-9	Total	TRUE	3	2	20200910	ENCBS418RDP	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_HpreCap_0+_WTC1101Rep2	ONT	Ucsc	R2C2	Human	HpreCap	0+	WTC11	Total	TRUE	1	2	20200910	ENCBS944CBA	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_HpreCap_0+_WTC1102Rep2	ONT	Ucsc	R2C2	Human	HpreCap	0+	WTC11	Total	TRUE	2	2	20200914	ENCBS593PKA	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_HpreCap_0+_WTC1103Rep2	ONT	Ucsc	R2C2	Human	HpreCap	0+	WTC11	Total	TRUE	3	2	20200914	ENCBS474NOC	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_HpreCap_0+_Mix01Rep2	ONT	Ucsc	R2C2	Human	HpreCap	0+	Mix	Total	TRUE	1	2	20210114	ali-mortazavi-h1_es_1,ali-mortazavi-h1_de_1	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_HpreCap_0+_Mix02Rep2	ONT	Ucsc	R2C2	Human	HpreCap	0+	Mix	Total	TRUE	2	2	20210111	ali-mortazavi-h1_es_2,ali-mortazavi-h1_de_2	SMART MMLV	FALSE	LRGASP	10	
+ont-Ucsc-R2C2_HpreCap_0+_Mix03Rep2	ONT	Ucsc	R2C2	Human	HpreCap	0+	Mix	Total	TRUE	3	2	20210111	ali-mortazavi-h1_es_3,ali-mortazavi-h1_de_3	SMART MMLV	FALSE	LRGASP	10	
 ont-Ucsc-PcrOnt_MpreCap_1+_F121-901Rep1	ONT	Ucsc	PcrOnt	Mouse	MpreCap	1+	F121-9	Total	TRUE	1	1	20200907	ENCBS648HXY	Maxima	FALSE	LRGASP	10	
 ont-Ucsc-PcrOnt_MpreCap_1+_F121-902Rep1	ONT	Ucsc	PcrOnt	Mouse	MpreCap	1+	F121-9	Total	TRUE	2	1	20200907	ENCBS951CRC	Maxima	FALSE	LRGASP	10	
 ont-Ucsc-PcrOnt_MpreCap_1+_F121-903Rep1	ONT	Ucsc	PcrOnt	Mouse	MpreCap	1+	F121-9	Total	TRUE	3	1	20200910	ENCBS418RDP	Maxima	FALSE	LRGASP	10	
