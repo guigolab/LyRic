@@ -16,7 +16,7 @@
 		"h_rt": "06:00:00"
 	},
 	"strandedGffToBed": {
-		"virtual_free": "30G"
+		"virtual_free": "40G"
 	},
 	"strandGffs": {
 		"virtual_free": "10G",
