@@ -71,7 +71,7 @@
 	},
 	"highConfidenceReads": {
 		"h_rt": "36:00:00",
-		"virtual_free": "35G"
+		"virtual_free": "50G"
 	},
 	"readBedToGff": {
 		"queue": "rg-el7,long-sl7",
