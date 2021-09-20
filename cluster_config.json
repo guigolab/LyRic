@@ -135,7 +135,7 @@
 		"virtual_free": "1G"
 	},
 	"getHCGMintrons": {
-		"virtual_free": "10G"
+		"virtual_free": "20G"
 	},
 	"getClsSpliceJunctions": {
 		"h_rt": "04:30:00",
