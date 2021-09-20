@@ -108,7 +108,7 @@
 		"h_rt": "06:00:00"
 	},
 	"mergedReads": {
-		"virtual_free": "70G",
+		"virtual_free": "90G",
 		"h_rt": "36:00:00"
 	},
 	"mergedReadsToBed": {
