@@ -407,28 +407,33 @@ rule catMergedReadsForGroupedSampleReps:
 	input: getMergedSampleReps
 	output: 
 		gff=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff"),
-		countReps=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.countReps.txt")
+		countFiles=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.countFiles.txt")
 	shell:
 		'''
 uuid=$(uuidgen)
 zcat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n > {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output.gff}
 
-#calculate number of files (replicates) in input:
-echo {input} | awk '{{print NF}}' > {output.countReps}
+#calculate number of files in input:
+echo {input} | awk '{{print NF}}' > {output.countFiles}
 		'''
 
 rule mergedReadsGroupedSampleReps:
 	input: 
 		gff="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff",
-		countReps="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.countReps.txt"
+		countFiles="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.countFiles.txt"
 	output: 
 		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
 		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
-minRS=$(cat {input.countReps})
+
+
+filesCount=$(cat {input.countFiles})
+#min read support is floor of number of input files /2:
+let minRS=$filesCount/2 || true
+
 echo "Min Read Support: $minRS"
 cat {input.gff} | tmerge --minReadSupport $minRS --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
 
