@@ -415,7 +415,7 @@ zcat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n > {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output.gff}
 
 #calculate number of files (replicates) in input:
-echo {input } | awk '{{print NF}}' > {output.countReps}
+echo {input} | awk '{{print NF}}' > {output.countReps}
 		'''
 
 rule mergedReadsGroupedSampleReps:
