@@ -431,9 +431,8 @@ uuid=$(uuidgen)
 
 
 filesCount=$(cat {input.countFiles})
-#min read support is floor of number of input files /2:
-let minRS=$filesCount/3 || true
-
+#min read support is 1 (1 input file) or 2 (more than 1 input files):
+if [ $filesCount == 1 ]; then minRS=1; else minRS=2; fi;
 echo "Min Read Support: $minRS"
 cat {input.gff} | tmerge --minReadSupport $minRS --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
 
