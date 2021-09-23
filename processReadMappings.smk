@@ -405,23 +405,32 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 rule catMergedReadsForGroupedSampleReps:
 	input: getMergedSampleReps
-	output: temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff")
+	output: 
+		gff=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.gff"),
+		countReps=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.countReps.txt")
 	shell:
 		'''
 uuid=$(uuidgen)
 zcat {input} |sort -T $TMPDIR  -k1,1 -k4,4n -k5,5n > {TMPDIR}/$uuid
-mv {TMPDIR}/$uuid {output}
+mv {TMPDIR}/$uuid {output.gff}
+
+#calculate number of files (replicates) in input:
+echo {input } | awk '{{print NF}}' > {output.countReps}
 		'''
 
 rule mergedReadsGroupedSampleReps:
-	input: "output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff"
+	input: 
+		gff="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.gff",
+		countReps="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.countReps.txt"
 	output: 
-		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
-		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz"
+		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.gff.gz",
+		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.readsToTm.tsv.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
-cat {input} | tmerge --minReadSupport {wildcards.minReadSupport} --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
+minRS=$(cat {input.countReps})
+echo "Min Read Support: $minRS"
+cat {input.gff} | tmerge --minReadSupport $minRS --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
 
 echo -e "read_id\ttranscript_id" > {TMPDIR}/$uuid.tsv
 
@@ -433,11 +442,6 @@ mv {TMPDIR}/$uuid.gff.gz {output.gff}
 mv {TMPDIR}/$uuid.tsv.gz {output.readToTmTsv}
 
 		'''
-
-
-
-
-
 
 rule mergedReadsToBed:
 	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz"
