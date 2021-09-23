@@ -1,5 +1,6 @@
 name: sqanti3_lrgasp
 channels:
+  - anaconda
   - conda-forge
   - defaults
   - r
@@ -33,10 +34,11 @@ dependencies:
   - bwidget=1.9.14
   - bzip2=1.0.8
   - c-ares=1.17.2
-  - ca-certificates=2021.5.30
+  - ca-certificates=2020.10.14
   - cairo=1.16.0
   - cdbtools=0.99
   - curl=7.78.0
+  - cython=0.29.21
   - dendropy=4.5.2
   - diamond=2.0.11
   - entrez-direct=15.6
@@ -339,6 +341,7 @@ dependencies:
   - zstd=1.5.0
   - pip:
     - bx-python==0.8.11
+    - cupcake==27.0.0
     - joblib==1.0.1
     - scikit-learn==0.24.2
     - scipy==1.7.1

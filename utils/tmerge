@@ -209,7 +209,10 @@ unless (defined $ARGV[0]){
                -output  => $filehandle } );
 }
 
-die "ERROR: minReadSupport value must be > 0, can't continue.\n" if $minReadSupport<1;
+if ($minReadSupport<1){
+	warn "minReadSupport value is $minReadSupport, must be > 0, auto-adjusted to 1.\n" ;
+	$minReadSupport=1;
+}
 die "ERROR: exonOverhangTolerance value must be >= 0, can't continue.\n" if $exonOverhangTolerance<0;
 die "ERROR: endFuzz value must be >= 0, can't continue.\n" if $transcriptEndFuzziness<0;
 
