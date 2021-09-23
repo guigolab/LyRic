@@ -406,8 +406,8 @@ mv {TMPDIR}/$uuidTmpOut {output}
 rule catMergedReadsForGroupedSampleReps:
 	input: getMergedSampleReps
 	output: 
-		gff=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.gff"),
-		countReps=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.countReps.txt")
+		gff=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff"),
+		countReps=temp("output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.countReps.txt")
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -420,11 +420,11 @@ echo {input } | awk '{{print NF}}' > {output.countReps}
 
 rule mergedReadsGroupedSampleReps:
 	input: 
-		gff="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.gff",
-		countReps="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.countReps.txt"
+		gff="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff",
+		countReps="output/mappings/mergedReads/groupedSampleReps/tmp/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.countReps.txt"
 	output: 
-		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.gff.gz",
-		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.readsToTm.tsv.gz"
+		gff="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
+		readToTmTsv="output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz"
 	shell:
 		'''
 uuid=$(uuidgen)
