@@ -434,7 +434,7 @@ cat {input.gff} | tmerge --minReadSupport $minRS --tmPrefix {wildcards.groupedSa
 
 echo -e "read_id\ttranscript_id" > {TMPDIR}/$uuid.tsv
 
-tmergeRecoverSampleRepReadIds.pl {input} {TMPDIR}/$uuid.gff | sort -T $TMPDIR | uniq >> {TMPDIR}/$uuid.tsv
+tmergeRecoverSampleRepReadIds.pl {input.gff} {TMPDIR}/$uuid.gff | sort -T $TMPDIR | uniq >> {TMPDIR}/$uuid.tsv
 
 gzip {TMPDIR}/$uuid.tsv
 gzip {TMPDIR}/$uuid.gff
