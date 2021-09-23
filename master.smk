@@ -221,9 +221,9 @@ rule all:
 		# transcriptome GTFs (per sampleRep):
 		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		# transcriptome GTFs (per grouped sampleReps)
-		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys()),
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
-		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.splicing_status-all.endSupport-all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys()),		
+		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),		
 
 		################################
 		### Summary statistics plots ###
