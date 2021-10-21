@@ -519,7 +519,7 @@ rule plotReadToBiotypeBreakdownStats:
 	output: returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_{spikeInCategories}.readToBiotypeBreakdown.stats")
 	conda: "envs/R_env.yml"
 	params: 
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
+		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname),
 		BtPalette=lambda wildcards: simpleBiotypes_Rpalette_woSpikeins if wildcards.spikeInCategories == 'woSpikeIns' else simpleBiotypes_Rpalette
 	shell:
 		'''
