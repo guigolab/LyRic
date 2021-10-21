@@ -520,6 +520,7 @@ rule plotReadToBiotypeBreakdownStats:
 	conda: "envs/R_env.yml"
 	params: 
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
+		BtPalette=lambda wildcards: simpleBiotypes_Rpalette_woSpikeins if wildcards.spikeInCategories == 'woSpikeIns' else simpleBiotypes_Rpalette
 	shell:
 		'''
 echo "
@@ -542,10 +543,10 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\\t')
 {params.filterDat[substSampleRepString]}
 {params.filterDat[graphDimensions]}
 
-dat\$biotype=factor(dat\$biotype, levels=names({simpleBiotypes_Rpalette}), ordered=TRUE)  #otherwise the manual scale is not ordered correctly and "drop=FALSE" (include categories in scale that are absent from data frame) is ignored 
+dat\$biotype=factor(dat\$biotype, levels=names({params.BtPalette}), ordered=TRUE)  #otherwise the manual scale is not ordered correctly and "drop=FALSE" (include categories in scale that are absent from data frame) is ignored 
 
 plotBase <- \\"p <- ggplot(data=dat, aes(x=1, y=readOverlapsPercent, fill=biotype)) +
-geom_bar(stat='identity') + scale_fill_manual(values={simpleBiotypes_Rpalette}, drop = FALSE) + ylab('% read overlaps') + xlab('') + guides(fill = guide_legend(title='Region/biotype')) +
+geom_bar(stat='identity') + scale_fill_manual(values={params.BtPalette}, drop = FALSE) + ylab('% read overlaps') + xlab('') + guides(fill = guide_legend(title='Region/biotype')) +
 scale_y_continuous(labels = scales::percent) + coord_cartesian(ylim=c(0,1)) +
 
 {params.filterDat[hideXaxisLabels]}
