@@ -503,7 +503,7 @@ zcat {input} | cut -f2| sort -T {TMPDIR} |uniq -c |ssv2tsv | awk -v t={wildcards
 
 
 rule aggReadToBiotypeBreakdownStats:
-	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.{spikeInCategories}.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, spikeInCategories=wildcards.spikeInCategories)
+	input: lambda wildcards:  expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.{spikeInCategories}.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, spikeInCategories=wildcards.spikeInCategories)
 	output: "output/statsFiles/" + "all.readToBiotypeBreakdown.{spikeInCategories}.stats.tsv"
 	shell:
 		'''
