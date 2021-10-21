@@ -480,18 +480,20 @@ rule getReadBiotypeClassification:
 	input: 
 		reads="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
 		ann="output/annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf"
-	output: "output/mappings/longReadMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.reads2biotypes.tsv.gz"
+	output: "output/mappings/longReadMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.reads2biotypes.{spikeInCategories}.tsv.gz"
 	conda: "envs/xtools_env.yml"
+	params:
+		grepSpikeIns= lambda wildcards: '| grep -vP "^ERCC" | grep -vP "^SIRV"' if wildcards.spikeInCategories == 'woSpikeIns' else ''
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-bedtools intersect -split -wao -bed -a {input.reads} -b {input.ann} |perl -lane '$line=$_; $gid="NA"; $gt="nonExonic"; if($line=~/gene_id \"(\S+)\";/){{$gid=$1}}; if ($line=~/gene_type \"(\S+)\";/){{$gt=$1}}; print "$F[3]\\t$gid\\t$gt\\t$F[-1]"'|cut -f1,3|sort -T {TMPDIR} |uniq | gzip > {TMPDIR}/$uuidTmpOut.2
+bedtools intersect -split -wao -bed -a {input.reads} -b {input.ann} {params.grepSpikeIns} |perl -lane '$line=$_; $gid="NA"; $gt="nonExonic"; if($line=~/gene_id \"(\S+)\";/){{$gid=$1}}; if ($line=~/gene_type \"(\S+)\";/){{$gt=$1}}; print "$F[3]\\t$gid\\t$gt\\t$F[-1]"'|cut -f1,3|sort -T {TMPDIR} |uniq | gzip > {TMPDIR}/$uuidTmpOut.2
 mv  {TMPDIR}/$uuidTmpOut.2 {output}
 		'''
 
 rule getReadToBiotypeBreakdownStats:
-	input: "output/mappings/longReadMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.reads2biotypes.tsv.gz"
-	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats.tsv"
+	input: "output/mappings/longReadMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.reads2biotypes.{spikeInCategories}.tsv.gz"
+	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.{spikeInCategories}.stats.tsv"
 	shell:
 		'''
 totalPairs=$(zcat {input} | wc -l)
@@ -501,8 +503,8 @@ zcat {input} | cut -f2| sort -T {TMPDIR} |uniq -c |ssv2tsv | awk -v t={wildcards
 
 
 rule aggReadToBiotypeBreakdownStats:
-	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
-	output: "output/statsFiles/" + "all.readToBiotypeBreakdown.stats.tsv"
+	input: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.{spikeInCategories}.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, spikeInCategories=wildcards.spikeInCategories)
+	output: "output/statsFiles/" + "all.readToBiotypeBreakdown.{spikeInCategories}.stats.tsv"
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
@@ -513,8 +515,8 @@ mv  {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule plotReadToBiotypeBreakdownStats:
-	input: "output/statsFiles/" + "all.readToBiotypeBreakdown.stats.tsv"
-	output: returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats")
+	input: "output/statsFiles/" + "all.readToBiotypeBreakdown.{spikeInCategories}.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_{spikeInCategories}.readToBiotypeBreakdown.stats")
 	conda: "envs/R_env.yml"
 	params: 
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)

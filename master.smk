@@ -72,6 +72,11 @@ ENDSUPPORTcategories=["all", "cagePolyASupported"]
 	# "cagePolyASupported" = CAGE (5') + PolyA (3') -supported TMs only
 # splicing status categories of TMs:
 TMSPLICEDSTATUScategories=["all", "spliced", "unspliced"]
+# categories of plots wrt spike-ins:
+SPIKEINcategories=["wSpikeIns", "woSpikeIns"]
+	# "wSpikeIns": no filters (stats include spike-ins if present)
+	# "woSpikeIns": spike-ins (ERCC and SIRVs) removed from statistics
+
 # TMPDIR to write temp files in
 TMPDIR='$TMPDIR'
 
@@ -258,7 +263,7 @@ rule all:
 		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.allErrors.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.deletionsOnly.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
+		expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_{spikeInCategories}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, spikeInCategories=SPIKEINcategories) if config['produceStatPlots'] else '/dev/null',
 		expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
 
 		################################
