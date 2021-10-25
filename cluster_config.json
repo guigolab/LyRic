@@ -158,7 +158,7 @@
 	},
 	"getReadBiotypeClassification": {
 		"disk": "30G",
-		"h_rt": "16:00:00"
+		"h_rt": "30:00:00"
 	},
 	"aggGeneidScores": {
 		"threads": "-pe smp 8"
