@@ -394,7 +394,7 @@ rule splitTmsBySplicedStatus:
 	input: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.endSupport-all.gff"
 	output: "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-all.gff.gz"
 	params:
-		grepSpliced = lambda wildcards: '| fgrep \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| fgrep \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
+		grepSpliced = lambda wildcards: '| tgrep -F \'spliced \"1\"\'' if wildcards.splicedStatus == "spliced" else '| tgrep -F \'spliced \"0\"\'' if wildcards.splicedStatus == "unspliced" else ''
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
