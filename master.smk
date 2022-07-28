@@ -84,7 +84,7 @@ TMPDIR='$TMPDIR'
 MINIMUM_TMERGE_READ_SUPPORT=config["minimumTmergeReadSupport"]
 READFILTERS=['HiSS', 'noFilt']
 # for tmerge:
-ExonOverhangTolerance='8'
+ExonOverhangTolerance=config["exonOverhangTolerance"]
 
 GENOMES=[]
 GENOMETOCAPDESIGNS=defaultdict(list)
