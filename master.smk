@@ -14,7 +14,7 @@ onerror:
 	print("LyRic workflow finished with errors, see log file.")
 
 #prefix all shell scripts with the following commands:
-shell.prefix('source ~/.bashrc; set +eu; conda deactivate;  set -euo pipefail; export PATH="$PWD/LyRic/utils/:$PATH";')
+shell.prefix('set -euo pipefail; export PATH="$PWD/LyRic/utils/:$PATH";')
 #(it seems DRMAA does not source ~/.bashrc by itself)
 include: "functions.py"
 
