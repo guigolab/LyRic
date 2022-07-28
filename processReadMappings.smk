@@ -693,7 +693,7 @@ rule getGeneReadCoverageStats:
 	input: 
 		gencode="output/annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
 		bam = "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
-		tmerge = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min2reads.splicing_status-all.endSupport-all.gff.gz",
+		tmerge = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: 
 		gencode="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.gencode.coverage.tsv",

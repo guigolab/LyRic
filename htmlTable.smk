@@ -16,21 +16,21 @@ rule makeHtmlSummaryDashboard:
 		allReadLengths="output/statsFiles/all.readlength.summary.tsv",
 		allBasicMappingStats="output/statsFiles/all.basic.mapping.stats.tsv",
 		allHissStats="output/statsFiles/all.HiSS.stats.tsv",
-		allMergedStats="output/statsFiles/all.min2reads.merged.stats.tsv",
-		allMatureRnaLengthStats="output/statsFiles/all.min2reads.matureRNALengthSummary.stats.tsv",
-		allTmergeVsSirvStats="output/statsFiles/all.HiSS.tmerge.min2reads.vs.SIRVs.stats.tsv",
-		allCagePolyASupportStats="output/statsFiles/all.min2reads.splicing_status-all.cagePolyASupport.stats.tsv",
-		allNovelLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.stats.tsv",
-		allNovelFlLociStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.stats.tsv",
-		allNovelLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.novelLoci.qc.stats.tsv",
-		allNovelFlLociQcStats="output/statsFiles/all.tmerge.min2reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv",
-		allNtCoverageStats="output/statsFiles/all.tmerge.min2reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv",
+		allMergedStats="output/statsFiles/all.min{minReadSupport}reads.merged.stats.tsv",
+		allMatureRnaLengthStats="output/statsFiles/all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv",
+		allTmergeVsSirvStats="output/statsFiles/all.HiSS.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv",
+		allCagePolyASupportStats="output/statsFiles/all.min{minReadSupport}reads.splicing_status-all.cagePolyASupport.stats.tsv",
+		allNovelLociStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.novelLoci.stats.tsv",
+		allNovelFlLociStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-cagePolyASupported.novelLoci.stats.tsv",
+		allNovelLociQcStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.novelLoci.qc.stats.tsv",
+		allNovelFlLociQcStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv",
+		allNtCoverageStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv",
 	conda: "envs/R_env.yml"
 	params: indexEntryPart= lambda wildcards: "(no filter, all samples)" if wildcards.subProject == 'ALL' else "sub-project"
 	output:
-		html="output/html/summary_table_{subProject}.html",
-		tsv="output/html/summary_table_{subProject}.tsv",
-		index=temp("output/html/summary_table_{subProject}.index.tmp.html")
+		html="output/html/summary_table_min{minReadSupport}reads_{subProject}.html",
+		tsv="output/html/summary_table_min{minReadSupport}reads_{subProject}.tsv",
+		index=temp("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html")
 	shell:
 		'''
 ./LyRic/makeHtmlDashboard.r {output.html} {input.sampleAnnotationFile} {input.allFastqTimeStamps} {input.allReadLengths} {input.allBasicMappingStats} {input.allHissStats} {input.allMergedStats} {input.allMatureRnaLengthStats} {input.allTmergeVsSirvStats} {input.allCagePolyASupportStats} {input.allNovelLociStats} {input.allNovelFlLociStats} {input.allNovelLociQcStats} {input.allNovelFlLociQcStats} {input.allNtCoverageStats}
@@ -42,7 +42,7 @@ echo "<li> <b>{wildcards.subProject}</b> {params.indexEntryPart}: <a href='$html
 		'''
 
 rule makeHtmlSummaryDashboardIndex:
-	input:  lambda wildcards: expand("output/html/summary_table_{subProject}.index.tmp.html", subProject=subProjects)
+	input:  lambda wildcards: expand("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html", subProject=subProjects, minReadSupport='|'.join(MINIMUM_TMERGE_READ_SUPPORT))
 	output: "output/html/index.html"
 	shell:
 		'''

@@ -81,7 +81,7 @@ SPIKEINcategories=["wSpikeIns", "woSpikeIns"]
 # TMPDIR to write temp files in
 TMPDIR='$TMPDIR'
 
-MINIMUM_TMERGE_READ_SUPPORT=['2',]
+MINIMUM_TMERGE_READ_SUPPORT=config["minimumTmergeReadSupport"]
 READFILTERS=['HiSS', 'noFilt']
 # for tmerge:
 ExonOverhangTolerance='8'
