@@ -30,7 +30,7 @@ samtools view -H {TMPDIR}/$uuid > {TMPDIR}/$uuid.2
 samtools view -F 256 -F4 -F 2048 {TMPDIR}/$uuid >> {TMPDIR}/$uuid.2
 cat {TMPDIR}/$uuid.2 | samtools sort -T {TMPDIR}  --threads {threads}  -m 5G - > {TMPDIR}/$uuidTmpOut
 echoerr "Done creating/sorting BAM"
-sleep 200s
+#sleep 200s
 samtools index {TMPDIR}/$uuidTmpOut
 
 mv {TMPDIR}/$uuidTmpOut {output.bam}
