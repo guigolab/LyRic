@@ -6,7 +6,7 @@ uuid=$(uuidgen)
 
 cat $genome | cut -f1 | sort |uniq > $uuid.chr.list
 
-zcat -f $gtf | fgrep -w -f $uuid.chr.list > $uuid.ingenomegtf
+zcat -f $gtf | fgrep -w -f $uuid.chr.list | sortgff > $uuid.ingenomegtf
 
 # projected exons:
 zcat -f $uuid.ingenomegtf |  awk '$3=="exon"' | sortgff | bedtools merge -i stdin > $uuid.exons.nostrand.bed
