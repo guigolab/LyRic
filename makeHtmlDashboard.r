@@ -296,7 +296,7 @@ options= list(
 	buttons = c('csv','colvis'),
 	buttons = list(list(extend='colvis', column = c(2,3,4))),
 	searchPanes = list(threshold = 0),
-	columnDefs = list(list(searchPanes = list(show=TRUE), targets = c(0,5,6,7,8,9,10,11,12,13,16,17))),
+	columnDefs = list(list(searchPanes = list(show=TRUE), targets = c(0,4,6))),
 	colReorder=TRUE, 
 	fixedColumns = list(leftColumns=1),
 	fixedHeader = TRUE, 
