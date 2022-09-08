@@ -335,13 +335,13 @@ rule catTrackDb:
 	input:
 		lambda wildcards: expand("output/trackHub/" + "{capDesign}_SupertrackHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand("output/trackHub/" + "{capDesign}_trackDbInputHeader.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
-		lambda wildcards: expand("output/trackHub/" + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else None,
+		lambda wildcards: expand("output/trackHub/" + "{capDesign}_trackDbHiSeqOutputHeader.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else [],
 		lambda wildcards: expand("output/trackHub/" + "{capDesign}_primary_targets.trackDb.txt", nonPreCapOnly, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_trackDbOutputHeader.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome]),
 		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_TmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
 		lambda wildcards: expand("output/trackHub/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_BamOutput.trackDb.txt", filtered_product, techname=TECHNAMES, capDesign=GENOMETOCAPDESIGNS[wildcards.genome], sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
-		lambda wildcards: expand("output/trackHub/" + "hiSeq_{capDesign}_BamOutput.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else None
+		lambda wildcards: expand("output/trackHub/" + "hiSeq_{capDesign}_BamOutput.trackDb.txt", capDesign=GENOMETOCAPDESIGNS[wildcards.genome]) if config["USE_MATCHED_ILLUMINA"] else []
 	output:
 		"output/trackHub/" + "{genome}/trackDb.txt"
 	shell:

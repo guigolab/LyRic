@@ -51,11 +51,9 @@ def nonPreCapOnly(capDList):
 ### preCap capDesign values are filtered out 
 ####################################################
 
-	auth=[]
 	for capD in capDList:
 		if 'preCap' not in capD[1]:
-			auth.append(capD)
-	yield(auth)
+			yield(capD)
 
 
 def multi_figures(capDesign, sizeFrac, sampleRep, techname, splicing_status=None): 
