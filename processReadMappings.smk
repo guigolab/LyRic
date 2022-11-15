@@ -696,8 +696,8 @@ rule getGeneReadCoverageStats:
 		tmerge = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output: 
-		gencode="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.gencode.coverage.tsv",
-		tmerge="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.coverage.tsv"
+		gencode="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.gencode.min{minReadSupport}reads.coverage.tsv",
+		tmerge="output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.coverage.tsv"
 	wildcard_constraints:
 		sizeFrac='[0-9-+\.]+',
 	conda: "envs/xtools_env.yml"
@@ -724,9 +724,9 @@ mv {TMPDIR}/$uuid.4 {output.tmerge}
 		'''
 
 rule aggGeneReadCoverageStats:
-	input: lambda wildcards: expand("output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.coverage.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
+	input: lambda wildcards: expand("output/mappings/geneReadCoverage/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.coverage.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
 	output: 
-		"output/statsFiles/" + "all.tmerge.GeneReadCoverage.stats.tsv"
+		"output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.GeneReadCoverage.stats.tsv"
 	shell:
 		'''
 uuid=$(uuidgen)
@@ -737,8 +737,8 @@ mv {TMPDIR}/$uuid {output}
 		'''
 
 rule plotGeneReadCoverageStats:
-	input: "output/statsFiles/" + "all.tmerge.GeneReadCoverage.stats.tsv"
-	output: returnPlotFilenames("output/plots/" + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.geneReadCoverage.stats")
+	input: "output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.GeneReadCoverage.stats.tsv"
+	output: returnPlotFilenames("output/plots/" + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.geneReadCoverage.min{minReadSupport}reads.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
 	conda: "envs/R_env.yml"
