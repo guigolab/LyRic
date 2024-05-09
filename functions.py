@@ -53,7 +53,7 @@ def nonPreCapOnly(capDList):
 
 	for capD in capDList:
 		if 'preCap' not in capD[1]:
-			yield(capD)
+			yield([capD])
 
 
 def multi_figures(capDesign, sizeFrac, sampleRep, techname, splicing_status=None): 
