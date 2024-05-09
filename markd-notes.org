@@ -1,4 +1,0 @@
-
-* snakemake version
-does not work with snakemake 8
-test with 7.32.4
