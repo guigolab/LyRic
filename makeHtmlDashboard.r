@@ -244,7 +244,7 @@ dat <- rename(dat, '# merged TMs (min. 2 reads)' =mergedTMs)
 dat <- rename(dat, '# TM nts over intergenic regions' = intergenic.x, '% TM nts over intergenic regions' = intergenic.y, '# TM nts over CDS regions'=CDS.x, '% TM nts over CDS regions'=CDS.y, '# TM nts over UTR regions'=UTR.x, '% TM nts over UTR regions'=UTR.y, '# TM nts over exons of noncoding transcripts' =exonOfNCT.x, '% TM nts over exons of noncoding transcripts' =exonOfNCT.y, '# TM nts over exons of pseudogenes' = exonOfPseudo.x, '% TM nts over exons of pseudogenes' = exonOfPseudo.y, '# TM nts over introns' = intron.x, '% TM nts over introns' = intron.y)
 
 
-tb <- formattable(dat, 
+tb <- formattable(dat,
 	list('# reads' = color_tile("#def7e9", "#45ba78"),
 	'median read length' = color_tile("#e6f7ff", "#0088cc"),
 	'mean read length' = color_tile("#e6f7ff", "#0088cc"),
@@ -252,7 +252,7 @@ tb <- formattable(dat,
 	'% mapped reads' = color_tile("#def7e9", "#45ba78"),
 	'# HCGM reads' = color_tile("#def7e9", "#45ba78"),
 	'% HCGM reads' = color_tile("#def7e9", "#45ba78"),
-	'% spliced HCGMs' = color_tile("#def7e9", "#45ba78"), 
+	'% spliced HCGMs' = color_tile("#def7e9", "#45ba78"),
 	'# merged TMs (min. 2 reads)' = color_tile('#ffe6cc','#ff8c1a'),
 	'merge rate' = color_tile('#ffe6cc','#ff8c1a'),
 	'TM median length'= color_tile("#e6f7ff", "#0088cc"),
@@ -286,10 +286,10 @@ tb <- formattable(dat,
 
 
 )
-) 
+)
 
-tbDt <- as.datatable(tb[order(tb$cellLine), ], extensions = c('Buttons','ColReorder','FixedColumns', 'FixedHeader', 'KeyTable','RowGroup', 'Select', 'SearchPanes'),
-rownames=FALSE, 
+tbDt <- as.datatable(tb[order(tb$tissue), ], extensions = c('Buttons','ColReorder','FixedColumns', 'FixedHeader', 'KeyTable','RowGroup', 'Select', 'SearchPanes'),
+rownames=FALSE,
 selection='none',
 options= list(
 	dom = 'PBlfrtip',
@@ -297,9 +297,9 @@ options= list(
 	buttons = list(list(extend='colvis', column = c(2,3,4))),
 	searchPanes = list(threshold = 0),
 	columnDefs = list(list(searchPanes = list(show=TRUE), targets = c(0,4,6))),
-	colReorder=TRUE, 
+	colReorder=TRUE,
 	fixedColumns = list(leftColumns=1),
-	fixedHeader = TRUE, 
+	fixedHeader = TRUE,
 	pageLength =400,
 	autowidth=TRUE,
 	keys = TRUE,
