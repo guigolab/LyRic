@@ -23,7 +23,7 @@ rule polyAmapping:
 		'''
 uuidTmpOut=$(uuidgen)
 
-cat {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  |gzip > {TMPDIR}/$uuidTmpOut
+cat {input.reads} | samToPolyA.pl --minClipped=10 --minAcontent={params.minAcontent}  --discardInternallyPrimed --minUpMisPrimeAlength=10 --genomeFasta={input.genome} - |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n	 |gzip > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 

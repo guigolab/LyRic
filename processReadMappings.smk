@@ -11,7 +11,7 @@ uuid=$(uuidgen)
 uuidTmpOutS=$(uuidgen)
 uuidTmpOutW=$(uuidgen)
 zcat {input.SJs} | skipcomments | cut -f 1,2 | awk '$2!="."' | sort -T {TMPDIR} > {TMPDIR}/$uuid.reads.SJ.strandInfo.tsv
-cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort -T {TMPDIR}  > {TMPDIR}/$uuid.reads.polyA.strandInfo.tsv
+cat {input.polyA} | cut -f4,6 | awk '$2!="."'| sort -T {TMPDIR}	 > {TMPDIR}/$uuid.reads.polyA.strandInfo.tsv
 join -a1 -a2 -e '.' -o '0,1.2,2.2' {TMPDIR}/$uuid.reads.SJ.strandInfo.tsv  {TMPDIR}/$uuid.reads.polyA.strandInfo.tsv > {TMPDIR}/$uuid.reads.SJ.polyA.strandInfo.tsv
 
 #make list of reads with wrongly called polyA sites (i.e. their strand is different from the one inferred using SJs):
@@ -95,7 +95,7 @@ rule aggIntraPrimingStats:
 		'''
 uuid=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tintraPrimed\tpercentIntraPrimed" > {TMPDIR}/$uuid
-cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuid
+cat {input} | sort -T {TMPDIR}	>> {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output}
 		'''
 
@@ -200,7 +200,7 @@ tgrep -F -w -f {TMPDIR}/$uuid.reads.hcSJs.list {TMPDIR}/$uuid.str.gff > {TMPDIR}
 wc -l {TMPDIR}/$uuid.gtag.gff
 cat {TMPDIR}/$uuid.str.gff | extractGffAttributeValue.pl transcript_id | sort -T {TMPDIR} |uniq -u > {TMPDIR}/$uuid.tmp
 tgrep -F -w -f {TMPDIR}/$uuid.tmp {TMPDIR}/$uuid.str.gff > {TMPDIR}/$uuid.tmp2
-cat {TMPDIR}/$uuid.tmp2  > {TMPDIR}/$uuid.monoPolyA.gff
+cat {TMPDIR}/$uuid.tmp2	 > {TMPDIR}/$uuid.monoPolyA.gff
  echo $?
 cat {TMPDIR}/$uuid.gtag.gff {TMPDIR}/$uuid.monoPolyA.gff | fgrep -vw -f {input.intraPriming} -| sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip> {TMPDIR}/$uuidTmpOutG
 mv {TMPDIR}/$uuidTmpOutG {output.gff}
@@ -213,7 +213,7 @@ rule aggHighConfSplicedReadsStats:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalSplicedReads\tcanonSjReads\tnoFishySjReads\tnoFishyCanonSjReads" > {TMPDIR}/$uuidTmpOut
-cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}	>> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -224,7 +224,7 @@ rule getHCGMintrons:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | makeIntrons.pl -| perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $end=$F[4]+1; print $F[11]."\t".$F[0]."_".$start."_".$end."_".$F[6]' | sort -T {TMPDIR}  -k2,2 > {TMPDIR}/$uuidTmpOut
+zcat {input} | makeIntrons.pl -| perl -lane '$F[11]=~s/"|;//g; $start=$F[3]-1; $end=$F[4]+1; print $F[11]."\t".$F[0]."_".$start."_".$end."_".$F[6]' | sort -T {TMPDIR}	-k2,2 > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
@@ -302,7 +302,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 rule plotAllHiSSStats:
 	input: "output/statsFiles/" + "all.HiSS.stats.tsv"
-	output:  returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats")
+	output:	 returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
 	conda: "envs/R_env.yml"
@@ -434,7 +434,7 @@ filesCount=$(cat {input.countFiles})
 #min read support is 1 (1 input file) or 2 (more than 1 input files):
 if [ $filesCount == 1 ]; then minRS=1; else minRS=2; fi;
 echo "Min Read Support: $minRS"
-cat {input.gff} | tmerge --minReadSupport $minRS --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid.gff
+cat {input.gff} | tmerge --minReadSupport $minRS --tmPrefix {wildcards.groupedSampleRepBasename}.NAM_ - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n	> {TMPDIR}/$uuid.gff
 
 echo -e "read_id\ttranscript_id" > {TMPDIR}/$uuid.tsv
 
@@ -478,7 +478,7 @@ rule aggTmStats:
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tspliced\tcontains_count\tend\tdistance\tnormDistance" | gzip > {TMPDIR}/$uuidTmpOut
 
-zcat {input} | perl -F"\\t" -slane '@ara=split(",", $F[8]); @arb=split(",", $F[9]); @arc=split(",", $F[10]), @ard=split(",", $F[11]); for ($i=0; $i<=$#ara; $i++){{$threepMinusDist=-$ara[$i];print  "$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t3\\t$threepMinusDist\\t$arc[$i]\\n$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t5\\t$arb[$i]\\t$ard[$i]"}}' | sort -T {TMPDIR}  | gzip >> {TMPDIR}/$uuidTmpOut
+zcat {input} | perl -F"\\t" -slane '@ara=split(",", $F[8]); @arb=split(",", $F[9]); @arc=split(",", $F[10]), @ard=split(",", $F[11]); for ($i=0; $i<=$#ara; $i++){{$threepMinusDist=-$ara[$i];print  "$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t3\\t$threepMinusDist\\t$arc[$i]\\n$F[0]\\t$F[1]\\t$F[2]\\t$F[3]\\t$F[5]\\t$F[7]\\t5\\t$arb[$i]\\t$ard[$i]"}}' | sort -T {TMPDIR}	| gzip >> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
@@ -514,7 +514,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 rule plotMergingStats:
-	input:  "output/statsFiles/" + "all.min{minReadSupport}reads.merged.stats.tsv"
+	input:	"output/statsFiles/" + "all.min{minReadSupport}reads.merged.stats.tsv"
 	output: returnPlotFilenames("output/plots/" + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.merged.stats")
 	params:
 		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
@@ -584,7 +584,7 @@ uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttranscript_id\tspliced\tmature_RNA_length\tcategory" |gzip> {TMPDIR}/$uuidTmpOut
 
 zcat {input.all} |cut -f1-7| awk '{{print $0"\\tCLS_TMs"}}' |sort -T {TMPDIR}  | gzip >> {TMPDIR}/$uuidTmpOut
-zcat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' |sort -T {TMPDIR}  | gzip >> {TMPDIR}/$uuidTmpOut
+zcat {input.fl} |cut -f1-7| awk '{{print $0"\\tCLS_FL_TMs"}}' |sort -T {TMPDIR}	 | gzip >> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -716,7 +716,7 @@ mv {TMPDIR}/$uuid.2 {output.gencode}
 
 #tmerge
 zcat {input.tmerge} > {TMPDIR}/$uuid.a
-bedtools intersect -s -wao -a {TMPDIR}/$uuid.a -b {TMPDIR}/$uuid.a | buildLoci.pl - | extract_locus_coords.pl -| sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid.3
+bedtools intersect -s -wao -a {TMPDIR}/$uuid.a -b {TMPDIR}/$uuid.a | buildLoci.pl - | extract_locus_coords.pl -| sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n	> {TMPDIR}/$uuid.3
 
 bedtools coverage -sorted -g {input.genome}  -bed -split -nonamecheck -counts -a {TMPDIR}/$uuid.3 -b {input.bam}  |sort -k7,7nr | cut -f1-4,7 | awk -v s={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print s"\\t"c"\\t"si"\\t"b"\\t"$0}}' > {TMPDIR}/$uuid.4
 mv {TMPDIR}/$uuid.4 {output.tmerge}

@@ -30,7 +30,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
 rule aggTargetCoverageStats:
-	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats.tsv",filtered_product,  techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
+	input: lambda wildcards: expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats.tsv",filtered_product,	techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
 	output: "output/statsFiles/" + "all.min{minReadSupport}reads.targetCoverage.stats.tsv"
 	shell:
 		'''
@@ -288,7 +288,7 @@ rule aggSirvDetectionStats:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tSIRVid\tlength\tconcentration\tdetectionStatus" > {TMPDIR}/$uuidTmpOut
-cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}	>> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
@@ -631,9 +631,9 @@ scale_y_log10(limits=c(100,10000)) +
 scale_x_log10(limits=c(100, 20000)) + 
 geom_smooth() + 
 annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
-annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
+annotate(x=100, y=7000,	 label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
 
-geom_text(data = summaryStats[summaryStats\$splicingStatus=='all',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=-1,  size=geom_textSize, show.legend=FALSE) +
+geom_text(data = summaryStats[summaryStats\$splicingStatus=='all',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=-1,	size=geom_textSize, show.legend=FALSE) +
 geom_text(data = summaryStats[summaryStats\$splicingStatus=='unspliced',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=0,  size=geom_textSize, show.legend=FALSE) +
 geom_text(data = summaryStats[summaryStats\$splicingStatus=='spliced',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=1,  size=geom_textSize, show.legend=FALSE) +
 
@@ -685,8 +685,8 @@ scale_y_log10(limits=c(100,10000)) +
 scale_x_log10(limits=c(100, 20000)) + 
 geom_smooth() + 
 annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
-annotate(x=100, y=7000,  label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
-geom_text(data = summaryStats[summaryStats\$splicingStatus=='all',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=-1,  size=geom_textSize, show.legend=FALSE) +
+annotate(x=100, y=7000,	 label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
+geom_text(data = summaryStats[summaryStats\$splicingStatus=='all',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=-1,	size=geom_textSize, show.legend=FALSE) +
 
 guides(color = guide_legend(title='TM splicing\\nstatus'))+
 xlab('Annotated length\\n(mature RNA, nts)') +
@@ -744,7 +744,7 @@ rule mergeTmsWithGencode:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat -f {input.annot} {input.tm}  | skipcomments | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip > {TMPDIR}/$uuidTmpOut
+zcat -f {input.annot} {input.tm}  | skipcomments | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}	-k1,1 -k4,4n -k5,5n  |gzip > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -760,7 +760,7 @@ uuidTmpOut=$(uuidgen)
 zcat {input} > {TMPDIR}/$uuid
 
 
-bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | gzip> {TMPDIR}/$uuidTmpOut
+bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid |awk '$1 !~ /ERCC/'| buildLoci.pl --locPrefix {params.locusPrefix}: - |sort -T {TMPDIR}	-k1,1 -k4,4n -k5,5n  | gzip> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
@@ -776,7 +776,7 @@ rule mergeWithRef:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 zcat  {input.clsGencode} > {TMPDIR}/$uuid
-mergeToRef.pl {input.gencode} {TMPDIR}/$uuid | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip > {TMPDIR}/$uuidTmpOut
+mergeToRef.pl {input.gencode} {TMPDIR}/$uuid | sort -T {TMPDIR}	 -k1,1 -k4,4n -k5,5n  |gzip > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -798,14 +798,14 @@ uuid5=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 cat {input.gencode} |awk '$3=="exon"' | extract_locus_coords.pl -| sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid1
 zcat {input.tmergeGencode} | tgrep -F 'gene_ref_status "novel";' > {TMPDIR}/$uuid4
-cat {TMPDIR}/$uuid4 | extract_locus_coords.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid2
+cat {TMPDIR}/$uuid4 | extract_locus_coords.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n	 > {TMPDIR}/$uuid2
 
 
 
 bedtools intersect -v -a {TMPDIR}/$uuid2 -b {TMPDIR}/$uuid1 > {TMPDIR}/$uuid5
 cat {TMPDIR}/$uuid5 |awk '$1 !~ /ERCC/' |cut -f4 | sort -T {TMPDIR} |uniq > {TMPDIR}/$uuid3
 zcat {input.tmergeGencode}| tgrep -F -w -f {TMPDIR}/$uuid3 - |gzip > {TMPDIR}/$uuidTmpOut
-zcat {TMPDIR}/$uuidTmpOut |  extract_locus_coords.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid2.bed
+zcat {TMPDIR}/$uuidTmpOut |  extract_locus_coords.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n	> {TMPDIR}/$uuid2.bed
 mv {TMPDIR}/$uuidTmpOut {output.gtf}
 mv {TMPDIR}/$uuid2.bed {output.locusBed}
 		'''
@@ -837,7 +837,7 @@ cat {TMPDIR}/$uuid.bed | awk '$10>1' | cut -f4 | sort -T {TMPDIR} |uniq >  {TMPD
 tgrep -F -w -f {TMPDIR}/$uuid.spliced.transcripts.list {TMPDIR}/$uuid | extractGffAttributeValue.pl gene_id |sort|uniq > {TMPDIR}/$uuid.spliced.genes.list
 
 total=$(cat {TMPDIR}/$uuid.genes.list |wc -l)
-spliced=$(cat {TMPDIR}/$uuid.spliced.genes.list  |wc -l)
+spliced=$(cat {TMPDIR}/$uuid.spliced.genes.list	 |wc -l)
 let mono=$total-$spliced || true
 
 ############## length statistics
@@ -876,7 +876,7 @@ rule aggNovelIntergenicLociQcStats:
 		'''
 uuid=$(uuidgen)
 echo -e "seqTech\\tcapDesign\\tsizeFrac\\tsampleRep\\ttotal\\tcountMono\\tcountRepeats\\tminLengthAllTms\\tmedianLengthAllTms\\tmaxLengthAllTms\\tminLengthMonoTms\\tmedianLengthMonoTms\\tmaxLengthMonoTms\\tminLengthSplicedTms\\tmedianLengthSplicedTms\\tmaxLengthSplicedTms\\tpercentMono\\tpercentRepeats" > {TMPDIR}/$uuid
-cat {input}  | sort -T {TMPDIR}  >> {TMPDIR}/$uuid
+cat {input}  | sort -T {TMPDIR}	 >> {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output}
 
 		'''
@@ -992,7 +992,7 @@ echo -e "transcript_id\tspliced\tflrpm\trpm" > {TMPDIR}/$uuidTmpOutQ
 cat {TMPDIR}/$uuid | extractGffAttributeValue.pl transcript_id spliced flrpm rpm | sort|uniq >> {TMPDIR}/$uuidTmpOutQ
 countDups=$(cat {TMPDIR}/$uuidTmpOutQ |cut -f1 |sort|uniq -d |wc -l)
 if [ $countDups -gt 0 ]; then echoerr "$countDups duplicates found"; exit 1; fi;
-cat {TMPDIR}/$uuid  | skipcomments | sort -T {TMPDIR} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOutT
+cat {TMPDIR}/$uuid  | skipcomments | sort -T {TMPDIR} -k1,1 -k4,4n -k5,5n | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}	-k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOutT
 cat {TMPDIR}/$uuidTmpOutT | gzip > {output.tm}
 mv {TMPDIR}/$uuidTmpOutQ {output.quant}
 
@@ -1022,7 +1022,7 @@ rule aggAnnotatedGeneDetectionStats:
 		'''
 uuid=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuid
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tflGenes\\t"$6"\\t"$8"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonFlGenes\\t"$7"\\t"$9}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuid
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tflGenes\\t"$6"\\t"$8"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnonFlGenes\\t"$7"\\t"$9}}' | sort -T {TMPDIR}	 >> {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output}
 
 		'''

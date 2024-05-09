@@ -67,7 +67,7 @@ rule getBamqcStats:
 	shell:
 		'''
 uuid=$(uuidgen)
-qualimapReportToTsv.pl {input}  | cut -f2,3 |grep -v globalErrorRate| sed 's/PerMappedBase//' |awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2}}' > {TMPDIR}/$uuid
+qualimapReportToTsv.pl {input}	| cut -f2,3 |grep -v globalErrorRate| sed 's/PerMappedBase//' |awk -v t={wildcards.techname} -v c={wildcards.capDesign} -v si={wildcards.sizeFrac} -v b={wildcards.sampleRep} '{{print t"\t"c"\t"si"\t"b"\t"$1"\t"$2}}' > {TMPDIR}/$uuid
 
 mv {TMPDIR}/$uuid {output}
 		'''
@@ -245,7 +245,7 @@ rule getReadProfileMatrix:
 		'''
 uuid=$(uuidgen)
 
-computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {TMPDIR}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend  --missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {input.libraryPrepList} | perl -ne 'chomp; print')
+computeMatrix scale-regions -S {input.bw} -R {input.annot} -o {TMPDIR}/$uuid.gz --upstream 1000 --downstream 1000 --sortRegions ascend	--missingDataAsZero --skipZeros --metagene -p {threads} --samplesLabel $(cat {input.libraryPrepList} | perl -ne 'chomp; print')
 
 mv {TMPDIR}/$uuid.gz {output.matrix}
 		'''
@@ -262,9 +262,9 @@ rule plotReadProfileMatrix:
 		'''
 	
 
-  plotProfile -m {input.matrix} -o {output.profile} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --colors $(cat {input.colorList} | perl -ne 'chomp; print')
+  plotProfile -m {input.matrix} -o {output.profile} --perGroup	--plotType se --yAxisLabel "mean CPM" --regionsLabel '' --colors $(cat {input.colorList} | perl -ne 'chomp; print')
 
-  plotHeatmap -m {input.matrix} -o {output.heatmap} --perGroup  --plotType se --yAxisLabel "mean CPM" --regionsLabel '' --whatToShow 'heatmap and colorbar'
+  plotHeatmap -m {input.matrix} -o {output.heatmap} --perGroup	--plotType se --yAxisLabel "mean CPM" --regionsLabel '' --whatToShow 'heatmap and colorbar'
 
 		'''
 
@@ -302,7 +302,7 @@ rule aggMappingStats:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\ttotalReads\tmappedReads\tpercentMappedReads" > {TMPDIR}/$uuidTmpOut
-cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}	>> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
@@ -509,7 +509,7 @@ rule aggReadToBiotypeBreakdownStats:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tbiotype\treadOverlapsCount\treadOverlapsPercent" > {TMPDIR}/$uuidTmpOut
-cat {input} | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}	>> {TMPDIR}/$uuidTmpOut
 mv  {TMPDIR}/$uuidTmpOut {output}
 
 		'''
