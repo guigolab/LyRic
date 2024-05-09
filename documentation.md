@@ -19,7 +19,8 @@ LyRic is platform-agnostic, _i.e._ it can deal with FASTQ data coming from both 
 LyRic depends on the following software:
 
 - **Conda**: Official installation instructions [here](https://docs.anaconda.com/anaconda/install/linux/)
-- **Snakemake**: Official installation instructions [here](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html).
+- **Snakemake 7.32.4**: Official installation instructions [here](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html).
+**WARNING: Snakemake version 8 + will not work.**
 
 Please install those as a prerequisite. Once this is completed:
 
