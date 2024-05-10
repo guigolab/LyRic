@@ -49,7 +49,7 @@ STAR \
 --outFilterIntronMotifs RemoveNoncanonical \
 --outSAMstrandField intronMotif \
 --outSAMattributes NH HI NM MD AS nM XS \
-| samtools view -b -u -S - | samtools sort -T {TMPDIR}  -@ 2   -m 15000000000 - > {TMPDIR}/$uuidTmpOut
+| samtools view -b -u -S - | samtools sort -T {TMPDIR}	-@ 2   -m 15000000000 - > {TMPDIR}/$uuidTmpOut
 sleep 200s
 samtools index {TMPDIR}/$uuidTmpOut
 echoerr "Mapping done"
@@ -69,7 +69,7 @@ rule getHiSeqMappingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-totalReads=$(zcat {input.reads1} {input.reads2}  | fastq2tsv.pl | wc -l)
+totalReads=$(zcat {input.reads1} {input.reads2}	 | fastq2tsv.pl | wc -l)
 mappedReads=$(samtools view  -F 4 {input.bams}|cut -f1|sort -T {TMPDIR} |uniq|wc -l)
 echo -e "{wildcards.capDesign}\t$totalReads\t$mappedReads" | awk '{{print $0"\t"$3/$2}}' > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
@@ -81,7 +81,7 @@ rule aggHiSeqMappingStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | sort -T {TMPDIR}  > {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}	> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -129,7 +129,7 @@ uuid=$(uuidgen)
 
 echoerr "making bed"
 
-samtools view -b -F 256 -F4 -F 2048 {input.bam}  |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {TMPDIR}/$uuid.hiSeq_{wildcards.capDesign}.bed
+samtools view -b -F 256 -F4 -F 2048 {input.bam}	 |bedtools bamtobed -i stdin -bed12 | fgrep -v ERCC- > {TMPDIR}/$uuid.hiSeq_{wildcards.capDesign}.bed
 
 mv {TMPDIR}/$uuid.hiSeq_{wildcards.capDesign}.bed {output}
 		'''
@@ -172,7 +172,7 @@ rule aggHiSeqSjStats:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input} | sort -T {TMPDIR}  > {TMPDIR}/$uuidTmpOut
+cat {input} | sort -T {TMPDIR}	> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 

@@ -74,7 +74,7 @@ rule simplifyGencode:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
+cat {input}  | simplifyGencodeGeneTypes.pl - | sort -T {TMPDIR}	 -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -90,7 +90,7 @@ uuidTmpOut=$(uuidgen)
 cat {input} | skipcomments | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {ExonOverhangTolerance} - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuid
 uuidL=$(uuidgen)
 
-bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid | buildLoci.pl - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidL
+bedtools intersect -s -wao -a {TMPDIR}/$uuid -b {TMPDIR}/$uuid | buildLoci.pl - |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n	> {TMPDIR}/$uuidL
 mergeToRef.pl {input} {TMPDIR}/$uuidL | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 

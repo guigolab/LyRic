@@ -115,7 +115,7 @@ uuidTmpOut=$(uuidgen)
 cat {input.polyAsites} |sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid.polyAsites.bed
 
 
-cat {input.threePends} | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 5 -r 5 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {TMPDIR}/$uuid.polyAsites.bed | cut -f4 | tgrep -F -w -f - {input.tms} > {TMPDIR}/$uuidTmpOut
+cat {input.threePends} | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n	| bedtools slop -s -l 5 -r 5 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {TMPDIR}/$uuid.polyAsites.bed | cut -f4 | tgrep -F -w -f - {input.tms} > {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -149,7 +149,7 @@ comm -1 -2 {TMPDIR}/$uuid.polyA.list {TMPDIR}/$uuid.cage.list |sort -T {TMPDIR} 
 
 comm -2 -3 {TMPDIR}/$uuid.all.list {TMPDIR}/$uuid.cageOrPolyA.list > {TMPDIR}/$uuid.noCageNoPolyA.list
 noCageNoPolyA=$(cat {TMPDIR}/$uuid.noCageNoPolyA.list |wc -l)
-tgrep -F -w -f {TMPDIR}/$uuid.noCageNoPolyA.list {TMPDIR}/$uuid.tms | gff2bed_full.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid.noCageNoPolyA.bed
+tgrep -F -w -f {TMPDIR}/$uuid.noCageNoPolyA.list {TMPDIR}/$uuid.tms | gff2bed_full.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n	 > {TMPDIR}/$uuid.noCageNoPolyA.bed
 mv {TMPDIR}/$uuid.noCageNoPolyA.bed {output.noCageNoPolyABed}
 
 comm -2 -3 {TMPDIR}/$uuid.cage.list {TMPDIR}/$uuid.polyA.list > {TMPDIR}/$uuid.cageOnly.list
@@ -159,14 +159,14 @@ mv {TMPDIR}/$uuid.cageOnly.bed {output.cageOnlyBed}
 
 comm -2 -3 {TMPDIR}/$uuid.polyA.list {TMPDIR}/$uuid.cage.list > {TMPDIR}/$uuid.polyAOnly.list
 polyAOnly=$(cat {TMPDIR}/$uuid.polyAOnly.list |wc -l)
-tgrep -F -w -f {TMPDIR}/$uuid.polyAOnly.list {TMPDIR}/$uuid.tms | gff2bed_full.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid.polyAOnly.bed
+tgrep -F -w -f {TMPDIR}/$uuid.polyAOnly.list {TMPDIR}/$uuid.tms | gff2bed_full.pl - | sort -T {TMPDIR}	-k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid.polyAOnly.bed
 mv {TMPDIR}/$uuid.polyAOnly.bed {output.polyAOnlyBed}
 
 cageAndPolyA=$(cat {TMPDIR}/$uuid.cage+PolyA.list | wc -l)
 let total=$noCageNoPolyA+$cageOnly+$polyAOnly+$cageAndPolyA
-tgrep -F -w -f {TMPDIR}/$uuid.cage+PolyA.list {TMPDIR}/$uuid.tms |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  > {TMPDIR}/$uuidTmpOutG
+tgrep -F -w -f {TMPDIR}/$uuid.cage+PolyA.list {TMPDIR}/$uuid.tms |sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n	 > {TMPDIR}/$uuidTmpOutG
 cat {TMPDIR}/$uuidTmpOutG | gzip > {output.FLgff}
-cat {TMPDIR}/$uuidTmpOutG |gff2bed_full.pl - | sort -T {TMPDIR}  -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuidTmpOutB
+cat {TMPDIR}/$uuidTmpOutG |gff2bed_full.pl - | sort -T {TMPDIR}	 -k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuidTmpOutB
 mv {TMPDIR}/$uuidTmpOutB {output.FLbed}
 echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$total\t$cageOnly\t$cageAndPolyA\t$polyAOnly\t$noCageNoPolyA"  > {TMPDIR}/$uuidTmpOutS
 mv {TMPDIR}/$uuidTmpOutS {output.stats}
@@ -181,7 +181,7 @@ rule aggCagePolyAStats:
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuidTmpOut
 
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tcageOnly\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tcageAndPolyA\\t"$7"\\t"$7/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyAOnly\\t"$8"\\t"$8/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnoCageNoPolyA\\t"$9"\\t"$9/$5}}'  | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tcageOnly\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tcageAndPolyA\\t"$7"\\t"$7/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tpolyAOnly\\t"$8"\\t"$8/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnoCageNoPolyA\\t"$9"\\t"$9/$5}}'  | sort -T {TMPDIR}	 >> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 

@@ -115,7 +115,7 @@ plotBase <- \\"p <- ggplot(dat, aes(x=length)) +
 geom_histogram(aes(y=..density..,fill=sizeFrac_f), binwidth=100) +
 geom_vline(data = summaryStats, aes(xintercept=med), color='#ff0055', linetype='solid', size=lineSize) +
 scale_fill_manual(values={sizeFrac_Rpalette}) +
-geom_text(data = summaryStats, aes(label = LabelN, x = Inf, y = Inf), hjust=1, vjust=1,  size=geom_textSize, fontface = 'bold') +
+geom_text(data = summaryStats, aes(label = LabelN, x = Inf, y = Inf), hjust=1, vjust=1,	 size=geom_textSize, fontface = 'bold') +
 geom_text(data = summaryStats, aes(label = LabelM, x = med, y = Inf), hjust=-0.1, vjust=2.5,  size=geom_textSize, fontface = 'bold', color='#ff0055') +
 coord_cartesian(xlim=c(0, 3500)) +
 #scale_y_continuous(labels=scientific)+
@@ -141,4 +141,4 @@ save_plot('{output[4]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 
 
-	 	'''
+		'''

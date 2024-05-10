@@ -1,5 +1,5 @@
 
-def authorizeComb(comb): 
+def authorizeComb(comb):
 ############################################################################
 ### populate AUTHORIZEDCOMBINATIONS with relevant combinations of wildcards
 ############################################################################
@@ -10,7 +10,7 @@ def authorizeComb(comb):
 		(("techname", comb[0]), ("capDesign", comb[1]), ("sizeFrac", comb[2]), ("sampleRep", comb[3])))
 
 
-def returnPlotFilenames(basename): 
+def returnPlotFilenames(basename):
 ###################################
 ### produce sets of plot filenames
 ###################################
@@ -23,7 +23,7 @@ def returnPlotFilenames(basename):
 	return plotsList
 
 
-def filtered_product(*args): 
+def filtered_product(*args):
 #####################################################################
 ### return combinations of wildcards that correspond to combinations
 ### contained in AUTHORIZEDCOMBINATIONS
@@ -48,7 +48,7 @@ def filtered_product(*args):
 def nonPreCapOnly(capDList):
 ####################################################
 ### return list of non-'preCap' capDesign wildcards.
-### preCap capDesign values are filtered out 
+### preCap capDesign values are filtered out
 ####################################################
 
 	for capD in capDList:
@@ -56,7 +56,7 @@ def nonPreCapOnly(capDList):
 			yield([capD])
 
 
-def multi_figures(capDesign, sizeFrac, sampleRep, techname, splicing_status=None): 
+def multi_figures(capDesign, sizeFrac, sampleRep, techname, splicing_status=None):
 ################################################
 ### return ggplot figure settings as dictionary
 ################################################
@@ -83,22 +83,22 @@ plotFacetYx <- parse(text=paste(plotFacetYx, \\" + theme(strip.text.x = element_
 		figure_settings['technameFilterString'] = "dat <- subset(dat, seqTech=='" + \
 			techname + "')\n"
 	figure_settings['substSeqTechString'] = """
-dat\$seqTech <- gsub('-', '\\n', dat\$seqTech)
+dat\\$seqTech <- gsub('-', '\\n', dat\\$seqTech)
 """
-	figure_settings['substSampleRepString'] = "dat\$sampleRep <- gsub('" + \
-		capDesign + "_', '', dat\$sampleRep)\n"
+	figure_settings['substSampleRepString'] = "dat\\$sampleRep <- gsub('" + \
+		capDesign + "_', '', dat\\$sampleRep)\n"
 	figure_settings['capDesignFilterString'] = ''
 	figure_settings['sizeFracFilterString'] = ''
 	figure_settings['sampleRepFilterString'] = ''
 	figure_settings['graphDimensions'] = """
 
-horizCats <- length(unique(dat\$capDesign)) * length(unique(dat\$sampleRep))
-vertCats <- length(unique(dat\$seqTech))
+horizCats <- length(unique(dat\\$capDesign)) * length(unique(dat\\$sampleRep))
+vertCats <- length(unique(dat\\$seqTech))
 
 wXyPlot = (horizCats * 0.9) +1.7
 hXyPlot = (vertCats * 0.6) + 1.7
 
-geom_textSize=1.4 
+geom_textSize=1.4
 themeSize = (14/5) * geom_textSize
 # https://stackoverflow.com/questions/25061822/ggplot-geom-text-font-size-control/25062509
 lineSize=geom_textSize/8
@@ -124,14 +124,14 @@ pXyNoLegendGrob <- as.grob(pXyNoLegend)
 pYxNoLegendGrob <- as.grob(pYxNoLegend)
 
 
-hLegendOnly <- convertUnit(sum(legend\$heights), 'in', valueOnly=TRUE)
-wLegendOnly <- convertUnit(sum(legend\$widths), 'in', valueOnly=TRUE)
+hLegendOnly <- convertUnit(sum(legend\\$heights), 'in', valueOnly=TRUE)
+wLegendOnly <- convertUnit(sum(legend\\$widths), 'in', valueOnly=TRUE)
 
 
 hYxPlot <- wXyPlot
-wYxPlot <- hXyPlot 
+wYxPlot <- hXyPlot
 
-hXyNoLegendPlot<- hXyPlot 
+hXyNoLegendPlot<- hXyPlot
 wXyNoLegendPlot<- wXyPlot - wLegendOnly
 
 hYxNoLegendPlot<- hYxPlot
@@ -150,9 +150,9 @@ wYxNoLegendPlot<- wYxPlot - wLegendOnly
 	return(figure_settings)
 
 
-def trackHubSubGroupString(techname, capDesign, sizeFrac, sampleRep, minReadSupport): 
+def trackHubSubGroupString(techname, capDesign, sizeFrac, sampleRep, minReadSupport):
 #######################################################################
-### return string to populate the "subGroup" UCSC Track Hub attributes 
+### return string to populate the "subGroup" UCSC Track Hub attributes
 #######################################################################
 	techname = (("techname", techname),)
 	capDesign = (("capDesign", capDesign),)

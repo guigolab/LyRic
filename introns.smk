@@ -4,7 +4,7 @@ rule makeIntrons:
 	shell:
 		'''
 uuidTmpOut=$(uuidgen)
-zcat {input} | makeIntrons.pl - | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n  |gzip> {TMPDIR}/$uuidTmpOut
+zcat {input} | makeIntrons.pl - | sort -T {TMPDIR}  -k1,1 -k4,4n -k5,5n	 |gzip> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 		'''
 
@@ -73,7 +73,7 @@ rule aggCompareClsGencodeSJsStats:
 		'''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount\tpercent" > {TMPDIR}/$uuidTmpOut
-cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{ print $1"\\t"$2"\\t"$3"\\t"$4"\\tcommon\\t"$6"\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tnovel\\t"$7"\t"$7/$5}}' | sort -T {TMPDIR}	>> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 
 

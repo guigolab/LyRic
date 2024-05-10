@@ -13,9 +13,9 @@ uuid=$(uuidgen)
 uuidM=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
-cat {input.previous} {input.annot} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
+cat {input.previous} {input.annot} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}	 -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
 
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM |awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
+bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM |awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}	-k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 			'''
@@ -29,7 +29,7 @@ rule mergePreviousPhaseTmsWithGencodeBiotypes:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 zcat  {input.clsGencode} > {config[TMPDIR]}/$uuid
-mergeToRef.pl {input.gencode} {config[TMPDIR]}/$uuid | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
+mergeToRef.pl {input.gencode} {config[TMPDIR]}/$uuid | sort -T {config[TMPDIR]}	 -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
@@ -52,7 +52,7 @@ uuidM=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 
 zcat -f {input.previous} {input.annot} {input.current} | skipcomments | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | tmerge --exonOverhangTolerance {config[exonOverhangTolerance]} - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  > {config[TMPDIR]}/$uuidM
-bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM | awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
+bedtools intersect -s -wao -a {config[TMPDIR]}/$uuidM -b {config[TMPDIR]}/$uuidM | awk '$1 !~ /ERCC/'| buildLoci.pl - |sort -T {config[TMPDIR]}	 -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 			'''
@@ -67,7 +67,7 @@ rule mergeCurrentPreviousPhaseTmsWithGencodeBiotypes:
 uuid=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 zcat  {input.clsGencode} > {config[TMPDIR]}/$uuid
-mergeToRef.pl {input.gencode} {config[TMPDIR]}/$uuid | sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
+mergeToRef.pl {input.gencode} {config[TMPDIR]}/$uuid | sort -T {config[TMPDIR]}	 -k1,1 -k4,4n -k5,5n  |gzip > {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
@@ -87,14 +87,14 @@ rule getGencodeSupportedEnds:
 uuid5pEnds=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 uuid2=$(uuidgen)
-cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}  |uniq > {config[TMPDIR]}/$uuid2
+cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}	 |uniq > {config[TMPDIR]}/$uuid2
 
-cat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2 | gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
+cat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2 | gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}	 -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
 uuid3pEnds=$(uuidgen)
 cat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
 
 uuidCageSupported=$(uuidgen)
-cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
+cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4	|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
 
 uuidPASsupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid3pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r -10 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} |cut -f4 |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidPASsupported
@@ -102,7 +102,7 @@ cat {config[TMPDIR]}/$uuid3pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n
 uuidcagePASsupported=$(uuidgen)
 comm -1 -2 {config[TMPDIR]}/$uuidCageSupported {config[TMPDIR]}/$uuidPASsupported |sort -T {config[TMPDIR]} |uniq | awk '{{print "transcript_id \\""$1"\\";"}}'> {config[TMPDIR]}/$uuidcagePASsupported
 
-fgrep -w -f {config[TMPDIR]}/$uuidcagePASsupported {input.tm} |sort -T {config[TMPDIR]}  -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
+fgrep -w -f {config[TMPDIR]}/$uuidcagePASsupported {input.tm} |sort -T {config[TMPDIR]}	 -k1,1 -k4,4n -k5,5n  | gzip> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 
 		'''
@@ -128,7 +128,7 @@ uuid3pEnds=$(uuidgen)
 zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuidChrList |gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
 
 uuidCageSupported=$(uuidgen)
-cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
+cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4	|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
 
 uuidPASsupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid3pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r -10 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} |cut -f4 |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidPASsupported
@@ -156,15 +156,15 @@ rule getPreviousPhaseTmsWithGencodeSupportedEnds:
 uuid5pEnds=$(uuidgen)
 uuidTmpOut=$(uuidgen)
 uuid2=$(uuidgen)
-cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}  |uniq > {config[TMPDIR]}/$uuid2
+cat {input.genome} | cut -f1 | sort -T {config[TMPDIR]}	 |uniq > {config[TMPDIR]}/$uuid2
 
-zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
+zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 5 |sort -T {config[TMPDIR]}	-k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid5pEnds
 uuid3pEnds=$(uuidgen)
-zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
+zcat {input.tm} | fgrep -w -f {config[TMPDIR]}/$uuid2|gff2bed_full.pl - |extractTranscriptEndsFromBed12.pl 3 |sort -T {config[TMPDIR]}	-k1,1 -k2,2n -k3,3n > {config[TMPDIR]}/$uuid3pEnds
 
 
 uuidCageSupported=$(uuidgen)
-cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4  |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
+cat {config[TMPDIR]}/$uuid5pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r 50 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.cagePeaks} | cut -f4	|sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidCageSupported
 
 uuidPASsupported=$(uuidgen)
 cat {config[TMPDIR]}/$uuid3pEnds | sort -T {config[TMPDIR]}  -k1,1 -k2,2n -k3,3n  | bedtools slop -s -l 50 -r -10 -i stdin -g {input.genome} | bedtools intersect -u -s -a stdin -b {input.PAS} |cut -f4 |sort -T {config[TMPDIR]} |uniq > {config[TMPDIR]}/$uuidPASsupported
@@ -242,7 +242,7 @@ rule aggFlLocusStats:
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcorrectionLevel\tcapDesign\tsizeFrac\ttissue\tannotation_set\tbiotype\tcategory\tcount\tpercent" > {config[TMPDIR]}/$uuidTmpOut
 
-cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tprotein-coding\\tnon-FL\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tprotein-coding\\tFL\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tprotein-coding\\tnon-FL\\t"$7-$8"\\t"($7-$8)/$7"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tprotein-coding\\tFL\\t"$8"\\t"$8/$7"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tlncRNA\\tnon-FL\\t"$9-$10"\\t"($9-$10)/$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tlncRNA\\tFL\\t"$10"\\t"$10/$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tlncRNA\\tnon-FL\\t"$11-$12"\\t"($11-$12)/$11"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tlncRNA\\tFL\\t"$12"\\t"$12/$11"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tlncRNA\\tnon-FL\\t"$13-$14"\\t"($13-$14)/$13"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tlncRNA\\tFL\\t"$14"\\t"$14/$13"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tprotein-coding\\tnon-FL\\t"$15-$16"\\t"($15-$16)/$15"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tprotein-coding\\tFL\\t"$16"\\t"$16/$15}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}  >> {config[TMPDIR]}/$uuidTmpOut
+cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tprotein-coding\\tnon-FL\\t"$5-$6"\\t"($5-$6)/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tprotein-coding\\tFL\\t"$6"\\t"$6/$5"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tprotein-coding\\tnon-FL\\t"$7-$8"\\t"($7-$8)/$7"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tprotein-coding\\tFL\\t"$8"\\t"$8/$7"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tlncRNA\\tnon-FL\\t"$9-$10"\\t"($9-$10)/$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE\\tlncRNA\\tFL\\t"$10"\\t"$10/$9"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tlncRNA\\tnon-FL\\t"$11-$12"\\t"($11-$12)/$11"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous+current\\tlncRNA\\tFL\\t"$12"\\t"$12/$11"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tlncRNA\\tnon-FL\\t"$13-$14"\\t"($13-$14)/$13"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tlncRNA\\tFL\\t"$14"\\t"$14/$13"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tprotein-coding\\tnon-FL\\t"$15-$16"\\t"($15-$16)/$15"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\tGENCODE+previous\\tprotein-coding\\tFL\\t"$16"\\t"$16/$15}}' | sed 's/Corr0/\tNo/' | sed 's/Corr{lastK}/\tYes/' | sort -T {config[TMPDIR]}	 >> {config[TMPDIR]}/$uuidTmpOut
 mv {config[TMPDIR]}/$uuidTmpOut {output}
 		'''
 

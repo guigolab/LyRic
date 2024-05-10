@@ -42,7 +42,7 @@ echo "<li> <b>{wildcards.subProject}</b> {params.indexEntryPart}: <a href='$html
 		'''
 
 rule makeHtmlSummaryDashboardIndex:
-	input:  lambda wildcards: expand("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html", subProject=subProjects, minReadSupport='|'.join(MINIMUM_TMERGE_READ_SUPPORT))
+	input:	lambda wildcards: expand("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html", subProject=subProjects, minReadSupport='|'.join(MINIMUM_TMERGE_READ_SUPPORT))
 	output: "output/html/index.html"
 	shell:
 		'''
