@@ -9,22 +9,40 @@ rule filterSampleAnnot:
 			sampleAnnotFiltered=sampleAnnot[sampleAnnot.subProject == wildcards.subProject]
 			sampleAnnotFiltered.to_csv(output[0], sep="\t")
 
+#####################
+# HTML table inputs #
+#####################
+sampleAnnotationFile = "output/tmp/{subProject}_samples.tsv"
+allFastqTimeStamps = "output/statsFiles/all.fastq.timestamps.tsv"
+allReadLengths = "output/statsFiles/all.readlength.summary.tsv"
+allBasicMappingStats = "output/statsFiles/all.basic.mapping.stats.tsv"
+allHissStats = "output/statsFiles/all.HiSS.stats.tsv"
+allMergedStats = "output/statsFiles/all.min{minReadSupport}reads.merged.stats.tsv"
+allMatureRnaLengthStats = "output/statsFiles/all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv"
+allTmergeVsSirvStats = "output/statsFiles/all.HiSS.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
+allCagePolyASupportStats = "output/statsFiles/all.min{minReadSupport}reads.splicing_status-all.cagePolyASupport.stats.tsv"
+allNovelLociStats = "output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.novelLoci.stats.tsv"
+allNovelFlLociStats = "output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-cagePolyASupported.novelLoci.stats.tsv"
+allNovelLociQcStats = "output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.novelLoci.qc.stats.tsv"
+allNovelFlLociQcStats = "output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv"
+allNtCoverageStats = "output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv"
+
 rule makeHtmlSummaryDashboard:
 	input:
-		sampleAnnotationFile="output/tmp/{subProject}_samples.tsv",
-		allFastqTimeStamps="output/statsFiles/all.fastq.timestamps.tsv",
-		allReadLengths="output/statsFiles/all.readlength.summary.tsv",
-		allBasicMappingStats="output/statsFiles/all.basic.mapping.stats.tsv",
-		allHissStats="output/statsFiles/all.HiSS.stats.tsv",
-		allMergedStats="output/statsFiles/all.min{minReadSupport}reads.merged.stats.tsv",
-		allMatureRnaLengthStats="output/statsFiles/all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv",
-		allTmergeVsSirvStats="output/statsFiles/all.HiSS.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv",
-		allCagePolyASupportStats="output/statsFiles/all.min{minReadSupport}reads.splicing_status-all.cagePolyASupport.stats.tsv",
-		allNovelLociStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.novelLoci.stats.tsv",
-		allNovelFlLociStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-cagePolyASupported.novelLoci.stats.tsv",
-		allNovelLociQcStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.novelLoci.qc.stats.tsv",
-		allNovelFlLociQcStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-cagePolyASupported.novelLoci.qc.stats.tsv",
-		allNtCoverageStats="output/statsFiles/all.tmerge.min{minReadSupport}reads.endSupport-all.vs.ntCoverageByGenomePartition.stats.tsv",
+		sampleAnnotationFile,
+		allFastqTimeStamps,
+		allReadLengths,
+		allBasicMappingStats,
+		allHissStats,
+		allMergedStats,
+		allMatureRnaLengthStats  if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
+		allTmergeVsSirvStats,
+		allCagePolyASupportStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
+		allNovelLociStats,
+		allNovelFlLociStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
+		allNovelLociQcStats,
+		allNovelFlLociQcStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
+		allNtCoverageStats,
 	conda: "envs/R_env.yml"
 	params: indexEntryPart= lambda wildcards: "(no filter, all samples)" if wildcards.subProject == 'ALL' else "sub-project"
 	output:
@@ -33,7 +51,7 @@ rule makeHtmlSummaryDashboard:
 		index=temp("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html")
 	shell:
 		'''
-./LyRic/makeHtmlDashboard.r {output.html} {input.sampleAnnotationFile} {input.allFastqTimeStamps} {input.allReadLengths} {input.allBasicMappingStats} {input.allHissStats} {input.allMergedStats} {input.allMatureRnaLengthStats} {input.allTmergeVsSirvStats} {input.allCagePolyASupportStats} {input.allNovelLociStats} {input.allNovelFlLociStats} {input.allNovelLociQcStats} {input.allNovelFlLociQcStats} {input.allNtCoverageStats}
+./LyRic/makeHtmlDashboard.r {output.html} {input}
 
 htmlBn=$(basename {output.html})
 tsvBn=$(basename {output.tsv})
