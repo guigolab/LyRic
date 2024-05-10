@@ -68,9 +68,11 @@ except KeyError:
 if config["produceTrackHub"]:
 	TRACK_HUB_DATA_URL=config["TRACK_HUB_BASE_URL"] + "dataFiles/"
 # 5' and 3' end support categories for transcript models (TMs):
-ENDSUPPORTcategories=["all", "cagePolyASupported"] 
-	# "all" = all TMs (no filter applied)
-	# "cagePolyASupported" = CAGE (5') + PolyA (3') -supported TMs only
+# "all" = all TMs (no filter applied)
+# "cagePolyASupported" = CAGE (5') + PolyA (3') -supported TMs only
+ENDSUPPORTcategories=["all"]
+if config.get("GENOMETOCAGEPEAKS"):
+	ENDSUPPORTcategories.append("cagePolyASupported")
 # splicing status categories of TMs:
 TMSPLICEDSTATUScategories=["all", "spliced", "unspliced"]
 # categories of plots wrt spike-ins:
@@ -216,66 +218,145 @@ include: "trackHub.smk"
 include: "htmlTable.smk"
 include: "processInputGenome.smk"
 
+###########################
+### Transcriptome files ###
+###########################
+# transcriptome GTFs (per sampleRep):
+gff = expand(
+	"output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", 
+	filtered_product, 
+	techname=TECHNAMES,
+	capDesign=CAPDESIGNS,
+	sizeFrac=SIZEFRACS,
+	sampleRep=SAMPLEREPS,
+	minReadSupport=MINIMUM_TMERGE_READ_SUPPORT
+)
 
+# transcriptome GTFs (per grouped sampleReps)
+grouped_gff = expand(
+	"output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
+	groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(),
+	minReadSupport=MINIMUM_TMERGE_READ_SUPPORT
+)
+
+# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
+grouped_read_to_tm = expand(
+	"output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz",
+	groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(),
+	minReadSupport=MINIMUM_TMERGE_READ_SUPPORT
+)
+
+################################
+### Summary statistics plots ###
+################################
+hiss_stats = expand(returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY)
+read_length_stats = expand(returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) # facetted histograms of read length
+fastq_qc = expand("output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
+lr_mapping_dupl = expand("output/mappings/longReadMapping/qc/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
+lr_mapping_basic_stats = expand(returnPlotFilenames("output/plots/" + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.lrMapping.basic.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY)
+intra_prming_stats = expand(returnPlotFilenames("output/plots/" + "intraPriming.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.intraPriming.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY)
+lr_mapping_spikeins_stats = expand(returnPlotFilenames("output/plots/" + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.lrMapping.spikeIns.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY)
+sr_mapping_stats = expand("output/plots/" + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=plotFormat)
+sr_mapping_junctions_stats = expand("output/plots/" + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=plotFormat)
+merged_stats = expand(returnPlotFilenames("output/plots/" + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.merged.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, ext=plotFormat, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+cage_polya_support_stats = expand(returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories)
+tmerge_gencode_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories)
+mature_rna_length_stats = expand(returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.matureRNALength.hist.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories)
+polya_reads_stats = expand(returnPlotFilenames("output/plots/" + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY)
+tmerge_novel_loci_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+tmerge_gencode_junctions_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+tmerge_gencode_snpr_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.SnPr.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories)
+tmerge_gencode_length_splicing_status_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-bySplicingStatus.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+tmerge_gencode_length_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,	capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+dhs_cage_5prime_comparison_stats = expand("output/plots/" + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+gene_read_coverage_stats = expand(returnPlotFilenames("output/plots/" + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.geneReadCoverage.min{minReadSupport}reads.stats"), filtered_product, techname=TECHNAMESplusBY, capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+read_profile_density = expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.density.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
+read_profile_heatmap = expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.heatmap.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS)
+sequencing_error_stats = expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.allErrors.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY)
+deletions_only_stats = expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.deletionsOnly.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY)
+gencode_gene_detection_stats = expand(returnPlotFilenames("output/plots/" + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories)
+read_biotypes_breakdown_stats = expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_{spikeInCategories}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, spikeInCategories=SPIKEINcategories)
+tmerge_nt_coverage_genome_partition_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+tmerge_sirvs_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, filt=READFILTERS)
+tmerge_sirvs_detection_stats = expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
+target_coverage_stats = expand(
+	returnPlotFilenames("output/plots/" + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats"), 
+	filtered_product, 
+	techname=TECHNAMESplusBY, 
+	capDesign=CAPDESIGNSplusBY, 
+	sizeFrac=SIZEFRACS, 
+	sampleRep=SAMPLEREPSplusBY, 
+	minReadSupport=MINIMUM_TMERGE_READ_SUPPORT
+)
+
+################################
+### HTML Summary stats table ###
+################################
+summary_stats = "output/html/index.html"
+
+#################
+### Track hub ###
+#################
+track_hub_file = "output/trackHub/" + "hub.txt"
+track_hub_genomes = "output/trackHub/" + "genomes.txt"
+track_hub_db = expand("output/trackHub/" + "{genome}/trackDb.txt", genome=GENOMES)
+
+
+####################################
+### Prepare inputs for main rule ###
+####################################
+inputs = []
+DEFAULT_INPUTS = [ gff, grouped_gff, grouped_read_to_tm ]
+
+for i in DEFAULT_INPUTS:
+	inputs.append(i)
+
+if config['produceStatPlots']:
+	inputs.append(hiss_stats)
+	inputs.append(read_length_stats)
+	inputs.append(fastq_qc)
+	inputs.append(lr_mapping_dupl)
+	inputs.append(lr_mapping_basic_stats)
+	inputs.append(intra_prming_stats)
+	inputs.append(lr_mapping_spikeins_stats)
+	inputs.append(merged_stats)
+	inputs.append(tmerge_gencode_stats)
+	inputs.append(polya_reads_stats)
+	inputs.append(tmerge_novel_loci_stats)
+	inputs.append(tmerge_gencode_junctions_stats)
+	inputs.append(tmerge_gencode_snpr_stats)
+	inputs.append(tmerge_gencode_length_splicing_status_stats)
+	inputs.append(tmerge_gencode_length_stats)
+	inputs.append(gene_read_coverage_stats)
+	inputs.append(read_profile_density)
+	inputs.append(read_profile_heatmap)
+	inputs.append(sequencing_error_stats)
+	inputs.append(deletions_only_stats)
+	inputs.append(gencode_gene_detection_stats)
+	inputs.append(read_biotypes_breakdown_stats)
+	inputs.append(tmerge_nt_coverage_genome_partition_stats)
+	if config.get("GENOMETOCAGEPEAKS"):
+		inputs.append(cage_polya_support_stats)
+	inputs.append(mature_rna_length_stats)
+	if config.get("GENOMETODHSPEAKS"):
+		inputs.append(dhs_cage_5prime_comparison_stats)
+	if config.get("USE_MATCHED_ILLUMINA"):
+		inputs.append(sr_mapping_stats)
+		inputs.append(sr_mapping_junctions_stats)
+	if SIRVpresent:
+		inputs.append(tmerge_sirvs_stats)
+		inputs.append(tmerge_sirvs_detection_stats)
+	if config.get("CAPTURE"):
+		inputs.append(target_coverage_stats)
+
+if config['produceHtmlStatsTable']:
+	inputs.append(summary_stats)
+
+if config['produceTrackHub']:
+	inputs.append(track_hub_file)
+	inputs.append(track_hub_genomes)
+	inputs.append(track_hub_db)
 
 rule all:
 	input:
-		###########################
-		### Transcriptome files ###
-		###########################
-		# transcriptome GTFs (per sampleRep):
-		expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
-		# transcriptome GTFs (per grouped sampleReps)
-		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),
-		# read-to-TM mapping file (per grouped sampleReps, required by LRGASP to check what each TM contains)
-		expand("output/mappings/mergedReads/groupedSampleReps/{groupedSampleRepBasename}.min{minReadSupport}reads.splicing_status-all.endSupport-all.readsToTm.tsv.gz", groupedSampleRepBasename=sampleRepGroupIdToSampleReps.keys(), minReadSupport=MINIMUM_TMERGE_READ_SUPPORT),		
-
-		################################
-		### Summary statistics plots ###
-		################################
-
-		expand(returnPlotFilenames("output/plots/" + "HiSS.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"), filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null', # facetted histograms of read length
-		expand("output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt", filtered_product,techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
-		expand("output/mappings/longReadMapping/qc/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.dupl.txt",filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS),
-		expand(returnPlotFilenames("output/plots/" + "lrMapping.basic.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.lrMapping.basic.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "intraPriming.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.intraPriming.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "lrMapping.spikeIns.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.lrMapping.spikeIns.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand("output/plots/" + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}", ext=plotFormat) if config['produceStatPlots'] else '/dev/null',
-		expand("output/plots/" + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}", ext=plotFormat) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "merged.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.merged.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, ext=plotFormat, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config["CAPTURE"] and config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "matureRNALength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.matureRNALength.hist.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "polyAreads.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, filt=READFILTERS) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.SnPr.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-bySplicingStatus.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,  capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.vs.gencode.length.stats"), filtered_product, techname=TECHNAMES,	capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if SIRVpresent and config['produceStatPlots'] else '/dev/null',
-		expand("output/plots/" + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS,sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "geneReadCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.geneReadCoverage.min{minReadSupport}reads.stats"), filtered_product, techname=TECHNAMESplusBY, capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-		expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.density.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null',
-		expand("output/plots/" + "readProfile/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.heatmap.png", filtered_product, techname='byTech', capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.allErrors.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.deletionsOnly.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gencode.geneDetection.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT, splicedStatus=TMSPLICEDSTATUScategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_{spikeInCategories}.readToBiotypeBreakdown.stats"), filtered_product, techname=TECHNAMESplusBY,	 capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, spikeInCategories=SPIKEINcategories) if config['produceStatPlots'] else '/dev/null',
-		expand(returnPlotFilenames("output/plots/" + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"), filtered_product, techname=TECHNAMESplusBY,  capDesign=CAPDESIGNSplusBY, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPSplusBY, endSupport=ENDSUPPORTcategories, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT) if config['produceStatPlots'] else '/dev/null',
-
-		################################
-		### HTML Summary stats table ###
-		################################
-
-		"output/html/index.html" if config['produceHtmlStatsTable'] else '/dev/null',
-
-		#################
-		### Track hub ###
-		#################
-		"output/trackHub/" + "hub.txt" if config['produceTrackHub'] else '/dev/null',
-		"output/trackHub/" + "genomes.txt" if config['produceTrackHub'] else '/dev/null',
-		expand("output/trackHub/" + "{genome}/trackDb.txt", genome=GENOMES) if config['produceTrackHub'] else '/dev/null',
-
+		inputs
