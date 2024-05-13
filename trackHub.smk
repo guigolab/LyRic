@@ -251,13 +251,16 @@ mv {TMPDIR}/$uuidTmpOut {output.trackDb}
 
 		'''
 
-
-
+# set tmerge BED file
+if config.get('genomeToAnnotGtf'):
+	tmerge_bed = "output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed"
+else:
+	tmerge_bed = "output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed"
 
 
 rule makeTmergeOutputTracks:
 	input:
-		bed="output/mappings/mergedReads/colored/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.bed",
+		bed=tmerge_bed,
 		gff="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-all.gff.gz",
 		genome=lambda wildcards: config["GENOMESDIR"] + CAPDESIGNTOGENOME[wildcards.capDesign] + ".sorted.genome"
 	output:
