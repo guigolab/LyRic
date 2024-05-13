@@ -71,7 +71,7 @@ if config["produceTrackHub"]:
 # "all" = all TMs (no filter applied)
 # "cagePolyASupported" = CAGE (5') + PolyA (3') -supported TMs only
 ENDSUPPORTcategories=["all"]
-if config.get("GENOMETOCAGEPEAKS"):
+if config.get("genomeToCAGEpeaks"):
 	ENDSUPPORTcategories.append("cagePolyASupported")
 # splicing status categories of TMs:
 TMSPLICEDSTATUScategories=["all", "spliced", "unspliced"]
@@ -335,10 +335,10 @@ if config['produceStatPlots']:
 	inputs.append(gencode_gene_detection_stats)
 	inputs.append(read_biotypes_breakdown_stats)
 	inputs.append(tmerge_nt_coverage_genome_partition_stats)
-	if config.get("GENOMETOCAGEPEAKS"):
+	if config.get("genomeToCAGEpeaks"):
 		inputs.append(cage_polya_support_stats)
 	inputs.append(mature_rna_length_stats)
-	if config.get("GENOMETODHSPEAKS"):
+	if config.get("genomeToDHSpeaks"):
 		inputs.append(dhs_cage_5prime_comparison_stats)
 	if config.get("USE_MATCHED_ILLUMINA"):
 		inputs.append(sr_mapping_stats)
