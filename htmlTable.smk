@@ -35,14 +35,14 @@ rule makeHtmlSummaryDashboard:
 		allBasicMappingStats,
 		allHissStats,
 		allMergedStats,
-		allMatureRnaLengthStats  if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
-		allTmergeVsSirvStats if SIRVpresent else "/dev/null",
-		allCagePolyASupportStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
-		allNovelLociStats,
-		allNovelFlLociStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
-		allNovelLociQcStats,
-		allNovelFlLociQcStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
-		allNtCoverageStats,
+		allMatureRnaLengthStats if config.get("genomeToCAGEpeaks") else "/dev/null",
+		allTmergeVsSirvStats if config.get("genomeToAnnotGtf") else "/dev/null",
+		allCagePolyASupportStats if config.get("genomeToCAGEpeaks") else "/dev/null",
+		allNovelLociStats if config.get("genomeToAnnotGtf") else "/dev/null",
+		allNovelFlLociStats if config.get("genomeToCAGEpeaks") else "/dev/null",
+		allNovelLociQcStats if config.get("genomeToAnnotGtf") else "/dev/null",
+		allNovelFlLociQcStats if config.get("genomeToCAGEpeaks") else "/dev/null",
+		allNtCoverageStats if config.get("genomeToAnnotGtf") else "/dev/null",
 	conda: "envs/R_env.yml"
 	params: indexEntryPart= lambda wildcards: "(no filter, all samples)" if wildcards.subProject == 'ALL' else "sub-project"
 	output:
@@ -51,7 +51,7 @@ rule makeHtmlSummaryDashboard:
 		index=temp("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html")
 	shell:
 		'''
-./LyRic/makeHtmlDashboard.r {output.html} {input}
+{workflow.basedir}/makeHtmlDashboard.r {output.html} {input}
 
 htmlBn=$(basename {output.html})
 tsvBn=$(basename {output.tsv})
@@ -60,7 +60,7 @@ echo "<li> <b>{wildcards.subProject}</b> {params.indexEntryPart}: <a href='$html
 		'''
 
 rule makeHtmlSummaryDashboardIndex:
-	input:	lambda wildcards: expand("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html", subProject=subProjects, minReadSupport='|'.join(MINIMUM_TMERGE_READ_SUPPORT))
+	input:	lambda wildcards: expand("output/html/summary_table_min{minReadSupport}reads_{subProject}.index.tmp.html", subProject=subProjects, minReadSupport=MINIMUM_TMERGE_READ_SUPPORT)
 	output: "output/html/index.html"
 	shell:
 		'''
