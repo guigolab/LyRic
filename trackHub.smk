@@ -91,7 +91,7 @@ cat {input.genome} | cut -f1 | sort -T {TMPDIR}	 |uniq > {TMPDIR}/$uuid2
 
 cat {input.gff} | grep -P "^chr" | grep -v "chrIS" |gff2bed_full.pl -|sort -T {TMPDIR}	-k1,1 -k2,2n -k3,3n  > {TMPDIR}/$uuid3
 join  -j1 {TMPDIR}/$uuid2 {TMPDIR}/$uuid3 |ssv2tsv > {TMPDIR}/$uuid
-bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
+bedToBigBed -as={workflow.basedir}/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
 mv {TMPDIR}/$uuidTmpOutB {output.bigBed}
 
 echo -e "
@@ -275,7 +275,7 @@ uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 
 cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {TMPDIR}/$uuid
-bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
+bedToBigBed -as={workflow.basedir}/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
 mv {TMPDIR}/$uuidTmpOutB {output.bigBed}
 cp -f {input.gff} {output.gff}
 echo -e "
@@ -311,7 +311,7 @@ uuidTmpOutB=$(uuidgen)
 uuidTmpOutT=$(uuidgen)
 
 cat {input.bed} | grep -P "^chr" | grep -v "chrIS"  > {TMPDIR}/$uuid
-bedToBigBed -as=./LyRic/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
+bedToBigBed -as={workflow.basedir}/misc/bed12.as -type=bed12 -extraIndex=name {TMPDIR}/$uuid {input.genome} {TMPDIR}/$uuidTmpOutB
 mv {TMPDIR}/$uuidTmpOutB {output.bigBed}
 cp -f {input.gff} {output.gff}
 
