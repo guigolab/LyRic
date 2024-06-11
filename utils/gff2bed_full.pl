@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # Copyright (c) 2011 Erik Aronesty (erik@q32.com)
 # http://code.google.com/p/ea-utils/source/browse/trunk/clipper/gtf2bed
