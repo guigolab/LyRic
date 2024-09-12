@@ -105,7 +105,7 @@ rule gffcompareToAnnotation:
 	input:
 		annot=lambda wildcards: GENOMETOANNOTGTF[CAPDESIGNTOGENOME[wildcards.capDesign]],
 		tm="output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gff.gz"
-	output: 
+	output:
 		standard="output/mappings/mergedReads/gffcompare/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.simple.tsv",
 		adjustedSn="output/mappings/mergedReads/gffcompare/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.adj.simple.tsv"
 	conda: "envs/gffcompare_env.yml"
@@ -168,11 +168,12 @@ mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
 
 			'''
 
-rule getGffCompareSirvStats:
-	input:"output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
-	output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
-	shell:
-		'''
+if SIRVpresent:
+  rule getGffCompareSirvStats:
+	  input:"output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
+	  output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
+	  shell:
+		  '''
 uuidTmpOut=$(uuidgen)
 uuid=$(uuidgen)
 file=$(dirname {input})/$(basename {input} .simple.tsv)
@@ -389,10 +390,10 @@ SnDEFAULT=0
 SpDEFAULT='NA'
 
 
-Sn=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2` 
+Sn=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f2`
 Sn=${{Sn:-$SnDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
 
-Sp=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3` 
+Sp=`cat {TMPDIR}/$uuid |sed 's/ //g'| sed 's/:/\\t/'|sed 's/|$//'|sed 's/|/\\t/g' | awk -v l=$level '$1==l' |cut -f3`
 Sp=${{Sp:-$SpDEFAULT}} #see https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/ default variable assignments
 
 echo -e "{wildcards.techname}\t{wildcards.capDesign}\t{wildcards.sizeFrac}\t{wildcards.sampleRep}\t$level\t$Sn\t$Sp";
@@ -525,7 +526,7 @@ xlab('') +
 guides(fill = guide_legend(title='Category'))+
 scale_y_continuous(labels=scientific)+
 {params.filterDat[hideXaxisLabels]}
-{GGPLOT_PUB_QUALITY} + 
+{GGPLOT_PUB_QUALITY} +
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 
 \\"
@@ -578,7 +579,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 rule plotTmVsGencodeLengthStats:
 	input: "output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.vs.gencode.length.stats.tsv"
-	output: 
+	output:
 		bySS=returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-bySplicingStatus.endSupport-{endSupport}.vs.gencode.length.stats"),
 		all=returnPlotFilenames("output/plots/" + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.vs.gencode.length.stats"),
 	conda: "envs/R_env.yml"
@@ -623,13 +624,13 @@ dat %>%
 
 summaryStats = transform(datSumm, Label = paste0('N= ', comma(n)) )
 
-plotBase <- \\"p <- ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
+plotBase <- \\"p <- ggplot(dat, aes(x=ref_match_len, y=len, color=splicingStatus)) +
 geom_abline(intercept=0, alpha=0.09, size=lineSize) +
-geom_point(alpha=0.1,size=0.5, stroke = 0) + 
+geom_point(alpha=0.1,size=0.5, stroke = 0) +
 #geom_density_2d(size=0.1, alpha=0.3) +
-scale_y_log10(limits=c(100,10000)) +  
-scale_x_log10(limits=c(100, 20000)) + 
-geom_smooth() + 
+scale_y_log10(limits=c(100,10000)) +
+scale_x_log10(limits=c(100, 20000)) +
+geom_smooth() +
 annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
 annotate(x=100, y=7000,	 label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
 
@@ -663,7 +664,7 @@ hXyPlot <- hXyPlot
 wXyPlot <- wXyPlot +2
 
 
-hXyNoLegendPlot<- hXyPlot 
+hXyNoLegendPlot<- hXyPlot
 wXyNoLegendPlot<- wXyPlot - wLegendOnly
 
 
@@ -677,13 +678,13 @@ save_plot('{output.bySS[3]}', pXyMar, base_width=wXyPlot, base_height=hXyPlot)
 
 save_plot('{output.bySS[4]}', pXyMarNoLegend, base_width=wXyNoLegendPlot, base_height=hXyNoLegendPlot)
 
-plotBase <- \\"p <- ggplot(datAll, aes(x=ref_match_len, y=len, color=splicingStatus)) + 
+plotBase <- \\"p <- ggplot(datAll, aes(x=ref_match_len, y=len, color=splicingStatus)) +
 geom_abline(intercept=0, alpha=0.09, size=lineSize) +
-geom_point(alpha=0.1,size=0.5, stroke = 0) + 
+geom_point(alpha=0.1,size=0.5, stroke = 0) +
 #geom_density_2d(size=0.1, alpha=0.3) +
-scale_y_log10(limits=c(100,10000)) +  
-scale_x_log10(limits=c(100, 20000)) + 
-geom_smooth() + 
+scale_y_log10(limits=c(100,10000)) +
+scale_x_log10(limits=c(100, 20000)) +
+geom_smooth() +
 annotate(x=100, y=10000,  label=paste('Pearson: ', round(cor(datAll\$len, datAll\$ref_match_len, method='pearson'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
 annotate(x=100, y=7000,	 label=paste('Spearman: ', round(cor(datAll\$len, datAll\$ref_match_len, method='spearman'),2)), geom='text', size=geom_textSize, color='#666666', hjust=0, vjust=1) +
 geom_text(data = summaryStats[summaryStats\$splicingStatus=='all',], aes(label = Label, x = 100, y = 2000), hjust=0, vjust=-1,	size=geom_textSize, show.legend=FALSE) +
@@ -711,7 +712,7 @@ wLegendOnly <- convertUnit(sum(legend\$widths), 'in', valueOnly=TRUE)
 
 
 
-hXyNoLegendPlot<- hXyPlot 
+hXyNoLegendPlot<- hXyPlot
 wXyNoLegendPlot<- wXyPlot - wLegendOnly
 
 
@@ -946,7 +947,7 @@ xlab('') +
 guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
 geom_text(position = 'stack', size=geom_textSize, aes( y = count, label = comma(count), hjust = 0.5, vjust = 1))+
 {params.filterDat[hideXaxisLabels]}
-{GGPLOT_PUB_QUALITY}  + 
+{GGPLOT_PUB_QUALITY}  +
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
@@ -975,7 +976,7 @@ rule tmergeAll:
 	input:
 		tm=lambda wildcards: expand("output/mappings/mergedReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gff.gz", filtered_product, techname=TECHNAMES, capDesign=wildcards.capDesign, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, endSupport=wildcards.endSupport,  minReadSupport=wildcards.minReadSupport, splicedStatus=wildcards.splicedStatus)
 		#gencode="annotations/simplified/{capDesign}.gencode.simplified_biotypes.gtf",
-	output: 
+	output:
 		tm="output/mappings/mergedReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.tmerge.gff.gz",
 		quant="output/mappings/mergedReads/tmergeAll/{capDesign}_min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.tmerge.expQuant.tsv"
 	shell:
@@ -1061,7 +1062,7 @@ ylab('# GENCODE genes detected') +
 xlab('') +
 guides(fill = guide_legend(title='Category'))+
 scale_y_continuous(labels=scientific)+
-{GGPLOT_PUB_QUALITY} + 
+{GGPLOT_PUB_QUALITY} +
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
@@ -1099,7 +1100,7 @@ bedtools coverage -a {input.gencodePart} -b {TMPDIR}/$uuid.tmp.tm.bed  > {TMPDIR
 
 totalNts=$(cat {TMPDIR}/$uuid.tmp.tm.cov.bedtsv | awk '{{print $(NF-2)}}' | sum.sh)
 
-for flag in `cat {TMPDIR}/$uuid.tmp.tm.cov.bedtsv | extractGffAttributeValue.pl region_flag|sort|uniq`; do 
+for flag in `cat {TMPDIR}/$uuid.tmp.tm.cov.bedtsv | extractGffAttributeValue.pl region_flag|sort|uniq`; do
 nts=$(cat {TMPDIR}/$uuid.tmp.tm.cov.bedtsv |fgrep "region_flag \\"$flag\\";" | awk '{{print $(NF-2)}}'|sum.sh)
 echo -e "{wildcards.techname}\\t{wildcards.capDesign}\\t{wildcards.sizeFrac}\\t{wildcards.sampleRep}\\t{wildcards.splicedStatus}\\t$flag\\t$nts" | awk -v t=$totalNts '{{print $0"\\t"$7/t}}'; done  > {TMPDIR}/$uuid.tmp.tm.cov.stats.tsv
 
@@ -1160,7 +1161,7 @@ scale_fill_manual (values=c(intron='#d98c8c', intergenic='#33ccff', CDS='#00e64d
 guides(fill = guide_legend(title='Category\\n(w.r.t. GENCODE)'))+
 #geom_text(position = 'stack', size=geom_textSize, aes( y = count, label = paste(sep='',percent(round(percent, digits=2)),' / ','(',comma(count),')'), hjust = 0.5, vjust = 1))+
 {params.filterDat[hideXaxisLabels]}
-{GGPLOT_PUB_QUALITY}  + 
+{GGPLOT_PUB_QUALITY}  +
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
 \\"
 
