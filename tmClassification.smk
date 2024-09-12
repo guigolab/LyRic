@@ -168,6 +168,7 @@ mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
 
 			'''
 
+if SIRVpresent:
   rule getGffCompareSirvStats:
 	  input:"output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
 	  output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
@@ -196,6 +197,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
+if SIRVpresent:
   rule aggGffCompareSirvStats:
 	  input: lambda wildcards:expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport, filt=wildcards.filt)
 	  output: "output/statsFiles/" + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
@@ -208,6 +210,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
+if SIRVpresent:
   rule plotGffCompareSirvStats:
 	  input:"output/statsFiles/" + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
 	  output: returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats")
@@ -265,6 +268,7 @@ save_plot('{output[4]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 		'''
 
+if SIRVpresent:
 	rule getSirvDetectionStats:
 		input:
 			gffC="output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv",
@@ -280,6 +284,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 			'''
 
+if SIRVpresent:
   rule aggSirvDetectionStats:
 	  input: lambda wildcards:expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
 	  output: "output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
@@ -292,6 +297,7 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
+if SIRVpresent:
   rule plotSirvDetectionStats:
 	  input:"output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
 	  output: returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats")
