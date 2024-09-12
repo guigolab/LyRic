@@ -168,7 +168,6 @@ mv ${{uuid}}PREF.$uuid.tmap $outdir/$pref.tmap
 
 			'''
 
-if SIRVpresent:
   rule getGffCompareSirvStats:
 	  input:"output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv"
 	  output: "output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
@@ -197,11 +196,11 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
-rule aggGffCompareSirvStats:
-	input: lambda wildcards:expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport, filt=wildcards.filt)
-	output: "output/statsFiles/" + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
-	shell:
-		'''
+  rule aggGffCompareSirvStats:
+	  input: lambda wildcards:expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport, filt=wildcards.filt)
+	  output: "output/statsFiles/" + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
+	  shell:
+		  '''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tlevel\tmetric\tvalue" > {TMPDIR}/$uuidTmpOut
 cat {input} | awk '{{print $1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tSn\\t"$6"\\n"$1"\\t"$2"\\t"$3"\\t"$4"\\t"$5"\\tPr\\t"$7}}' | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
@@ -209,14 +208,14 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
-rule plotGffCompareSirvStats:
-	input:"output/statsFiles/" + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
-	output: returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats")
-	conda: "envs/R_env.yml"
-	params:
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
-	shell:
-		'''
+  rule plotGffCompareSirvStats:
+	  input:"output/statsFiles/" + "all.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats.tsv"
+	  output: returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats")
+	  conda: "envs/R_env.yml"
+	  params:
+		  filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
+	  shell:
+		  '''
 echo "
 library(ggplot2)
 library(cowplot)
@@ -266,7 +265,6 @@ save_plot('{output[4]}', pYxNoLegend, base_width=wYxNoLegendPlot, base_height=hY
 cat $(dirname {output[0]})/$(basename {output[0]} .legendOnly.png).r | R --slave
 		'''
 
-if SIRVpresent:
 	rule getSirvDetectionStats:
 		input:
 			gffC="output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv",
@@ -282,11 +280,11 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 			'''
 
-rule aggSirvDetectionStats:
-	input: lambda wildcards:expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
-	output: "output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
-	shell:
-		'''
+  rule aggSirvDetectionStats:
+	  input: lambda wildcards:expand("output/statsFiles/" + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv", filtered_product, techname=TECHNAMES, capDesign=CAPDESIGNS, sizeFrac=SIZEFRACS, sampleRep=SAMPLEREPS, minReadSupport=wildcards.minReadSupport)
+	  output: "output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
+	  shell:
+		  '''
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tSIRVid\tlength\tconcentration\tdetectionStatus" > {TMPDIR}/$uuidTmpOut
 cat {input} | sort -T {TMPDIR}	>> {TMPDIR}/$uuidTmpOut
@@ -294,14 +292,14 @@ mv {TMPDIR}/$uuidTmpOut {output}
 
 		'''
 
-rule plotSirvDetectionStats:
-	input:"output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
-	output: returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats")
-	conda: "envs/R_env.yml"
-	params:
-		filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
-	shell:
-		'''
+  rule plotSirvDetectionStats:
+	  input:"output/statsFiles/" + "all.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats.tsv"
+	  output: returnPlotFilenames("output/plots/" + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats")
+	  conda: "envs/R_env.yml"
+	  params:
+		  filterDat=lambda wildcards: multi_figures(wildcards.capDesign, wildcards.sizeFrac, wildcards.sampleRep, wildcards.techname)
+	  shell:
+		  '''
 echo "
 library(ggplot2)
 
