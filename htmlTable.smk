@@ -36,7 +36,7 @@ rule makeHtmlSummaryDashboard:
 		allHissStats,
 		allMergedStats,
 		allMatureRnaLengthStats  if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
-		allTmergeVsSirvStats,
+		allTmergeVsSirvStats if SIRVpresent else "/dev/null",
 		allCagePolyASupportStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
 		allNovelLociStats,
 		allNovelFlLociStats if config.get("GENOMETOCAGEPEAKS") else "/dev/null",
@@ -76,17 +76,17 @@ printf "<html>
 <ul> " >> {TMPDIR}/$uuid.html
 
 # print list:
-cat {input} | sort >> {TMPDIR}/$uuid.html 
+cat {input} | sort >> {TMPDIR}/$uuid.html
 
 # print end of html:
 printf '</ul>
-'  >> {TMPDIR}/$uuid.html 
+'  >> {TMPDIR}/$uuid.html
 
-printf "<br>Produced with <a href="https://github.com/julienlag/LyRic/">LyRic</a>.<br>" >> {TMPDIR}/$uuid.html 
+printf "<br>Produced with <a href="https://github.com/julienlag/LyRic/">LyRic</a>.<br>" >> {TMPDIR}/$uuid.html
 date=$(date)
-printf "<br>(Last updated $date)"  >> {TMPDIR}/$uuid.html 
+printf "<br>(Last updated $date)"  >> {TMPDIR}/$uuid.html
 printf '</body>
-</html> ' >> {TMPDIR}/$uuid.html 
+</html> ' >> {TMPDIR}/$uuid.html
 
 mv {TMPDIR}/$uuid.html {output}
 		'''
