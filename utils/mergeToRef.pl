@@ -10,7 +10,7 @@ use gffToHash;
 use hashToGff;
 
 
-my @biotypePriority=("SIRV","ERCC", "pseudogene", "protein_coding", "rRNA", "ribozyme", "lncRNA", "tRNA", "vaultRNA", "miRNA", "misc_RNA", "Mt_rRNA", "Mt_tRNA","ribozyme","scaRNA","scRNA","snoRNA","snRNA","sRNA","TEC");
+my @biotypePriority=("SIRV","ERCC", "pseudogene", "protein_coding", "rRNA", "ribozyme", "lncRNA", "tRNA", "vaultRNA", "miRNA", "misc_RNA", "Mt_rRNA", "Mt_tRNA","ribozyme","scaRNA","scRNA","snoRNA","snRNA","sRNA","TEC","artifact","vault_RNA");
 
 
 my $refGtf=$ARGV[0]; #refenrece gencode gtf, e.g. (simplified for readability):
