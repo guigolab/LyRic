@@ -36,7 +36,7 @@ rule makeHtmlSummaryDashboard:
 		allHissStats,
 		allMergedStats,
 		allMatureRnaLengthStats if config.get("genomeToCAGEpeaks") else "/dev/null",
-		allTmergeVsSirvStats if config.get("genomeToAnnotGtf") else "/dev/null",
+		allTmergeVsSirvStats if (config.get("genomeToAnnotGtf") and SIRVpresent) else "/dev/null",
 		allCagePolyASupportStats if config.get("genomeToCAGEpeaks") else "/dev/null",
 		allNovelLociStats if config.get("genomeToAnnotGtf") else "/dev/null",
 		allNovelFlLociStats if config.get("genomeToCAGEpeaks") else "/dev/null",
