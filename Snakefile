@@ -10,6 +10,7 @@ from snakemake.utils import min_version
 min_version("8")
 
 configfile: "config.yaml"
+containerized: "docker://ghcr.io/guigolab/lyric:latest"
 
 onsuccess:
 	print("LyRic workflow finished smoothly.")
