@@ -5,7 +5,9 @@ import itertools
 import sys
 import pandas as pd
 from pprint import pprint
+from snakemake.utils import min_version
 
+min_version("8")
 
 onsuccess:
 	print("LyRic workflow finished smoothly.")
