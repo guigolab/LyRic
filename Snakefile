@@ -9,6 +9,8 @@ from snakemake.utils import min_version
 
 min_version("8")
 
+configfile: "config.yaml"
+
 onsuccess:
 	print("LyRic workflow finished smoothly.")
 
