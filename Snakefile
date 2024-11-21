@@ -65,7 +65,12 @@ if config["CAPTURE"]:
     # mapping of capDesign to capDesign:
     CAPDESIGNTOCAPDESIGN = config["capDesignToCapDesign"]
 # non-overlapping targeted regions for each capture design
-CAPDESIGNTOTARGETSGFF = config["capDesignToTargetsGff"]
+
+try:
+    CAPDESIGNTOTARGETSGFF = config["capDesignToTargetsGff"]
+except KeyError:
+    print("No primary targets file provided.", file=sys.stderr)
+
 
 # which CAGE peak BED file corresponds to each genome build:
 try:
