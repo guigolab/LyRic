@@ -11,7 +11,7 @@ min_version("8")
 
 
 # configfile: "config.yaml"
-containerized: "docker://ghcr.io/guigolab/lyric:latest"
+containerized: "docker://ghcr.io/guigolab/lyric:0.2.0"
 
 
 onsuccess:
