@@ -1,0 +1,25 @@
+capDesignToGenome:
+  HpreCap: hg38_chr12
+CAPTURE: false
+GENOMESDIR: data/fasta/
+DATADIR: data/fastq/
+produceStatPlots: true
+produceTrackHub: false
+produceHtmlStatsTable: false
+SAMPLE_ANNOT: data/sample_annotations.tsv
+sampleRepGroupBy:
+  - seqPlatform
+  - cellLine
+USE_MATCHED_ILLUMINA: false
+PROJECT_NAME: Lyric-testRestricted
+genomeToCAGEpeaks:
+  hg38_chr12: data/input/hg38_fair+new_CAGE_peaks_phase1and2.chr12_25Mto50M.bed
+genomeToAnnotGtf:
+  hg38_chr12: data/input/gencode.v47.primary_assembly.annotation.chr12_25Mto50M.gtf
+genomeToDHSpeaks:
+  hg38_chr12: data/input/ENCFF301VRH.hg38.sorted.chr12_25Mto50M.bed
+minimumTmergeReadSupport:
+  - "2"
+exonOverhangTolerance: "8"
+PROJECT_LONG_NAME: LyRic samples on the testRestricted hg38
+PROJECT_CONTACT_EMAIL: fabien.degalez@crg.eu
