@@ -1,6 +1,6 @@
 rule basicFASTQqc:
     input:
-        "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
+        DATADIR + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
     output:
         "output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt",
     shell:
@@ -18,7 +18,7 @@ if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {o
 rule fastqTimestamps:
     input:
         expand(
-            "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
+            DATADIR + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
             filtered_product,
             techname=TECHNAMES,
             capDesign=CAPDESIGNS,
@@ -41,7 +41,7 @@ mv {TMPDIR}/$uuid {output}
 # get read lengths for all FASTQ files:
 rule getReadLengthSummary:
     input:
-        "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
+        DATADIR + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
     output:
         reads="output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlength.tsv.gz",

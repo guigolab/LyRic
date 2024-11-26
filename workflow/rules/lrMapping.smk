@@ -2,7 +2,7 @@
 rule longReadMapping:
     input:
         reads=lambda wildcards: expand(
-            "fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
+            DATADIR + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
             filtered_product,
             techname=wildcards.techname,
             capDesign=wildcards.capDesign,
@@ -377,8 +377,7 @@ rule plotReadProfileMatrix:
 rule getMappingStats:
     input:
         bams="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
-        fastqs=config["FASTQDIR"]
-        + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
+        fastqs=DATADIR + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
     output:
         basic="output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.mapping.stats.tsv",

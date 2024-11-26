@@ -124,9 +124,11 @@ except KeyError:
 else:
     SIRVpresent = True
 
+# set input files folder
+DATADIR = config.get("DATADIR", "fastqs/")
 
 (TECHNAMES, CAPDESIGNS, SIZEFRACS, SAMPLEREPS) = glob_wildcards(
-    "fastqs/" + "{techname, [^_/]+}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"
+    DATADIR + "{techname, [^_/]+}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz"
 )
 SAMPLEREPS = set(SAMPLEREPS)
 CAPDESIGNS = set(CAPDESIGNS)
@@ -151,7 +153,7 @@ wildcard_constraints:
 sampleAnnot = pd.read_table(config["SAMPLE_ANNOT"], header=0, sep="\t")
 
 ## check that samples are properly annotated:
-(SAMPLES,) = glob_wildcards("fastqs/" + "{sample_name, [^/]+}.fastq.gz")
+(SAMPLES,) = glob_wildcards(DATADIR + "{sample_name, [^/]+}.fastq.gz")
 for sample_name in SAMPLES:
     sampleRow = sampleAnnot[sampleAnnot.sample_name == sample_name]
     assert len(sampleRow) < 2, (
@@ -218,30 +220,14 @@ for comb in itertools.product(
 ):
     if comb[0] == "byTech":
         filesList = glob.glob(
-            "fastqs/"
-            + "*"
-            + "_"
-            + comb[1]
-            + "_"
-            + comb[2]
-            + "_"
-            + comb[3]
-            + ".fastq.gz"
+            DATADIR + "*" + "_" + comb[1] + "_" + comb[2] + "_" + comb[3] + ".fastq.gz"
         )
         if len(filesList) > 1:  # authorize "byTech" combination only if it's relevant
             authorizeComb(comb)
 
     elif comb[1] == "byCapDesign":
         filesList = glob.glob(
-            "fastqs/"
-            + comb[0]
-            + "_"
-            + "*"
-            + "_"
-            + comb[2]
-            + "_"
-            + comb[3]
-            + ".fastq.gz"
+            DATADIR + comb[0] + "_" + "*" + "_" + comb[2] + "_" + comb[3] + ".fastq.gz"
         )
         if (
             len(filesList) > 1
@@ -249,32 +235,16 @@ for comb in itertools.product(
             authorizeComb(comb)
     elif comb[3] == "bySampleRep":
         filesList = glob.glob(
-            "fastqs/"
-            + comb[0]
-            + "_"
-            + comb[1]
-            + "_"
-            + comb[2]
-            + "_"
-            + "*"
-            + ".fastq.gz"
+            DATADIR + comb[0] + "_" + comb[1] + "_" + comb[2] + "_" + "*" + ".fastq.gz"
         )
         if (
             len(filesList) > 1
         ):  # authorize "bySampleRep" combination only if it's relevant
             authorizeComb(comb)
     elif os.path.isfile(
-        "fastqs/" + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz"
+        DATADIR + comb[0] + "_" + comb[1] + "_" + comb[2] + ".fastq.gz"
     ) or os.path.isfile(
-        "fastqs/"
-        + comb[0]
-        + "_"
-        + comb[1]
-        + "_"
-        + comb[2]
-        + "_"
-        + comb[3]
-        + ".fastq.gz"
+        DATADIR + comb[0] + "_" + comb[1] + "_" + comb[2] + "_" + comb[3] + ".fastq.gz"
     ):
         authorizeComb(comb)
 
