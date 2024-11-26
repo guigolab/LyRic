@@ -240,7 +240,7 @@ rule plotCagePolyAStats:
         ),
     shell:
         r"""
-cat << R_SCRIPT | R --slave
+cat << 'R_SCRIPT' | R --slave
 library(ggplot2)
 
 library(cowplot)
