@@ -664,7 +664,7 @@ rule aggMergingStats:
         r"""
 uuidTmpOut=$(uuidgen)
 echo -e "seqTech\tcapDesign\tsizeFrac\tsampleRep\tcategory\tcount" > {TMPDIR}/$uuidTmpOut
-cat {input} | awk '{{print $1,$2,$3,$4,"HCGMreads",$5,$1,$2,$3,$4,"mergedTMs",$6}}' OFS="\t" | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
+cat {input} | awk '{{print $1,$2,$3,$4,"HCGMreads",$5"\n"$1,$2,$3,$4,"mergedTMs",$6}}' OFS="\t" | sort -T {TMPDIR}  >> {TMPDIR}/$uuidTmpOut
 mv {TMPDIR}/$uuidTmpOut {output}
 
         """
