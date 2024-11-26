@@ -4,7 +4,7 @@ rule makeStarIndex:
     output:
         config["GENOMESDIR"] + "STARshort_indices/" + "{genome}/SA",
     conda:
-        "envs/star_env.yml"
+        "../envs/star_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -25,7 +25,7 @@ rule hiSeqReadMapping:
         + "/SA",
     threads: 12
     conda:
-        "envs/star_env.yml"
+        "../envs/star_env.yml"
     output:
         "output/mappings/shortReadMappings/hiSeq_{capDesign}.bam",
     shell:
@@ -74,7 +74,7 @@ rule getHiSeqMappingStats:
     output:
         "output/statsFiles/" + "tmp/{capDesign}_tmp.hiSeq.mapping.stats.tsv",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuidTmpOut=$(uuidgen)
@@ -107,7 +107,7 @@ rule plotHiSeqMappingStats:
     output:
         "output/plots/" + "hiSeq.mapping.stats/all.hiSeq.mapping.stats.{ext}",
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -140,7 +140,7 @@ rule getHiSeqCanonicalIntronsList:
     output:
         temp("output/mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.bed"),
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -163,7 +163,7 @@ rule getHiSeqCanonicalIntronsList2:
         list="output/mappings/hiSeqIntrons/hiSeq_{capDesign}.canonicalIntrons.list",
         stats="output/statsFiles/" + "tmp/{capDesign}_tmp.hiSeq.SJs.stats.tsv",
     conda:
-        "envs/perl_env.yml"
+        "../envs/perl_env.yml"
     shell:
         """
 
@@ -210,7 +210,7 @@ rule plotHiSeqSjStats:
     output:
         "output/plots/" + "hiSeq.SJs.stats/all.hiSeq.SJs.stats.{ext}",
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         """
 cat << 'R_SCRIPT' | R --slave

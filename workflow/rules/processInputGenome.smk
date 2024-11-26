@@ -8,7 +8,7 @@ rule sortIndexGenome:
         sorted=config["GENOMESDIR"] + "{genome}.sorted.fa",
         bioperlindex=config["GENOMESDIR"] + "{genome}.sorted.fa.index",
     conda:
-        "envs/perl_env.yml"
+        "../envs/perl_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -43,7 +43,7 @@ rule makeGencodePartition:
         + CAPDESIGNTOGENOME[wildcards.capDesign]
         + ".sorted.genome",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     output:
         "output/annotations/{capDesign}.partition.gff",
     shell:
@@ -104,7 +104,7 @@ rule collapseGencode:
         "output/annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf",
     threads: 1
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuid=$(uuidgen)

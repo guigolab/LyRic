@@ -61,7 +61,7 @@ rule longReadMapping:
         bam="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
         bai="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.bai",
     conda:
-        "envs/minimap2_env.yml"
+        "../envs/minimap2_env.yml"
     wildcard_constraints:
         sizeFrac=r"[0-9-+\.]+",
     shell:
@@ -92,7 +92,7 @@ rule makeBigWigs:
     output:
         "output/mappings/longReadMapping/bigWig/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bw",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -107,7 +107,7 @@ rule bamqc:
     output:
         "output/mappings/longReadMapping/bamqc/{techname}_{capDesign}_{sizeFrac}_{sampleRep}/genome_results.txt",
     conda:
-        "envs/qualimap_env.yml"
+        "../envs/qualimap_env.yml"
     shell:
         """
  unset DISPLAY # for JAVA
@@ -167,7 +167,7 @@ rule plotBamqcStats:
             + "sequencingError.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sequencingError.deletionsOnly.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
@@ -255,7 +255,7 @@ rule makeBigWigExonicRegions:
             CAPDESIGNTOGENOME[wildcards.capDesign]
         ],
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     output:
         "output/mappings/longReadMapping/bigWig_exonic/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bw",
     shell:
@@ -289,7 +289,7 @@ rule setupReadProfileMatrix:
         libraryPrepList="output/statsFiles/"
         + "byTech_{capDesign}_{sizeFrac}_{sampleRep}.libraryPreps.txt",
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 # extract libraryPrep names and matching colors, in the same order as input files
@@ -338,7 +338,7 @@ rule getReadProfileMatrix:
         matrix="output/statsFiles/"
         + "byTech_{capDesign}_{sizeFrac}_{sampleRep}.readProfileMatrix.tsv.gz",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     threads: 6
     shell:
         """
@@ -362,7 +362,7 @@ rule plotReadProfileMatrix:
         heatmap="output/plots/"
         + "readProfile/byTech_{capDesign}_{sizeFrac}_{sampleRep}.readProfile.heatmap.png",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 
@@ -377,14 +377,15 @@ rule plotReadProfileMatrix:
 rule getMappingStats:
     input:
         bams="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
-        fastqs="fastqs/" + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
+        fastqs=config["FASTQDIR"]
+        + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
     output:
         basic="output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.mapping.stats.tsv",
         spikeIns="output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.mapping.spikeIns.stats.tsv",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuidTmpOutB=$(uuidgen)
@@ -440,7 +441,7 @@ rule plotMappingStats:
             wildcards.techname,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -523,7 +524,7 @@ rule plotSpikeInsMappingStats:
             wildcards.techname,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -579,7 +580,7 @@ rule checkOnlyOneHit:
     output:
         "output/mappings/longReadMapping/qc/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.dupl.txt",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuidTmpOut=$(uuidgen)
@@ -597,7 +598,7 @@ rule readBamToBed:
     output:
         "output/mappings/readBamToBed/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bed.gz",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuidTmpOut=$(uuidgen)
@@ -629,7 +630,7 @@ rule getReadBiotypeClassification:
     output:
         "output/mappings/longReadMapping/reads2biotypes/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.reads2biotypes.{spikeInCategories}.tsv.gz",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     params:
         grepSpikeIns=lambda wildcards: (
             '| grep -vP "^ERCC" | grep -vP "^SIRV"'
@@ -692,7 +693,7 @@ rule plotReadToBiotypeBreakdownStats:
             + "readToBiotypeBreakdown.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}_{spikeInCategories}.readToBiotypeBreakdown.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,

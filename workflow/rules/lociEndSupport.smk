@@ -8,7 +8,7 @@ if GENOMETOPREVIOUS is not None:
             annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf",
         threads: 1
         conda:
-            "envs/xtools_env.yml"
+            "../envs/xtools_env.yml"
         output:
             "mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.all.gff.gz",
         shell:
@@ -62,7 +62,7 @@ if GENOMETOPREVIOUS is not None:
             annot="annotations/simplified/{capDesign}.gencode.collapsed.simplified_biotypes.gtf",
         threads: 1
         conda:
-            "envs/xtools_env.yml"
+            "../envs/xtools_env.yml"
         output:
             "mappings/nonAnchoredMergeReads/mergeWithPrevious/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.endSupport:all.gff.gz",
         shell:
@@ -108,7 +108,7 @@ rule getGencodeSupportedEnds:
     output:
         "mappings/nonAnchoredMergeReads/mergeWithPrevious/gencode/{capDesign}.gencode.cage+PASsupported.gff.gz",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuid5pEnds=$(uuidgen)
@@ -148,7 +148,7 @@ rule getCurrentPreviousPhaseTmsWithGencodeSupportedEnds:
     output:
         "mappings/nonAnchoredMergeReads/mergeWithPrevious/cls/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.HiSS.tmerge.min{minReadSupport}reads.cage+PASsupported.gff.gz",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuid5pEnds=$(uuidgen)
@@ -188,7 +188,7 @@ rule getPreviousPhaseTmsWithGencodeSupportedEnds:
     output:
         "mappings/nonAnchoredMergeReads/previous/{capDesign}.previous.tmerge.cage+PASsupported.gff.gz",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuid5pEnds=$(uuidgen)
@@ -304,7 +304,7 @@ rule plotFlLocusGencodeOnlyStats:
             + "FLloci.gencodeOnly.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.gencodeOnly.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: merge_figures_params(
             wildcards.capDesign,
@@ -383,7 +383,7 @@ rule plotFlLocusStats:
             + "FLloci.stats/{techname}/Corr{corrLevel}/{capDesign}/{techname}Corr{corrLevel}_{capDesign}_{sizeFrac}_{barcodes}.min{minReadSupport}reads.FLloci.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: merge_figures_params(
             wildcards.capDesign,

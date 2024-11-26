@@ -7,7 +7,7 @@ rule bamToSam:
             "output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.sam"
         ),
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -28,7 +28,7 @@ rule polyAmapping:
     output:
         "output/mappings/polyAmapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsites.bed.gz",
     conda:
-        "envs/perl_env.yml"
+        "../envs/perl_env.yml"
     shell:
         """
 uuidTmpOut=$(uuidgen)
@@ -71,7 +71,7 @@ rule getPolyAreadsStats:
         mappedReads="output/mappings/longReadMapping/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam",
         polyAreads="output/mappings/getPolyAreadsList/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.list",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     output:
         "output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAreads.stats.tsv",
@@ -124,7 +124,7 @@ rule plotAllPolyAreadsStats:
             wildcards.techname,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -178,7 +178,7 @@ rule clusterPolyAsites:
     output:
         "output/mappings/clusterPolyAsites/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsites.clusters.bed",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuidTmpOut=$(uuidgen)
@@ -196,7 +196,7 @@ rule makePolyABigWigs:
     output:
         "output/mappings/makePolyABigWigs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.polyAsitesNoErcc.{strand}.bw",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 tmpIn=$(uuidgen)

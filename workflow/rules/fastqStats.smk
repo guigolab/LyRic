@@ -48,7 +48,7 @@ rule getReadLengthSummary:
         summ="output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.readlengthSummary.tsv",
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         bc=lambda wildcards: wildcards.sampleRep,
     shell:
@@ -107,7 +107,7 @@ rule plotReadLength:
             + "readLength.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.readLength.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,

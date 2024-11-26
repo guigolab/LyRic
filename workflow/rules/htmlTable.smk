@@ -56,7 +56,7 @@ rule makeHtmlSummaryDashboard:
         allNovelFlLociQcStats if config.get("genomeToCAGEpeaks") else "/dev/null",
         allNtCoverageStats if config.get("genomeToAnnotGtf") else "/dev/null",
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         indexEntryPart=lambda wildcards: (
             "(no filter, all samples)"
@@ -71,7 +71,7 @@ rule makeHtmlSummaryDashboard:
         ),
     shell:
         r"""
-{workflow.basedir}/makeHtmlDashboard.r {output.html} {input}
+{workflow.basedir}/scripts/makeHtmlDashboard.r {output.html} {input}
 
 htmlBn=$(basename {output.html})
 tsvBn=$(basename {output.tsv})

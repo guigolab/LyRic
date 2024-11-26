@@ -5,7 +5,7 @@ rule compareTargetsToTms:
             CAPDESIGNTOCAPDESIGN[wildcards.capDesign]
         ],
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     output:
         "output/mappings/mergedReads/vsTargets/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.gfftsv.gz",
     shell:
@@ -69,7 +69,7 @@ rule plotTargetCoverageStats:
             + "targetCoverage.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.targetCoverage.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
@@ -134,7 +134,7 @@ rule gffcompareToAnnotation:
         standard="output/mappings/mergedReads/gffcompare/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.simple.tsv",
         adjustedSn="output/mappings/mergedReads/gffcompare/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.adj.simple.tsv",
     conda:
-        "envs/gffcompare_env.yml"
+        "../envs/gffcompare_env.yml"
     shell:
         """
 pref=$(basename {output.standard} .simple.tsv)
@@ -176,7 +176,7 @@ if SIRVpresent:
         output:
             "output/mappings/mergedReads/gffcompare/SIRVs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.simple.tsv",
         conda:
-            "envs/gffcompare_env.yml"
+            "../envs/gffcompare_env.yml"
         shell:
             """
 pref=$(basename {output} .simple.tsv)
@@ -269,7 +269,7 @@ if SIRVpresent:
                 + "tmerge.vs.SIRVs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.{filt}.tmerge.min{minReadSupport}reads.vs.SIRVs.stats"
             ),
         conda:
-            "envs/R_env.yml"
+            "../envs/R_env.yml"
         params:
             filterDat=lambda wildcards: multi_figures(
                 wildcards.capDesign,
@@ -382,7 +382,7 @@ if SIRVpresent:
                 + "tmerge.vs.SIRVs.detection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.SIRVs.detection.stats"
             ),
         conda:
-            "envs/R_env.yml"
+            "../envs/R_env.yml"
         params:
             filterDat=lambda wildcards: multi_figures(
                 wildcards.capDesign,
@@ -527,7 +527,7 @@ rule plotGffCompareGencodeSnPrStats:
             + "tmerge.vs.gencode.SnPr.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.SnPr.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
@@ -620,7 +620,7 @@ rule plotGffCompareStats:
             + "tmerge.vs.gencode.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.vs.gencode.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
@@ -735,7 +735,7 @@ rule plotTmVsGencodeLengthStats:
             + "tmerge.vs.gencode.length.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-all.endSupport-{endSupport}.vs.gencode.length.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
@@ -899,7 +899,7 @@ rule makeClsGencodeLoci:
             "output/mappings/mergedReads/gencodeLociMerge/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.+gencode.loci.gff.gz"
         ),
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -937,7 +937,7 @@ rule getNovelIntergenicLoci:
         gtf="output/mappings/mergedReads/mergeToRef/novelLoci/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelIntergenicLoci.gff.gz",
         locusBed="output/mappings/mergedReads/mergeToRef/novelLoci/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.geneCoords.bed",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuid1=$(uuidgen)
@@ -968,7 +968,7 @@ rule getNovelIntergenicLociQcStats:
         + CAPDESIGNTOGENOME[wildcards.capDesign]
         + ".repeatMasker.bed",
     conda:
-        "envs/Redtools_env.yml"
+        "../envs/Redtools_env.yml"
     output:
         "output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.qc.stats.tsv",
@@ -1102,7 +1102,7 @@ rule plotNovelIntergenicLociStats:
             + "tmerge.novelLoci.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.novelLoci.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
@@ -1249,7 +1249,7 @@ rule plotAnnotatedGeneDetectionStats:
             + "gencode.geneDetection.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.gencode.geneDetection.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
@@ -1310,7 +1310,7 @@ rule getNtCoverageByGenomePartition:
         "output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.tmerge.min{minReadSupport}reads.splicing_status-{splicedStatus}.endSupport-{endSupport}.ntCoverageByGenomePartition.stats.tsv",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuid=$(uuidgen)
@@ -1363,7 +1363,7 @@ rule plotNtCoverageByGenomePartition:
             + "tmerge.ntCoverageByGenomePartition.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.endSupport-{endSupport}.ntCoverageByGenomePartition.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,

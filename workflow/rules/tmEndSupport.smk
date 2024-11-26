@@ -24,7 +24,7 @@ rule cageSupportedfivepEnds:
     output:
         "output/mappings/mergedReads/cageSupported/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.cageSupported5pEnds.bed",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuidTmpOut=$(uuidgen)
@@ -45,7 +45,7 @@ rule dhsSupportedfivepEnds:
     output:
         "output/mappings/mergedReads/dhsSupported/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsSupported5pEnds.bed",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuidTmpOut=$(uuidgen)
@@ -64,7 +64,7 @@ rule plotDhsVsCage5primeComparisonStats:
         "output/plots/"
         + "dhsVsCage5primeComparison.venn.stats/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.dhsVsCage5primeComparison.venn.stats.pdf",
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         """
 uuidTmpCage=$(uuidgen)
@@ -126,7 +126,7 @@ rule polyASupportedthreepEnds:
         + CAPDESIGNTOGENOME[wildcards.capDesign]
         + ".sorted.genome",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     output:
         "output/mappings/mergedReads/polyASupported/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.polyASupported3pEnds.bed",
     shell:
@@ -230,7 +230,7 @@ rule plotCagePolyAStats:
             + "cagePolyASupport.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.min{minReadSupport}reads.splicing_status-{splicedStatus}.cagePolyASupport.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,

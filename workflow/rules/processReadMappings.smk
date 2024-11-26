@@ -62,7 +62,7 @@ rule strandedGffToBed:
             "output/mappings/strandGffs/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.stranded.bed"
         ),
     conda:
-        "envs/ucsc_env.yml"
+        "../envs/ucsc_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -85,7 +85,7 @@ rule removeIntraPriming:
         stats="output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.intraPriming.stats.tsv",
     conda:
-        "envs/perl_env.yml"
+        "../envs/perl_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -141,7 +141,7 @@ rule plotIntraPrimingStats:
             wildcards.techname,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -205,7 +205,7 @@ rule highConfidenceReads:
             + wildcards.sampleRep
         ]["filter_SJ_Qscore"],
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     output:
         gff="output/mappings/highConfidenceReads/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.strandedHCGMs.gff.gz",
         stats="output/statsFiles/"
@@ -350,7 +350,7 @@ rule getHiSSStats:
         "output/statsFiles/"
         + "tmp/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.HiSS.stats.tsv",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -414,7 +414,7 @@ rule plotAllHiSSStats:
             wildcards.techname,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -686,7 +686,7 @@ rule plotMergingStats:
             wildcards.techname,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -779,7 +779,7 @@ rule aggHistTmLengthSummaryStats:
         summary="output/statsFiles/"
         + "all.min{minReadSupport}reads.matureRNALengthSummary.stats.tsv",
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 uuid=$(uuidgen)
@@ -816,7 +816,7 @@ rule plotHistTmLengthStats:
             wildcards.splicedStatus,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave
@@ -897,7 +897,7 @@ rule getGeneReadCoverageStats:
     wildcard_constraints:
         sizeFrac=r"[0-9-+\.]+",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuid=$(uuidgen)
@@ -961,7 +961,7 @@ rule plotGeneReadCoverageStats:
             wildcards.techname,
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     shell:
         r"""
 cat << 'R_SCRIPT' | R --slave

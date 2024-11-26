@@ -88,7 +88,7 @@ rule makeTrackDbInputTracks:
         bigBed="output/trackHub/" + "dataFiles/{capDesign}_primary_targets.bb",
         trackDb=temp("output/trackHub/" + "{capDesign}_primary_targets.trackDb.txt"),
     conda:
-        "envs/ucsc_env.yml"
+        "../envs/ucsc_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -145,7 +145,7 @@ rule makeHiSeqBamOutputTracks:
         bam="output/trackHub/" + "dataFiles/hiSeq_{capDesign}.bam",
         bai="output/trackHub/" + "dataFiles/hiSeq_{capDesign}.bam.bai",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuidTmpOut=$(uuidgen)
@@ -234,7 +234,7 @@ rule makeBamOutputTracks:
         bai="output/trackHub/"
         + "dataFiles/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.bam.bai",
     conda:
-        "envs/xtools_env.yml"
+        "../envs/xtools_env.yml"
     shell:
         r"""
 uuidTmpOut=$(uuidgen)
@@ -306,7 +306,7 @@ rule makeTmergeOutputTracks:
             + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_TmergeOutput.min{minReadSupport}reads.trackDb.txt"
         ),
     conda:
-        "envs/ucsc_env.yml"
+        "../envs/ucsc_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -351,7 +351,7 @@ rule makeFLTmergeOutputTracks:
             + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}_FLTmergeOutput.min{minReadSupport}reads.trackDb.txt"
         ),
     conda:
-        "envs/ucsc_env.yml"
+        "../envs/ucsc_env.yml"
     shell:
         """
 uuid=$(uuidgen)

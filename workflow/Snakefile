@@ -27,7 +27,7 @@ shell.prefix('set -euo pipefail; export PATH="{workflow.basedir}/utils/:$PATH";'
 
 
 # (it seems DRMAA does not source ~/.bashrc by itself)
-include: "functions.py"
+include: "lib/functions.py"
 
 
 # consistent ggplot2 theme across R plots:
@@ -282,17 +282,17 @@ for comb in itertools.product(
 AUTHORIZEDCOMBINATIONS = set(AUTHORIZEDCOMBINATIONS)
 
 
-include: "fastqStats.smk"
-include: "lrMapping.smk"
-include: "srMapping.smk"
-include: "polyAmapping.smk"
-include: "introns.smk"
-include: "processReadMappings.smk"
-include: "tmClassification.smk"
-include: "tmEndSupport.smk"
-include: "trackHub.smk"
-include: "htmlTable.smk"
-include: "processInputGenome.smk"
+include: "rules/fastqStats.smk"
+include: "rules/lrMapping.smk"
+include: "rules/srMapping.smk"
+include: "rules/polyAmapping.smk"
+include: "rules/introns.smk"
+include: "rules/processReadMappings.smk"
+include: "rules/tmClassification.smk"
+include: "rules/tmEndSupport.smk"
+include: "rules/trackHub.smk"
+include: "rules/htmlTable.smk"
+include: "rules/processInputGenome.smk"
 
 
 ###########################

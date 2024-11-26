@@ -21,7 +21,7 @@ rule getIntronMotif:
         gff="output/mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.introns.gff.gz",
         tsv="output/mappings/getIntronMotif/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.transcripts.tsv.gz",
     conda:
-        "envs/perl_env.yml"
+        "../envs/perl_env.yml"
     shell:
         """
 uuid=$(uuidgen)
@@ -113,7 +113,7 @@ rule plotCompareClsGencodeSJsStats:
             + "tmerge.vs.Gencode.SJs.stats/{techname}/{capDesign}/{techname}_{capDesign}_{sizeFrac}_{sampleRep}.tmerge.min{minReadSupport}reads.vs.Gencode.SJs.stats"
         ),
     conda:
-        "envs/R_env.yml"
+        "../envs/R_env.yml"
     params:
         filterDat=lambda wildcards: multi_figures(
             wildcards.capDesign,
