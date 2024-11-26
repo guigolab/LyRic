@@ -729,14 +729,14 @@ dat <- read.table('{input}', header=T, as.is=T, sep='\t')
 
 dat$biotype=factor(dat$biotype, levels=names({params.BtPalette}), ordered=TRUE)  #otherwise the manual scale is not ordered correctly and "drop=FALSE" (include categories in scale that are absent from data frame) is ignored
 
-plotBase <- \"p <- ggplot(data=dat, aes(x=1, y=readOverlapsPercent, fill=biotype)) +
+plotBase <- "p <- ggplot(data=dat, aes(x=1, y=readOverlapsPercent, fill=biotype)) +
 geom_bar(stat='identity') + scale_fill_manual(values={params.BtPalette}, drop = FALSE) + ylab('% read overlaps') + xlab('') + guides(fill = guide_legend(title='Region/biotype')) +
 scale_y_continuous(labels = scales::percent) + coord_cartesian(ylim=c(0,1)) +
 
 {params.filterDat[hideXaxisLabels]}
 {GGPLOT_PUB_QUALITY} +
 theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) +
-\"
+"
 
 
 {params.filterDat[facetPlotSetup]}
