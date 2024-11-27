@@ -1,2 +1,6 @@
+.cache/
+.java
+.snakemake/
+
 data/
-.snakemake
+output/
