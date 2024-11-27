@@ -3,13 +3,15 @@ rule basicFASTQqc:
         DATADIR + "{techname}_{capDesign}_{sizeFrac}_{sampleRep}.fastq.gz",
     output:
         "output/fastqs/" + "qc/{techname}_{capDesign}_{sizeFrac}.{sampleRep}.dupl.txt",
+    params:
+        fastq2tsv=workflow.source_path("../utils/fastq2tsv.pl"),
     shell:
         """
 # check that read IDs don't contain spaces (frequent with ONT)
 #zcat {input} | perl -lane 'if ($F[3]) {{die}}'
 
 # check that there are no read ID duplicates
-zcat {input} | fastq2tsv.pl | awk '{{print $1}}' | sort -T {TMPDIR} | uniq -dc > {output}
+zcat {input} | perl {params.fastq2tsv} | awk '{{print $1}}' | sort | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
         """
