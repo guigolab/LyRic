@@ -138,6 +138,8 @@ legend <- get_legend(pXy)
 pXyNoLegend <- pXy + theme(legend.position='none')
 pYxNoLegend <- pYx + theme(legend.position='none')
 
+pdf(NULL)
+
 legendOnly <- grid.arrange(legend)
 pXyGrob <- as.grob(pXy)
 pYxGrob <- as.grob(pYx)
