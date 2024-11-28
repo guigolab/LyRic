@@ -11,7 +11,7 @@ rule basicFASTQqc:
 #zcat {input} | perl -lane 'if ($F[3]) {{die}}'
 
 # check that there are no read ID duplicates
-zcat {input} | perl {params.fastq2tsv} | awk '{{print $1}}' | sort | uniq -dc > {output}
+zcat {input} | fastq2tsv.pl | awk '{{print $1}}' | sort | uniq -dc > {output}
 count=$(cat {output} | wc -l)
 if [ $count -gt 0 ]; then echo "$count duplicate read IDs found"; mv {output} {output}.tmp; exit 1; fi
         """

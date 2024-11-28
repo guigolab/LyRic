@@ -23,7 +23,7 @@ onerror:
 
 
 # prefix all shell scripts with the following commands:
-shell.prefix('set -euo pipefail; export PATH="{workflow.basedir}/utils/:$PATH";')
+shell.prefix('set -euo pipefail; export PATH="{workflow.current_basedir}/utils/:$PATH";')
 
 
 # include common functions and utils
