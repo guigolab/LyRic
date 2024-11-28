@@ -1,3 +1,0 @@
-#!/bin/bash
-
-zcat $1 |head
