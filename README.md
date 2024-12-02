@@ -1,3 +1,5 @@
+# LyRic
+
 LyRic  is a versatile automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
 
 1. a set of high-quality RNA **Transcript Models (TMs)** mapped onto a genome sequence, based on Long-Read (LR) RNA sequencing data.
@@ -12,3 +14,48 @@ LyRic is platform-agnostic, *i.e.* it can deal with FASTQ data coming from both 
 **Full LyRic documentation is [here](https://guigolab.github.io/LyRic/documentation.html).**
 
 
+## Quickstart
+
+### Prerequisites
+
+* Anaconda installation (miniconda/mambaforge/pixi)
+* Singularity
+
+> [!NOTE]  
+> It seems that Snakemake needs an installation of Anaconda even when the pipeline runs in a containerized environment
+
+<!-- TODO: Add docs or reference on how to install Snakemake -->
+
+[Pixi section](#setup-snakemake-with-pixi)
+
+### Get the pipeline
+
+Clone the GitHub repo to the folder you want to use as the working directory of the pipeline amd move to it:
+
+```
+git clone https://github.com/guigolab/lyric my_working_dir
+
+cd my_working_dir
+```
+
+#### Setup Snakemake with Pixi
+
+If you use [Pixi](https://pixi.sh/) to install your conda environments you can use the provided `pixi.toml` file to setup Snakemake and other requirements, with the following command:
+
+```
+pixi install
+```
+
+### Make a test run
+
+From the pipeline folder extract the test dataset:
+
+```
+tar xf resources/test-data.tgz
+```
+
+Then run the pipeline on the test dataset with:
+
+```
+snakemake
+```
