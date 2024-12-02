@@ -1,6 +1,6 @@
 # LyRic
 
-LyRic  is a versatile automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
+LyRic is a versatile automated transcriptome annotation and analysis workflow written in the [Snakemake](https://snakemake.readthedocs.io/en/stable/) language. Its core functionality is the production of:
 
 1. a set of high-quality RNA **Transcript Models (TMs)** mapped onto a genome sequence, based on Long-Read (LR) RNA sequencing data.
 2. various **summary statistics plots** and analysis results that describe the input and output data in details
@@ -18,11 +18,11 @@ LyRic is platform-agnostic, *i.e.* it can deal with FASTQ data coming from both 
 
 ### Prerequisites
 
-* Anaconda installation (miniconda/mambaforge/pixi)
+* Anaconda installation (`miniconda`/`mambaforge`/`pixi`) for installing Snakemake
 * Singularity
 
 > [!NOTE]  
-> It seems that Snakemake needs an installation of Anaconda even when the pipeline runs in a containerized environment
+> It looks like Snakemake needs an installation of Anaconda even when the pipeline runs in a containerized environment
 
 <!-- TODO: Add docs or reference on how to install Snakemake -->
 
@@ -40,7 +40,7 @@ cd my_working_dir
 
 #### Setup Snakemake with Pixi
 
-If you use [Pixi](https://pixi.sh/) to install your conda environments you can use the provided `pixi.toml` file to setup Snakemake and other requirements, with the following command:
+If you use [Pixi](https://pixi.sh/) to install your conda environments you can use the provided `pixi.toml` file to setup Snakemake and other requirements. Just run the following command from the pipeline directory:
 
 ```
 pixi install
