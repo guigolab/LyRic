@@ -18,43 +18,33 @@ LyRic is platform-agnostic, *i.e.* it can deal with FASTQ data coming from both 
 
 ### Prerequisites
 
-* Anaconda installation (`miniconda`/`mambaforge`/`pixi`) for installing Snakemake
+* Anaconda installation (`miniconda`/`mambaforge`) 
+* Snakemake
 * Singularity
 
 > [!NOTE]  
 > It looks like Snakemake needs an installation of Anaconda even when the pipeline runs in a containerized environment
 
-<!-- TODO: Add docs or reference on how to install Snakemake -->
-
-[Pixi section](#setup-snakemake-with-pixi)
+> [!TIP]
+> If you use [Pixi](https://pixi.sh/) to install your conda environments you can use the provided `pixi.toml` file to setup Snakemake and other requirements. Just run the following command from the pipeline directory:
+>
+> ```
+> pixi install
+> ```
 
 ### Get the pipeline
 
-Clone the GitHub repo to the folder you want to use as the working directory of the pipeline amd move to it:
+Clone the GitHub repo to the folder you want to use as the working directory of the pipeline and move to it:
 
 ```
-git clone https://github.com/guigolab/lyric my_working_dir
+git clone https://github.com/guigolab/LyRic lyric_test
 
-cd my_working_dir
-```
-
-#### Setup Snakemake with Pixi
-
-If you use [Pixi](https://pixi.sh/) to install your conda environments you can use the provided `pixi.toml` file to setup Snakemake and other requirements. Just run the following command from the pipeline directory:
-
-```
-pixi install
+cd lyric_test
 ```
 
 ### Make a test run
 
-From the pipeline folder extract the test dataset:
-
-```
-tar xf resources/test-data.tgz
-```
-
-Then run the pipeline on the test dataset with:
+The pipeline repository contains a small datasets that can be used for testing. You can run the pipeline on the test dataset with the following command:
 
 ```
 snakemake
