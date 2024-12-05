@@ -71,7 +71,7 @@ rule makeHtmlSummaryDashboard:
         ),
     shell:
         r"""
-{workflow.basedir}/scripts/makeHtmlDashboard.r {output.html} {input}
+makeHtmlDashboard.r {output.html} {input}
 
 htmlBn=$(basename {output.html})
 tsvBn=$(basename {output.tsv})
