@@ -19,7 +19,27 @@ if [ $count -gt 0 ]; then echo "$count duplicate sequence IDs found"; exit 1; fi
 FastaToTbl {input} | sort -T {TMPDIR} -k1,1 | TblToFasta > {TMPDIR}/$uuid
 mv {TMPDIR}/$uuid {output.sorted}
 perl -e 'use Bio::DB::Fasta; my $chrdb = Bio::DB::Fasta->new("{output.sorted}");'
+        """
 
+
+rule sortIndexGenomeCompressed:
+    input:
+        config["GENOMESDIR"] + "{genome}.fa.gz",
+    output:
+        sorted=config["GENOMESDIR"] + "{genome}.sorted.fa",
+        bioperlindex=config["GENOMESDIR"] + "{genome}.sorted.fa.index",
+    conda:
+        "../envs/perl_env.yml"
+    shell:
+        """
+uuid=$(uuidgen)
+#check for duplicate sequences:
+count=$(zcat {input} | fgrep ">" | sort|uniq -d | wc -l)
+if [ $count -gt 0 ]; then echo "$count duplicate sequence IDs found"; exit 1; fi
+
+zcat {input} | FastaToTbl | sort -T {TMPDIR} -k1,1 | TblToFasta > {TMPDIR}/$uuid
+mv {TMPDIR}/$uuid {output.sorted}
+perl -e 'use Bio::DB::Fasta; my $chrdb = Bio::DB::Fasta->new("{output.sorted}");'
         """
 
 
