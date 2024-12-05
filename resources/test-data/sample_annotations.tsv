@@ -1,0 +1,3 @@
+sample_name	use_matched_HiSeq	filter_SJ_Qscore	seqPlatform	captureDesign	cellLine	subProject	use_dhs_peaks	use_cage_peaks	use_repeats	libraryPrep
+ont_HpreCap_0+_8NI3GM18906Q701Rep1	FALSE	10	ONT	HpreCap	NI3GM18906	PanTr_ref	FALSE	TRUE	TRUE	CapTrap
+ont_HpreCap_0+_30PE2HG01928Q701Rep1	FALSE	10	ONT	HpreCap	PE2HG01928	PanTr_ref	FALSE	TRUE	TRUE	CapTrap

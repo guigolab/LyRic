@@ -4,3 +4,5 @@
 
 data/
 output/
+
+resources/test-data/fasta/*.sorted.*
