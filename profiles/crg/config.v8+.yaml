@@ -1,0 +1,9 @@
+local-cores: 1
+executor: slurm
+keep-going: true
+rerun-incomplete: true
+latency-wait: 60
+slurm-init-seconds-before-status-checks: 10
+jobs: unlimited
+default-resources:
+  slurm_extra: "'--qos=test'"
