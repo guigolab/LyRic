@@ -1,0 +1,5 @@
+#!/bin/bash
+#outputs full path of any given file
+#find $dir -type f| sed "s#^.#$(pwd)#"
+
+readlink -e $1 |sed 's?^/nfs??' | sed 's?^/users2/?/users/?'

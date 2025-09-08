@@ -1,6 +1,0 @@
-#!/bin/bash
-if [[ $1 == *.gz ]]; then
-zcat $1
-else
-/bin/cat $1
-fi

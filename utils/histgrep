@@ -1,3 +1,0 @@
-#!/bin/bash
-hist | fgrep $1
-

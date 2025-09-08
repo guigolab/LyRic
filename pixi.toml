@@ -1,0 +1,17 @@
+[project]
+name = "test"
+version = "0.1.0"
+description = "Add a short description here"
+authors = ["Emilio Palumbo <emiliopalumbo@gmail.com>"]
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+
+[tasks]
+
+[dependencies]
+snakemake = ">=8.25.3,<9"
+snakemake-executor-plugin-slurm = ">=0.11.2,<0.12"
+snakefmt = ">=0.10.2,<0.11"
+conda = ">=24.9.2,<25"
+r-styler = ">=1.10.3,<2"
+snakedeploy = ">=0.10.3,<0.11"

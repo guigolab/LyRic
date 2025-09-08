@@ -1,0 +1,19 @@
+#! /bin/sh
+# tbl-to-fasta.awk transforms a tbl file into a fasta file, 60 columns per record
+# usage=gawk -f tbl-to-fasta TBL_FILE 
+
+
+gawk '{
+  sequence=$2
+
+  ls = length(sequence)
+  is = 1
+
+  printf ">%s\n", $1
+
+  while (is <= ls)
+  {
+    printf "%s\n", substr(sequence,is,60)
+    is=is+60
+  }
+}' "$@"

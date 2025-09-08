@@ -1,0 +1,8 @@
+.cache/
+.java
+.snakemake/
+
+data/
+output/
+
+resources/test-data/fasta/*.sorted.*
