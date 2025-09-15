@@ -19,7 +19,7 @@ LyRic is platform-agnostic, *i.e.* it can deal with FASTQ data coming from both 
 ### Prerequisites
 
 * Anaconda installation (`miniconda`/`mambaforge`) 
-* Snakemake
+* Snakemake v8
 * Singularity
 
 > [!NOTE]  
@@ -49,3 +49,4 @@ The pipeline repository contains a small datasets that can be used for testing. 
 ```
 snakemake
 ```
+Execution shall take < half an hour.
